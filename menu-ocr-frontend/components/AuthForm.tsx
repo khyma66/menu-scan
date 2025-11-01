@@ -1,7 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@supabase/supabase-js";
+
+// Initialize Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+
+const getSupabaseClient = () => {
+  if (!supabaseUrl || !supabaseKey) {
+    console.warn("Supabase credentials not configured");
+    return null;
+  }
+  return createClient(supabaseUrl, supabaseKey);
+};
 
 export default function AuthForm() {
   const [email, setEmail] = useState("");
@@ -9,10 +21,15 @@ export default function AuthForm() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const supabase = createClientComponentClient();
+  const supabase = getSupabaseClient();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!supabase) {
+      setMessage("Supabase not configured. Please set environment variables.");
+      return;
+    }
+
     setLoading(true);
     setMessage("");
 
@@ -45,6 +62,11 @@ export default function AuthForm() {
   };
 
   const handleGoogleSignIn = async () => {
+    if (!supabase) {
+      setMessage("Supabase not configured. Please set environment variables.");
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {

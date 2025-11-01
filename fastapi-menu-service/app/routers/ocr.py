@@ -2,7 +2,8 @@
 
 import time
 import logging
-from fastapi import APIRouter, HTTPException, status, Header, Depends, Optional
+from fastapi import APIRouter, HTTPException, status, Header, Depends
+from typing import Optional
 from typing import Union
 from app.models import OCRRequest, OCRResponse, ErrorResponse
 from app.services.redis_cache import RedisCache
