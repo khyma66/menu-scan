@@ -1,0 +1,20 @@
+# Render deployment configuration
+# This file configures Render to deploy the FastAPI application
+
+services:
+  - type: web
+    name: menu-ocr-api
+    runtime: python
+    region: oregon
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: API_TITLE
+        value: Menu OCR API
+      - key: API_VERSION
+        value: 1.0.0
+    healthCheckPath: /health
+

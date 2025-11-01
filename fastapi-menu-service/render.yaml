@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: menu-ocr-api
+    runtime: python
+    region: oregon
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: API_TITLE
+        value: Menu OCR API
+      - key: API_VERSION
+        value: 1.0.0
+      - key: API_PREFIX
+        value: /api/v1
+      - key: DEBUG
+        value: false
+      - key: REDIS_HOST
+        fromDatabase:
+          name: menu-ocr-redis
+          property: host
+      - key: REDIS_PORT
+        fromDatabase:
+          name: menu-ocr-redis
+          property: port
+      - key: REDIS_PASSWORD
+        fromDatabase:
+          name: menu-ocr-redis
+          property: password
+      - key: REDIS_DB
+        value: 0
+      - key: REDIS_TTL
+        value: 3600
+
+databases:
+  - name: menu-ocr-redis
+    databaseName: menu-ocr-redis
+    user: redis
+    plan: starter
+
