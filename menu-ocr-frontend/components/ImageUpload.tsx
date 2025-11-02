@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { ocrApi } from "@/lib/api";
 import type { MenuItem } from "@/types/menu";
 
 interface ImageUploadProps {
-  onOCRComplete: (items: MenuItem[], time: number) => void;
+  onOCRComplete: (items: MenuItem[], time: number, metadata?: any) => void;
   onError: (error: string) => void;
   onLoading: (loading: boolean) => void;
 }
@@ -15,51 +15,146 @@ export default function ImageUpload({
   onError,
   onLoading,
 }: ImageUploadProps) {
-  const [imageUrl, setImageUrl] = useState("");
-  const [useLLM, setUseLLM] = useState(true);
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [useLLM, setUseLLM] = useState(false); // Disabled by default for faster processing
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      onError("Please select an image file");
+      return;
+    }
+
+    // Validate file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      onError("Image size exceeds 10MB limit");
+      return;
+    }
+
+    setSelectedFile(file);
+    onError(""); // Clear previous errors
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     
-    if (!imageUrl.trim()) {
-      onError("Please enter an image URL");
+    console.log("🟢🟢🟢 ImageUpload: handleUpload called");
+    console.log("🟢🟢🟢 Event type:", e.type);
+
+    if (!selectedFile) {
+      onError("Please select an image file");
       return;
     }
 
     onLoading(true);
+    onError("");
+
     try {
-      const response = await ocrApi.processImage(imageUrl, useLLM);
-      
+      // Upload file and process
+      const response = await ocrApi.processImageFile(selectedFile, useLLM);
+
       if (response.success) {
-        onOCRComplete(response.menu_items, response.processing_time_ms);
-        setUploadedImage(imageUrl);
+        onOCRComplete(response.menu_items, response.processing_time_ms, response.metadata);
       } else {
         onError("Failed to process image");
       }
     } catch (error: any) {
-      onError(error.message || "An error occurred");
+      // Handle connection errors
+      if (error.message?.includes("fetch") || error.message?.includes("network")) {
+        onError("Connection error: Could not reach the server. Please check if the backend is running at http://localhost:8000");
+      } else if (error.message?.includes("Failed to upload")) {
+        onError("Failed to upload image. Please check the file and try again.");
+      } else {
+        onError(error.message || "An error occurred while processing the image");
+      }
     } finally {
       onLoading(false);
     }
   };
 
+  const handleClear = () => {
+    setSelectedFile(null);
+    setPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    onError("");
+  };
+
   return (
     <div className="space-y-4">
-      {/* Image Input */}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      {/* File Upload */}
+      <form onSubmit={handleUpload} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Image URL
+            Upload Menu Image
           </label>
-          <input
-            type="url"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="https://example.com/menu.jpg"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+              id="file-upload"
+            />
+            <label
+              htmlFor="file-upload"
+              className="cursor-pointer flex flex-col items-center"
+            >
+              <svg
+                className="w-12 h-12 text-gray-400 mb-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                />
+              </svg>
+              <span className="text-sm text-gray-600">
+                Click to upload or drag and drop
+              </span>
+              <span className="text-xs text-gray-500 mt-1">
+                PNG, JPG, JPEG, WEBP (max 10MB)
+              </span>
+            </label>
+          </div>
+
+          {selectedFile && (
+            <div className="mt-2 text-sm text-gray-600">
+              Selected: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+            </div>
+          )}
         </div>
+
+        {/* Preview */}
+        {preview && (
+          <div className="mt-4">
+            <p className="text-sm text-gray-600 mb-2">Preview:</p>
+            <img
+              src={preview}
+              alt="Preview"
+              className="w-full rounded-lg border border-gray-300 max-h-64 object-contain bg-gray-100"
+            />
+          </div>
+        )}
 
         {/* LLM Toggle */}
         <div className="flex items-center space-x-3">
@@ -75,27 +170,26 @@ export default function ImageUpload({
           </label>
         </div>
 
-        {/* Submit Button */}
-        <button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200"
-        >
-          Process Image
-        </button>
-      </form>
-
-      {/* Preview Image */}
-      {uploadedImage && (
-        <div className="mt-4">
-          <p className="text-sm text-gray-600 mb-2">Last Uploaded:</p>
-          <img
-            src={uploadedImage}
-            alt="Uploaded menu"
-            className="w-full rounded-lg border border-gray-300 max-h-64 object-contain bg-gray-100"
-          />
+        {/* Submit and Clear Buttons */}
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            disabled={!selectedFile}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Process Image
+          </button>
+          {selectedFile && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium rounded-lg transition"
+            >
+              Clear
+            </button>
+          )}
         </div>
-      )}
+      </form>
     </div>
   );
 }
-

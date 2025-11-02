@@ -38,6 +38,10 @@ app.add_middleware(
 # Include routers
 app.include_router(ocr.router, prefix=settings.api_prefix)
 app.include_router(auth.router, prefix=settings.api_prefix)
+from app.routers import dishes
+app.include_router(dishes.router, prefix=settings.api_prefix)
+from app.routers import user_info
+app.include_router(user_info.router, prefix=settings.api_prefix)
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -49,13 +53,15 @@ async def health_check():
     # Check services
     services = {}
     
+    # Redis is optional - check but don't fail if unavailable
     try:
         redis = RedisCache()
         await redis.ping()
         services["redis"] = "healthy"
     except Exception as e:
-        services["redis"] = f"unhealthy: {str(e)}"
+        services["redis"] = f"optional (unavailable: {str(e)})"
     
+    # Supabase is required
     try:
         supabase = SupabaseClient()
         # Simple connection test

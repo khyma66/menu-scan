@@ -35,24 +35,54 @@ export default function AuthForm() {
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/auth/callback`,
+            data: {
+              full_name: email.split("@")[0], // Use email prefix as name
+            },
           },
         });
 
-        if (error) throw error;
-        setMessage("Check your email to confirm signup!");
+        if (error) {
+          throw error;
+        }
+
+        // Check if email confirmation is required
+        if (data.user && !data.session) {
+          setMessage("✅ Sign up successful! Please check your email to confirm your account, or try signing in directly if email confirmation is disabled.");
+        } else if (data.session) {
+          setMessage("✅ Signed up and logged in successfully!");
+          // Reload page to update auth state
+          setTimeout(() => window.location.reload(), 1000);
+        } else {
+          setMessage("✅ Account created! You can now sign in.");
+        }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
-        if (error) throw error;
-        setMessage("Signed in successfully!");
+        if (error) {
+          // More specific error messages
+          if (error.message.includes("Invalid login")) {
+            throw new Error("Invalid email or password. Please check your credentials or sign up if you don't have an account.");
+          } else if (error.message.includes("Email not confirmed")) {
+            throw new Error("Please check your email and confirm your account before signing in.");
+          }
+          throw error;
+        }
+
+        if (data.session) {
+          setMessage("✅ Signed in successfully!");
+          // Reload page to update auth state
+          setTimeout(() => window.location.reload(), 1000);
+        } else {
+          setMessage("Sign in successful!");
+        }
       }
     } catch (error: any) {
       setMessage(error.message);

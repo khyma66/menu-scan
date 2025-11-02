@@ -13,11 +13,29 @@ class MenuItem(BaseModel):
     category: Optional[str] = None
 
 
+class Dish(BaseModel):
+    """Dish model with ingredients."""
+    id: Optional[str] = None
+    name_original: str
+    name_english: str
+    description: Optional[str] = None
+    category: Optional[str] = None
+    price_range: Optional[str] = None
+    ingredients: List[str] = []
+
+
+class DishRecommendation(BaseModel):
+    """Dish recommendation based on health condition."""
+    dish: Dish
+    recommendation_type: str  # recommended, not_recommended, caution
+    reason: Optional[str] = None
+
+
 class OCRRequest(BaseModel):
     """Request model for OCR processing."""
     image_url: str = Field(..., description="URL of the menu image")
     use_llm_enhancement: bool = Field(True, description="Use LLM to enhance OCR results")
-    language: str = Field("en", description="Expected language of the menu")
+    language: str = Field("auto", description="Expected language of the menu (auto for detection)")
 
 
 class OCRResponse(BaseModel):
@@ -29,6 +47,16 @@ class OCRResponse(BaseModel):
     enhanced: bool = Field(False, description="Whether LLM enhancement was used")
     cached: bool = Field(False, description="Whether result was from cache")
     metadata: Optional[Dict[str, Any]] = None
+
+
+class DishCreateRequest(BaseModel):
+    """Request model for creating a dish."""
+    name_original: str
+    name_english: str
+    description: Optional[str] = None
+    category: Optional[str] = None
+    price_range: Optional[str] = None
+    ingredients: List[str] = []
 
 
 class ErrorResponse(BaseModel):
@@ -44,4 +72,3 @@ class HealthResponse(BaseModel):
     timestamp: datetime
     version: str
     services: Dict[str, str]
-

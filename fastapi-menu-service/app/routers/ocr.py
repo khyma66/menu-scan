@@ -2,15 +2,16 @@
 
 import time
 import logging
-from fastapi import APIRouter, HTTPException, status, Header, Depends
+from fastapi import APIRouter, HTTPException, status, Header, Depends, UploadFile, File, Form
 from typing import Optional
-from typing import Union
 from app.models import OCRRequest, OCRResponse, ErrorResponse
-from app.services.redis_cache import RedisCache
+# Redis cache disabled for performance - comment out to skip
+# from app.services.redis_cache import RedisCache
 from app.services.supabase_client import SupabaseClient
 from app.services.llm_fallback import LLMFallback
 from app.services.health_service import HealthService
 from app.utils.ocr_parser import extract_menu_items
+from app.utils.language_detector import detect_european_language, get_tesseract_language_code
 from PIL import Image
 import requests
 import pytesseract
@@ -40,24 +41,15 @@ async def process_image(
     current_user: Optional[dict] = Depends(get_current_user_optional)
 ):
     """
-    Process a menu image and extract menu items.
+    Process a menu image from URL and extract menu items.
     
     Optionally filters results based on user's health conditions if authenticated.
-    
-    - **image_url**: URL of the menu image to process
-    - **use_llm_enhancement**: Whether to use LLM to enhance OCR results
-    - **language**: Expected language of the menu
     """
     start_time = time.time()
     
     try:
-        # Check cache first
-        cache = RedisCache()
-        cached_result = await cache.get(request.image_url)
-        
-        if cached_result and not current_user:
-            logger.info(f"Cache hit for image: {request.image_url}")
-            return OCRResponse(**cached_result, cached=True)
+        # Skip cache for now (Redis is optional) - improves speed
+        # Cache check removed to speed up processing
         
         # Download and process image
         logger.info(f"Processing image: {request.image_url}")
@@ -82,6 +74,14 @@ async def process_image(
                 detail="No text detected in image"
             )
         
+        # Auto-detect language if requested
+        if request.language == "auto":
+            detected_lang = detect_european_language(raw_text)
+            logger.info(f"Auto-detected language: {detected_lang}")
+            # Re-run OCR with detected language for better accuracy
+            if detected_lang != "en":
+                raw_text = pytesseract.image_to_string(image, lang=get_tesseract_language_code(detected_lang))
+        
         # Extract menu items from raw text
         menu_items = extract_menu_items(raw_text)
         
@@ -94,6 +94,36 @@ async def process_image(
             if llm_result.get("enhanced"):
                 menu_items = llm_result.get("menu_items", menu_items)
                 enhanced = True
+        
+        # Translate menu items to English using dish database
+        from app.services.translation_service import TranslationService
+        translation_service = TranslationService()
+        
+        # Convert MenuItem objects to dicts for translation
+        menu_items_dict = [
+            {
+                "name": item.name,
+                "price": item.price,
+                "description": item.description,
+                "category": item.category
+            }
+            for item in menu_items
+        ]
+        
+        # Translate to English
+        translated_items = await translation_service.translate_menu_items(menu_items_dict)
+        
+        # Convert back to MenuItem objects with English names
+        from app.models import MenuItem
+        menu_items = [
+            MenuItem(
+                name=item.get("name"),  # English name
+                price=item.get("price"),
+                description=item.get("description"),
+                category=item.get("category")
+            )
+            for item in translated_items
+        ]
         
         # Filter based on health conditions if user is authenticated
         if current_user:
@@ -124,9 +154,7 @@ async def process_image(
             "metadata": metadata
         }
         
-        # Cache the result
-        if not current_user:
-            await cache.set(request.image_url, response_data)
+        # Cache disabled for faster processing (Redis optional)
         
         # Optional: Save to database
         if current_user:
@@ -143,6 +171,195 @@ async def process_image(
         )
     except Exception as e:
         logger.error(f"Error processing image: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error processing image: {str(e)}"
+        )
+
+
+@router.post("/process-upload", response_model=OCRResponse)
+async def process_image_upload(
+    image: UploadFile = File(...),
+    use_llm_enhancement: bool = Form(True),
+    language: str = Form("auto"),
+    current_user: Optional[dict] = Depends(get_current_user_optional)
+):
+    """
+    Process a menu image from file upload and extract menu items.
+    
+    Supports automatic European language detection.
+    Optionally filters results based on user's health conditions if authenticated.
+    """
+    start_time = time.time()
+    
+    try:
+        # Validate file type
+        if not image.content_type or not image.content_type.startswith("image/"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="File must be an image"
+            )
+        
+        # Read image data
+        img_data = await image.read()
+        
+        # Verify image size
+        if len(img_data) > 10 * 1024 * 1024:  # 10MB limit
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="Image size exceeds 10MB limit"
+            )
+        
+        # Process image with Tesseract OCR
+        image_obj = Image.open(BytesIO(img_data))
+        
+        # Initial OCR with English (or specified language)
+        if language == "auto":
+            # Start with English, then detect
+            raw_text = pytesseract.image_to_string(image_obj, lang="eng")
+            
+            # Auto-detect language
+            if raw_text.strip():
+                detected_lang = detect_european_language(raw_text)
+                logger.info(f"Auto-detected language: {detected_lang}")
+                
+                # Re-run OCR with detected language for better accuracy
+                if detected_lang != "en":
+                    tesseract_lang = get_tesseract_language_code(detected_lang)
+                    try:
+                        raw_text = pytesseract.image_to_string(image_obj, lang=tesseract_lang)
+                        logger.info(f"Re-ran OCR with language: {tesseract_lang}")
+                    except Exception as e:
+                        logger.warning(f"Failed to use detected language {tesseract_lang}, using English: {e}")
+                        raw_text = pytesseract.image_to_string(image_obj, lang="eng")
+            else:
+                detected_lang = "en"
+        else:
+            # Use specified language
+            raw_text = pytesseract.image_to_string(image_obj, lang=language)
+            detected_lang = language
+        
+        if not raw_text.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No text detected in image"
+            )
+        
+        # Extract menu items from raw text
+        menu_items = extract_menu_items(raw_text)
+        
+        # Use LLM enhancement if requested
+        enhanced = False
+        if use_llm_enhancement:
+            llm_service = LLMFallback()
+            llm_result = await llm_service.enhance_ocr_result(raw_text, detected_lang)
+            
+            if llm_result.get("enhanced"):
+                menu_items = llm_result.get("menu_items", menu_items)
+                enhanced = True
+        
+        # Translate menu items to English using dish database
+        from app.services.translation_service import TranslationService
+        translation_service = TranslationService()
+        
+        # Convert MenuItem objects to dicts for translation
+        menu_items_dict = [
+            {
+                "name": item.name,
+                "price": item.price,
+                "description": item.description,
+                "category": item.category
+            }
+            for item in menu_items
+        ]
+        
+        # Translate to English
+        translated_items = await translation_service.translate_menu_items(menu_items_dict)
+        
+        # Convert back to MenuItem objects with English names
+        from app.models import MenuItem
+        menu_items = [
+            MenuItem(
+                name=item.get("name"),  # English name
+                price=item.get("price"),
+                description=item.get("description"),
+                category=item.get("category")
+            )
+            for item in translated_items
+        ]
+        
+        # Filter based on health conditions if user is authenticated
+        if current_user:
+            health_service = HealthService()
+            filtered_menu = await health_service.filter_menu_items(menu_items, current_user.get("id"))
+            menu_items = filtered_menu.get("filtered_items", menu_items)
+            
+            # Get dish recommendations
+            dish_recs = filtered_menu.get("dish_recommendations", {})
+            
+            # Add metadata about filtering
+            metadata = {
+                "original_count": len(filtered_menu.get("original_items", [])),
+                "filtered_count": len(filtered_menu.get("filtered_items", [])),
+                "items_to_avoid": [item.model_dump() if hasattr(item, 'model_dump') else item for item in filtered_menu.get("items_to_avoid", [])],
+                "conditions": filtered_menu.get("conditions", []),
+                "has_fever": filtered_menu.get("has_fever", False),
+                "has_gi": filtered_menu.get("has_gi", False),
+                "detected_language": detected_lang,
+                "translated": True
+            }
+            
+            # Add dish recommendations
+            if dish_recs and (dish_recs.get("recommended") or dish_recs.get("not_recommended")):
+                metadata["dish_recommendations"] = {
+                    "recommended": [
+                        {
+                            "name": item.get("name", item.get("original_name", "")),
+                            "reason": item.get("reason", "Recommended for your health condition")
+                        }
+                        for item in dish_recs.get("recommended", [])
+                    ],
+                    "not_recommended": [
+                        {
+                            "name": item.get("name", item.get("original_name", "")),
+                            "reason": item.get("reason", "Not recommended for your health condition")
+                        }
+                        for item in dish_recs.get("not_recommended", [])
+                    ],
+                    "conditions": dish_recs.get("conditions", [])
+                }
+        else:
+            metadata = {
+                "detected_language": detected_lang,
+                "translated": True
+            }
+        
+        processing_time_ms = int((time.time() - start_time) * 1000)
+        
+        # Prepare response
+        response_data = {
+            "success": True,
+            "menu_items": menu_items,
+            "raw_text": raw_text,
+            "processing_time_ms": processing_time_ms,
+            "enhanced": enhanced,
+            "cached": False,
+            "metadata": metadata
+        }
+        
+        # Optional: Save to database
+        if current_user:
+            supabase = SupabaseClient()
+            # Create a fake URL for uploaded files
+            fake_url = f"uploaded://{image.filename}"
+            await supabase.save_ocr_result(fake_url, response_data)
+        
+        return OCRResponse(**response_data)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error processing uploaded image: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error processing image: {str(e)}"

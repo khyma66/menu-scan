@@ -1,0 +1,14 @@
+Supabase Project Configuration
+==============================
+
+Project ID: jlfqzcaospvspmzbvbxd
+Supabase URL: https://jlfqzcaospvspmzbvbxd.supabase.co
+
+Dashboard: https://supabase.com/dashboard/project/jlfqzcaospvspmzbvbxd
+
+Quick Setup:
+1. Get API keys from Supabase Dashboard → Settings → API
+2. Update .env files with project URL and keys
+3. Run SQL schemas in Supabase SQL Editor
+4. Enable Google OAuth in Authentication settings
+

@@ -68,7 +68,7 @@ class AuthService:
         Verify JWT token.
         
         Args:
-            token: JWT token to verify
+            token: JWT access token to verify
             
         Returns:
             Decoded token payload or None
@@ -77,15 +77,22 @@ class AuthService:
             return None
         
         try:
-            # Set the session with the token
-            self.supabase.auth.set_session(token)
-            response = self.supabase.auth.get_session()
-            
-            if response.session and response.session.user:
-                return response.session.user.model_dump()
+            # Use Supabase's get_user method which accepts access_token
+            response = self.supabase.auth.get_user(token)
+            if response and hasattr(response, 'user') and response.user:
+                user_data = response.user.model_dump() if hasattr(response.user, 'model_dump') else {
+                    "id": getattr(response.user, 'id', None),
+                    "email": getattr(response.user, 'email', None),
+                }
+                # Return user data with id
+                return {
+                    "id": user_data.get("id"),
+                    "email": user_data.get("email"),
+                    "user_metadata": user_data.get("user_metadata", {})
+                }
             return None
         except Exception as e:
-            logger.error(f"Error verifying token: {e}")
+            logger.error(f"Error verifying token: {e}", exc_info=True)
             return None
     
     async def create_user_profile(self, user_id: str, email: str, full_name: Optional[str] = None) -> bool:

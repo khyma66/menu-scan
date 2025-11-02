@@ -21,21 +21,25 @@ export default function HealthConditionForm({ onSubmit, onCancel }: HealthCondit
 
   const conditionOptions = {
     allergy: ["peanut", "shellfish", "dairy", "egg", "nuts", "soy", "wheat"],
-    illness: ["cough", "flu", "cold", "nausea", "indigestion", "constipation"],
+    illness: ["fever", "flu", "cold", "cough", "gastrointestinal", "nausea", "indigestion", "constipation", "stomach"],
     dietary: ["vegetarian", "vegan", "gluten-free", "keto", "halal", "kosher"],
   };
 
   const addCondition = () => {
     if (conditionName.trim()) {
-      setConditions([
-        ...conditions,
-        {
-          condition_type: conditionType,
-          condition_name: conditionName,
-          severity: conditionType === "illness" ? severity : undefined,
-        },
-      ]);
+      const newCondition = {
+        condition_type: conditionType,
+        condition_name: conditionName,
+        severity: conditionType === "illness" ? severity : undefined,
+      };
+      console.log("Adding condition:", newCondition);
+      const updatedConditions = [...conditions, newCondition];
+      setConditions(updatedConditions);
       setConditionName("");
+      console.log("Conditions after add:", updatedConditions);
+    } else {
+      console.warn("Cannot add condition: conditionName is empty");
+      alert("Please select a condition from the dropdown.");
     }
   };
 
@@ -43,13 +47,44 @@ export default function HealthConditionForm({ onSubmit, onCancel }: HealthCondit
     setConditions(conditions.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(conditions);
+    e.stopPropagation(); // CRITICAL: Prevent event from bubbling to parent forms
+    
+    console.log("🔵🔵🔵 HealthConditionForm: handleSubmit called");
+    console.log("🔵🔵🔵 Event type:", e.type);
+    console.log("🔵🔵🔵 Conditions array:", JSON.stringify(conditions, null, 2));
+    console.log("🔵🔵🔵 Conditions length:", conditions.length);
+    console.log("🔵🔵🔵 onSubmit function exists:", typeof onSubmit === 'function');
+    
+    if (conditions.length === 0) {
+      console.warn("⚠️ No conditions to submit");
+      alert("Please add at least one health condition before saving.");
+      return;
+    }
+    
+    console.log("✅ Calling onSubmit with", conditions.length, "conditions");
+    try {
+      // Make sure onSubmit is called and awaited
+      const result = onSubmit(conditions);
+      if (result && typeof result.then === 'function') {
+        await result;
+      }
+      console.log("✅ onSubmit completed successfully");
+    } catch (error) {
+      console.error("❌ Error in onSubmit:", error);
+      alert(`Error: ${error instanceof Error ? error.message : String(error)}`);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form 
+      onSubmit={handleSubmit} 
+      onClick={(e) => {
+        console.log("🔵 Form clicked", e.target);
+      }}
+      className="space-y-4"
+    >
       <h3 className="text-xl font-semibold text-gray-800 mb-4">Health Conditions</h3>
 
       {/* Condition Type */}
@@ -175,14 +210,17 @@ export default function HealthConditionForm({ onSubmit, onCancel }: HealthCondit
         <button
           type="submit"
           disabled={conditions.length === 0}
-          className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition disabled:opacity-50"
+          className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Save Conditions
+          {conditions.length === 0 ? "Add Conditions First" : `Save ${conditions.length} Condition(s)`}
         </button>
         {onCancel && (
           <button
             type="button"
-            onClick={onCancel}
+            onClick={() => {
+              console.log("Cancel/Skip button clicked");
+              if (onCancel) onCancel();
+            }}
             className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-lg transition"
           >
             Skip
