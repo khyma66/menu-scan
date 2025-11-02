@@ -9,7 +9,8 @@ from app.models import OCRRequest, OCRResponse, ErrorResponse
 # from app.services.redis_cache import RedisCache
 from app.services.supabase_client import SupabaseClient
 from app.services.llm_fallback import LLMFallback
-from app.services.health_service import HealthService
+# Health service removed - no longer filtering by health conditions
+# from app.services.health_service import HealthService
 from app.utils.ocr_parser import extract_menu_items
 from app.utils.language_detector import detect_european_language, get_tesseract_language_code
 from PIL import Image
@@ -95,7 +96,7 @@ async def process_image(
                 menu_items = llm_result.get("menu_items", menu_items)
                 enhanced = True
         
-        # Translate menu items to English using dish database
+        # Translate menu items to English using dish database and save to translations table
         from app.services.translation_service import TranslationService
         translation_service = TranslationService()
         
@@ -110,8 +111,13 @@ async def process_image(
             for item in menu_items
         ]
         
-        # Translate to English
-        translated_items = await translation_service.translate_menu_items(menu_items_dict)
+        # Translate to English and save translations to database
+        user_id = current_user.get("id") if current_user else None
+        translated_items = await translation_service.translate_menu_items(
+            menu_items_dict,
+            detected_language=detected_lang,
+            user_id=user_id
+        )
         
         # Convert back to MenuItem objects with English names
         from app.models import MenuItem
@@ -125,21 +131,12 @@ async def process_image(
             for item in translated_items
         ]
         
-        # Filter based on health conditions if user is authenticated
-        if current_user:
-            health_service = HealthService()
-            filtered_menu = await health_service.filter_menu_items(menu_items, current_user.get("id"))
-            menu_items = filtered_menu.get("filtered_items", menu_items)
-            
-            # Add metadata about filtering
-            metadata = {
-                "original_count": len(filtered_menu.get("original_items", [])),
-                "filtered_count": len(filtered_menu.get("filtered_items", [])),
-                "items_to_avoid": [item.model_dump() if hasattr(item, 'model_dump') else item for item in filtered_menu.get("items_to_avoid", [])],
-                "conditions": filtered_menu.get("conditions", [])
-            }
-        else:
-            metadata = None
+        # Simple metadata without health filtering
+        metadata = {
+            "detected_language": detected_lang,
+            "translated": True,
+            "translation_count": len([item for item in translated_items if item.get("name") != item.get("original_name", item.get("name"))])
+        }
         
         processing_time_ms = int((time.time() - start_time) * 1000)
         
@@ -258,7 +255,7 @@ async def process_image_upload(
                 menu_items = llm_result.get("menu_items", menu_items)
                 enhanced = True
         
-        # Translate menu items to English using dish database
+        # Translate menu items to English using dish database and save to translations table
         from app.services.translation_service import TranslationService
         translation_service = TranslationService()
         
@@ -273,8 +270,13 @@ async def process_image_upload(
             for item in menu_items
         ]
         
-        # Translate to English
-        translated_items = await translation_service.translate_menu_items(menu_items_dict)
+        # Translate to English and save translations to database
+        user_id = current_user.get("id") if current_user else None
+        translated_items = await translation_service.translate_menu_items(
+            menu_items_dict,
+            detected_language=detected_lang,
+            user_id=user_id
+        )
         
         # Convert back to MenuItem objects with English names
         from app.models import MenuItem
@@ -288,51 +290,12 @@ async def process_image_upload(
             for item in translated_items
         ]
         
-        # Filter based on health conditions if user is authenticated
-        if current_user:
-            health_service = HealthService()
-            filtered_menu = await health_service.filter_menu_items(menu_items, current_user.get("id"))
-            menu_items = filtered_menu.get("filtered_items", menu_items)
-            
-            # Get dish recommendations
-            dish_recs = filtered_menu.get("dish_recommendations", {})
-            
-            # Add metadata about filtering
-            metadata = {
-                "original_count": len(filtered_menu.get("original_items", [])),
-                "filtered_count": len(filtered_menu.get("filtered_items", [])),
-                "items_to_avoid": [item.model_dump() if hasattr(item, 'model_dump') else item for item in filtered_menu.get("items_to_avoid", [])],
-                "conditions": filtered_menu.get("conditions", []),
-                "has_fever": filtered_menu.get("has_fever", False),
-                "has_gi": filtered_menu.get("has_gi", False),
-                "detected_language": detected_lang,
-                "translated": True
-            }
-            
-            # Add dish recommendations
-            if dish_recs and (dish_recs.get("recommended") or dish_recs.get("not_recommended")):
-                metadata["dish_recommendations"] = {
-                    "recommended": [
-                        {
-                            "name": item.get("name", item.get("original_name", "")),
-                            "reason": item.get("reason", "Recommended for your health condition")
-                        }
-                        for item in dish_recs.get("recommended", [])
-                    ],
-                    "not_recommended": [
-                        {
-                            "name": item.get("name", item.get("original_name", "")),
-                            "reason": item.get("reason", "Not recommended for your health condition")
-                        }
-                        for item in dish_recs.get("not_recommended", [])
-                    ],
-                    "conditions": dish_recs.get("conditions", [])
-                }
-        else:
-            metadata = {
-                "detected_language": detected_lang,
-                "translated": True
-            }
+        # Simple metadata without health filtering
+        metadata = {
+            "detected_language": detected_lang,
+            "translated": True,
+            "translation_count": len([item for item in translated_items if item.get("name") != item.get("original_name", item.get("name"))])
+        }
         
         processing_time_ms = int((time.time() - start_time) * 1000)
         

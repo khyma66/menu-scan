@@ -16,9 +16,6 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [processingTime, setProcessingTime] = useState<number | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<"checking" | "connected" | "disconnected">("checking");
-  const [recommendations, setRecommendations] = useState<any>(null);
-  const [hasFever, setHasFever] = useState(false);
-  const [hasGI, setHasGI] = useState(false);
   
   // Auth state
   const [user, setUser] = useState<any>(null);
@@ -33,19 +30,9 @@ export default function Home() {
       setUser(session?.user || null);
       
       if (session?.user) {
-        // Load health conditions
+        // Load health conditions (still used for user profile display)
         const conditions = await ocrApi.getHealthConditions();
         setHealthConditions(conditions);
-        
-        // Check if has fever/GI
-        const hasFeverConditions = conditions.some((c: any) => 
-          ["fever", "flu", "cold"].includes(c.condition_name)
-        );
-        const hasGIConditions = conditions.some((c: any) =>
-          ["gastrointestinal", "nausea", "indigestion", "stomach"].includes(c.condition_name)
-        );
-        setHasFever(hasFeverConditions);
-        setHasGI(hasGIConditions);
       }
     };
 
@@ -87,20 +74,13 @@ export default function Home() {
     setProcessingTime(time);
     setError(null);
     
-    // Extract recommendations from metadata
-    if (metadata?.dish_recommendations) {
-      setRecommendations(metadata.dish_recommendations);
-      console.log("Recommendations:", metadata.dish_recommendations);
-    } else {
-      setRecommendations(null);
-      // If logged in but no recommendations, it might be because no health conditions match
-      if (user && items.length > 0) {
-        console.log("No recommendations found in metadata:", metadata);
-      }
+    // Log translation info if available
+    if (metadata?.translated) {
+      console.log("Translation info:", {
+        language: metadata.detected_language,
+        translation_count: metadata.translation_count
+      });
     }
-    
-    setHasFever(metadata?.has_fever || false);
-    setHasGI(metadata?.has_gi || false);
   };
 
   const handleError = (errorMessage: string) => {
@@ -146,16 +126,6 @@ export default function Home() {
       console.log("Reloaded conditions:", updated);
       setHealthConditions(updated);
       
-      // Check for fever/GI
-      const hasFeverConditions = updated.some((c: any) => 
-        ["fever", "flu", "cold"].includes(c.condition_name)
-      );
-      const hasGIConditions = updated.some((c: any) =>
-        ["gastrointestinal", "nausea", "indigestion", "stomach"].includes(c.condition_name)
-      );
-      setHasFever(hasFeverConditions);
-      setHasGI(hasGIConditions);
-      
       console.log("Health conditions saved successfully:", updated);
     } catch (error: any) {
       console.error("Error saving health conditions:", error);
@@ -169,7 +139,6 @@ export default function Home() {
     await supabase.auth.signOut();
     setUser(null);
     setHealthConditions([]);
-    setRecommendations(null);
   };
 
   return (
@@ -193,7 +162,7 @@ export default function Home() {
             ) : (
               <div className="bg-white rounded-xl shadow-lg p-6 text-center">
                 <p className="text-gray-600 mb-4">
-                  Sign in to get personalized recommendations based on your health conditions
+                  Sign in to track your health conditions and get personalized menu insights
                 </p>
                 <button
                   type="button"
@@ -341,19 +310,11 @@ export default function Home() {
               </div>
             )}
 
-            {/* Info about recommendations */}
+            {/* Info about translation */}
             {!user && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800">
-                  💡 Tip: Sign in and add health conditions (fever, GI symptoms) to see personalized recommendations!
-                </p>
-              </div>
-            )}
-
-            {user && healthConditions.length === 0 && (
-              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm text-yellow-800">
-                  💡 Add health conditions (fever or gastrointestinal symptoms) to see recommendations!
+                  💡 Tip: Menu items are automatically translated to English from European languages!
                 </p>
               </div>
             )}
@@ -376,10 +337,7 @@ export default function Home() {
               Extracted Menu Items
             </h2>
             <MenuDisplay 
-              items={menuItems} 
-              recommendations={recommendations}
-              hasFever={hasFever}
-              hasGI={hasGI}
+              items={menuItems}
             />
           </div>
         </div>
