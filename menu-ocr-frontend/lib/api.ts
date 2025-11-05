@@ -28,13 +28,13 @@ export class OCRAPI {
     }
   }
 
-  async processImage(imageUrl: string, useLLM: boolean = true): Promise<OCRResponse> {
+  async processImage(imageUrl: string, useLLM: boolean = false): Promise<OCRResponse> {
     const token = await this.getAuthToken();
-    
+
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
-    
+
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }
@@ -57,9 +57,9 @@ export class OCRAPI {
     return response.json();
   }
 
-  async processImageFile(file: File, useLLM: boolean = true): Promise<OCRResponse> {
+  async processImageFile(file: File, useLLM: boolean = false): Promise<OCRResponse> {
     const token = await this.getAuthToken();
-    
+
     const formData = new FormData();
     formData.append("image", file);
     formData.append("use_llm_enhancement", useLLM.toString());
@@ -88,7 +88,8 @@ export class OCRAPI {
         throw new Error(error.detail || "Failed to process image");
       }
 
-      return response.json();
+      const result = await response.json();
+      return result;
     } catch (error: any) {
       if (error.message?.includes("fetch") || error.message?.includes("Failed to fetch")) {
         throw new Error("Connection error: Could not reach the server. Please check if the backend is running at " + this.baseUrl);
@@ -215,9 +216,50 @@ export class OCRAPI {
         return [];
       }
 
-      return response.json();
+      const result = await response.json();
+      return result;
     } catch {
       return [];
+    }
+  }
+
+  async translateOCR(rawText: string, detectedLanguage: string = "auto"): Promise<OCRResponse> {
+    const token = await this.getAuthToken();
+
+    const formData = new FormData();
+    formData.append("raw_text", rawText);
+    formData.append("detected_language", detectedLanguage);
+
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    try {
+      const response = await fetch(`${this.baseUrl}/api/v1/ocr/translate`, {
+        method: "POST",
+        headers,
+        body: formData,
+      });
+
+      if (!response.ok) {
+        if (!response.status || response.status === 0) {
+          throw new Error("Connection error: Could not reach the server. Please check if the backend is running.");
+        }
+
+        const error = await response.json().catch(() => ({
+          detail: `HTTP ${response.status}: ${response.statusText}`,
+        }));
+        throw new Error(error.detail || "Failed to translate OCR result");
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error: any) {
+      if (error.message?.includes("fetch") || error.message?.includes("Failed to fetch")) {
+        throw new Error("Connection error: Could not reach the server. Please check if the backend is running at " + this.baseUrl);
+      }
+      throw error;
     }
   }
 
@@ -227,7 +269,8 @@ export class OCRAPI {
         method: "GET",
         signal: AbortSignal.timeout(5000),
       });
-      return response.json();
+      const result = await response.json();
+      return result;
     } catch (error: any) {
       if (error.name === "AbortError" || error.message?.includes("fetch")) {
         throw new Error("Connection error: Could not reach the backend server");

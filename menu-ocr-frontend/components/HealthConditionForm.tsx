@@ -47,9 +47,14 @@ export default function HealthConditionForm({ onSubmit, onCancel }: HealthCondit
     setConditions(conditions.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     e.stopPropagation(); // CRITICAL: Prevent event from bubbling to parent forms
+    
+    // Also stop immediate propagation if available
+    if (e.nativeEvent && typeof e.nativeEvent.stopImmediatePropagation === 'function') {
+      e.nativeEvent.stopImmediatePropagation();
+    }
     
     console.log("🔵🔵🔵 HealthConditionForm: handleSubmit called");
     console.log("🔵🔵🔵 Event type:", e.type);
@@ -75,15 +80,25 @@ export default function HealthConditionForm({ onSubmit, onCancel }: HealthCondit
       console.error("❌ Error in onSubmit:", error);
       alert(`Error: ${error instanceof Error ? error.message : String(error)}`);
     }
+    
+    // Prevent default form submission behavior
+    return false;
   };
 
   return (
     <form 
-      onSubmit={handleSubmit} 
+      onSubmit={handleSubmit}
       onClick={(e) => {
-        console.log("🔵 Form clicked", e.target);
+        e.stopPropagation(); // Prevent clicks from bubbling
+      }}
+      onKeyDown={(e) => {
+        // Prevent Enter key from triggering other forms
+        if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'BUTTON') {
+          e.stopPropagation();
+        }
       }}
       className="space-y-4"
+      id="health-condition-form"
     >
       <h3 className="text-xl font-semibold text-gray-800 mb-4">Health Conditions</h3>
 

@@ -47,12 +47,34 @@ export default function ImageUpload({
     reader.readAsDataURL(file);
   };
 
-  const handleUpload = async (e: React.FormEvent) => {
+  const handleUpload = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     e.stopPropagation();
     
+    // CRITICAL: Check if event came from health form
+    const target = e.target as HTMLElement;
+    const healthForm = target.closest('#health-condition-form');
+    if (healthForm) {
+      console.log("🟢 BLOCKED: ImageUpload form submit blocked - came from health form");
+      console.log("🟢 Health form element:", healthForm);
+      e.stopPropagation();
+      if (e.nativeEvent && typeof e.nativeEvent.stopImmediatePropagation === 'function') {
+        e.nativeEvent.stopImmediatePropagation();
+      }
+      return;
+    }
+    
+    // Additional check: ensure this form was actually submitted (has selected file)
+    // This prevents accidental submissions
+    if (!selectedFile) {
+      console.log("🟢 Blocked: No file selected, preventing submission");
+      return;
+    }
+    
     console.log("🟢🟢🟢 ImageUpload: handleUpload called");
     console.log("🟢🟢🟢 Event type:", e.type);
+    console.log("🟢🟢🟢 Event target:", target);
+    console.log("🟢🟢🟢 Selected file:", selectedFile?.name);
 
     if (!selectedFile) {
       onError("Please select an image file");
@@ -67,7 +89,7 @@ export default function ImageUpload({
       const response = await ocrApi.processImageFile(selectedFile, useLLM);
 
       if (response.success) {
-        onOCRComplete(response.menu_items, response.processing_time_ms, response.metadata);
+        onOCRComplete(response.menu_items, response.processing_time_ms, { ...response.metadata, raw_text: response.raw_text });
       } else {
         onError("Failed to process image");
       }
@@ -97,7 +119,17 @@ export default function ImageUpload({
   return (
     <div className="space-y-4">
       {/* File Upload */}
-      <form onSubmit={handleUpload} className="space-y-4">
+      <form 
+        onSubmit={handleUpload} 
+        className="space-y-4"
+        id="image-upload-form"
+        onClick={(e) => {
+          // Only handle clicks inside this form
+          if (!(e.target as HTMLElement).closest('#image-upload-form')) {
+            e.stopPropagation();
+          }
+        }}
+      >
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Upload Menu Image
