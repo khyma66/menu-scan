@@ -42,6 +42,8 @@ from app.routers import dishes
 app.include_router(dishes.router, prefix=settings.api_prefix)
 from app.routers import user_info
 app.include_router(user_info.router, prefix=settings.api_prefix)
+from app.routers import new_health_router
+app.include_router(new_health_router.router, prefix=settings.api_prefix)
 
 
 @app.get("/health", response_model=HealthResponse)

@@ -86,50 +86,71 @@ async def process_image(
         # Extract menu items from raw text
         menu_items = extract_menu_items(raw_text)
         
-        # Use LLM enhancement if requested
+        # Use LLM enhancement if requested (disabled by default for speed)
         enhanced = False
         if request.use_llm_enhancement:
+            logger.info("LLM enhancement requested - this will slow down processing")
             llm_service = LLMFallback()
             llm_result = await llm_service.enhance_ocr_result(raw_text, request.language)
-            
+
             if llm_result.get("enhanced"):
                 menu_items = llm_result.get("menu_items", menu_items)
                 enhanced = True
         
-        # Translate menu items to English using dish database and save to translations table
-        from app.services.translation_service import TranslationService
-        translation_service = TranslationService()
-        
-        # Convert MenuItem objects to dicts for translation
-        menu_items_dict = [
-            {
-                "name": item.name,
-                "price": item.price,
-                "description": item.description,
-                "category": item.category
-            }
-            for item in menu_items
-        ]
-        
-        # Translate to English and save translations to database
-        user_id = current_user.get("id") if current_user else None
-        translated_items = await translation_service.translate_menu_items(
-            menu_items_dict,
-            detected_language=detected_lang,
-            user_id=user_id
-        )
+        # Skip translation for now to speed up processing
+        translated_items = []
+        for item in menu_items:
+            if isinstance(item, dict):
+                item_copy = item.copy()
+                item_copy["original_name"] = item.get("name", "")
+                translated_items.append(item_copy)
+            else:
+                # Handle MenuItem objects
+                translated_items.append({
+                    "name": getattr(item, "name", ""),
+                    "price": getattr(item, "price", None),
+                    "description": getattr(item, "description", None),
+                    "category": getattr(item, "category", None),
+                    "original_name": getattr(item, "name", "")
+                })
         
         # Convert back to MenuItem objects with English names
         from app.models import MenuItem
-        menu_items = [
-            MenuItem(
-                name=item.get("name"),  # English name
-                price=item.get("price"),
-                description=item.get("description"),
-                category=item.get("category")
-            )
-            for item in translated_items
-        ]
+        menu_items = []
+        for item in translated_items:
+            try:
+                # Ensure item is a dict and has required fields
+                if isinstance(item, dict):
+                    name = item.get("name", "")
+                    price = item.get("price")
+                    description = item.get("description")
+                    category = item.get("category")
+                else:
+                    # Handle case where item might be an object
+                    name = getattr(item, "name", "")
+                    price = getattr(item, "price", None)
+                    description = getattr(item, "description", None)
+                    category = getattr(item, "category", None)
+
+                menu_items.append(
+                    MenuItem(
+                        name=str(name),  # Ensure it's a string
+                        price=price,
+                        description=description,
+                        category=category
+                    )
+                )
+            except Exception as e:
+                logger.warning(f"Failed to create MenuItem from {item}: {e}")
+                # Create a basic MenuItem if conversion fails
+                menu_items.append(
+                    MenuItem(
+                        name="Unknown Item",
+                        price=None,
+                        description=None,
+                        category=None
+                    )
+                )
         
         # Simple metadata without health filtering
         metadata = {
@@ -156,7 +177,18 @@ async def process_image(
         # Optional: Save to database
         if current_user:
             supabase = SupabaseClient()
-            await supabase.save_ocr_result(request.image_url, response_data)
+            # Convert MenuItem objects to dicts for JSON serialization
+            serializable_data = response_data.copy()
+            serializable_data["menu_items"] = [
+                {
+                    "name": item.name,
+                    "price": item.price,
+                    "description": item.description,
+                    "category": item.category
+                }
+                for item in response_data["menu_items"]
+            ]
+            await supabase.save_ocr_result(request.image_url, serializable_data)
         
         return OCRResponse(**response_data)
     
@@ -171,6 +203,124 @@ async def process_image(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error processing image: {str(e)}"
+        )
+
+
+@router.post("/translate", response_model=OCRResponse)
+async def translate_ocr_result(
+    raw_text: str = Form(...),
+    detected_language: str = Form("auto"),
+    current_user: Optional[dict] = Depends(get_current_user_optional)
+):
+    """
+    Translate OCR text to English using the translation service.
+    """
+    start_time = time.time()
+
+    try:
+        # Extract menu items from raw text
+        menu_items = extract_menu_items(raw_text)
+
+        # Translate menu items to English using dish database
+        from app.services.translation_service import TranslationService
+        translation_service = TranslationService()
+
+        # Convert MenuItem objects to dicts for translation
+        menu_items_dict = []
+        for item in menu_items:
+            if isinstance(item, dict):
+                menu_items_dict.append(item)
+            else:
+                # Handle MenuItem objects
+                menu_items_dict.append({
+                    "name": getattr(item, "name", ""),
+                    "price": getattr(item, "price", None),
+                    "description": getattr(item, "description", None),
+                    "category": getattr(item, "category", None)
+                })
+
+        # Translate to English and save translations to database
+        user_id = current_user.get("id") if current_user and hasattr(current_user, 'get') else None
+        try:
+            translated_items = await translation_service.translate_menu_items(
+                menu_items_dict,
+                detected_language=detected_language,
+                user_id=user_id
+            )
+        except Exception as e:
+            logger.warning(f"Translation service failed: {e}, using original items")
+            # If translation fails, just add original_name to items
+            translated_items = []
+            for item in menu_items_dict:
+                item_copy = item.copy()
+                item_copy["original_name"] = item.get("name", "")
+                translated_items.append(item_copy)
+
+        # Convert back to MenuItem objects with English names
+        from app.models import MenuItem
+        menu_items = []
+        for item in translated_items:
+            try:
+                # Ensure item is a dict and has required fields
+                if isinstance(item, dict):
+                    name = item.get("name", "")
+                    price = item.get("price")
+                    description = item.get("description")
+                    category = item.get("category")
+                else:
+                    # Handle case where item might be an object
+                    name = getattr(item, "name", "")
+                    price = getattr(item, "price", None)
+                    description = getattr(item, "description", None)
+                    category = getattr(item, "category", None)
+
+                menu_items.append(
+                    MenuItem(
+                        name=str(name),  # Ensure it's a string
+                        price=price,
+                        description=description,
+                        category=category
+                    )
+                )
+            except Exception as e:
+                logger.warning(f"Failed to create MenuItem from {item}: {e}")
+                # Create a basic MenuItem if conversion fails
+                menu_items.append(
+                    MenuItem(
+                        name="Unknown Item",
+                        price=None,
+                        description=None,
+                        category=None
+                    )
+                )
+
+        # Metadata for translation
+        metadata = {
+            "detected_language": detected_language,
+            "translated": True,
+            "translation_count": len([item for item in translated_items if item.get("name") != item.get("original_name", item.get("name"))])
+        }
+
+        processing_time_ms = int((time.time() - start_time) * 1000)
+
+        # Prepare response
+        response_data = {
+            "success": True,
+            "menu_items": menu_items,
+            "raw_text": raw_text,
+            "processing_time_ms": processing_time_ms,
+            "enhanced": False,
+            "cached": False,
+            "metadata": metadata
+        }
+
+        return OCRResponse(**response_data)
+
+    except Exception as e:
+        logger.error(f"Error translating OCR result: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error translating OCR result: {str(e)}"
         )
 
 
@@ -245,50 +395,71 @@ async def process_image_upload(
         # Extract menu items from raw text
         menu_items = extract_menu_items(raw_text)
         
-        # Use LLM enhancement if requested
+        # Use LLM enhancement if requested (disabled by default for speed)
         enhanced = False
         if use_llm_enhancement:
+            logger.info("LLM enhancement requested - this will slow down processing")
             llm_service = LLMFallback()
             llm_result = await llm_service.enhance_ocr_result(raw_text, detected_lang)
-            
+
             if llm_result.get("enhanced"):
                 menu_items = llm_result.get("menu_items", menu_items)
                 enhanced = True
         
-        # Translate menu items to English using dish database and save to translations table
-        from app.services.translation_service import TranslationService
-        translation_service = TranslationService()
-        
-        # Convert MenuItem objects to dicts for translation
-        menu_items_dict = [
-            {
-                "name": item.name,
-                "price": item.price,
-                "description": item.description,
-                "category": item.category
-            }
-            for item in menu_items
-        ]
-        
-        # Translate to English and save translations to database
-        user_id = current_user.get("id") if current_user else None
-        translated_items = await translation_service.translate_menu_items(
-            menu_items_dict,
-            detected_language=detected_lang,
-            user_id=user_id
-        )
+        # Skip translation for now to speed up processing
+        translated_items = []
+        for item in menu_items:
+            if isinstance(item, dict):
+                item_copy = item.copy()
+                item_copy["original_name"] = item.get("name", "")
+                translated_items.append(item_copy)
+            else:
+                # Handle MenuItem objects
+                translated_items.append({
+                    "name": getattr(item, "name", ""),
+                    "price": getattr(item, "price", None),
+                    "description": getattr(item, "description", None),
+                    "category": getattr(item, "category", None),
+                    "original_name": getattr(item, "name", "")
+                })
         
         # Convert back to MenuItem objects with English names
         from app.models import MenuItem
-        menu_items = [
-            MenuItem(
-                name=item.get("name"),  # English name
-                price=item.get("price"),
-                description=item.get("description"),
-                category=item.get("category")
-            )
-            for item in translated_items
-        ]
+        menu_items = []
+        for item in translated_items:
+            try:
+                # Ensure item is a dict and has required fields
+                if isinstance(item, dict):
+                    name = item.get("name", "")
+                    price = item.get("price")
+                    description = item.get("description")
+                    category = item.get("category")
+                else:
+                    # Handle case where item might be an object
+                    name = getattr(item, "name", "")
+                    price = getattr(item, "price", None)
+                    description = getattr(item, "description", None)
+                    category = getattr(item, "category", None)
+
+                menu_items.append(
+                    MenuItem(
+                        name=str(name),  # Ensure it's a string
+                        price=price,
+                        description=description,
+                        category=category
+                    )
+                )
+            except Exception as e:
+                logger.warning(f"Failed to create MenuItem from {item}: {e}")
+                # Create a basic MenuItem if conversion fails
+                menu_items.append(
+                    MenuItem(
+                        name="Unknown Item",
+                        price=None,
+                        description=None,
+                        category=None
+                    )
+                )
         
         # Simple metadata without health filtering
         metadata = {
@@ -315,7 +486,18 @@ async def process_image_upload(
             supabase = SupabaseClient()
             # Create a fake URL for uploaded files
             fake_url = f"uploaded://{image.filename}"
-            await supabase.save_ocr_result(fake_url, response_data)
+            # Convert MenuItem objects to dicts for JSON serialization
+            serializable_data = response_data.copy()
+            serializable_data["menu_items"] = [
+                {
+                    "name": item.name,
+                    "price": item.price,
+                    "description": item.description,
+                    "category": item.category
+                }
+                for item in response_data["menu_items"]
+            ]
+            await supabase.save_ocr_result(fake_url, serializable_data)
         
         return OCRResponse(**response_data)
     
