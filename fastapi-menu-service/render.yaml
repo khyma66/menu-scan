@@ -8,7 +8,7 @@ services:
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: 3.11
       - key: API_TITLE
         value: Menu OCR API
       - key: API_VERSION
@@ -33,6 +33,16 @@ services:
         value: 0
       - key: REDIS_TTL
         value: 3600
+      - key: SUPABASE_URL
+        value: https://jlfqzcaospvspmzbvbxd.supabase.co
+      - key: SUPABASE_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsZnF6Y2Fvc3B2c3BtemJ2YnhkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTM3MDMzNiwiZXhwIjoyMDc2OTQ2MzM2fQ.5xdkvyJSsza79Iz3kiASMEE22WhNbBktQD6QBb2UgBY
+      - key: SUPABASE_BUCKET
+        value: menu-images
+      - key: OPENAI_API_KEY
+        value: your-openai-api-key
+      - key: ANTHROPIC_API_KEY
+        value: your-anthropic-api-key
 
 databases:
   - name: menu-ocr-redis
