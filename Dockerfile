@@ -12,11 +12,11 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy requirements and install Python dependencies
-COPY requirements.txt .
+COPY fastapi-menu-service/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY app ./app
+COPY fastapi-menu-service/app ./app
 
 # Expose port
 EXPOSE 8000
