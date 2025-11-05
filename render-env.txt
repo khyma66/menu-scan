@@ -1,0 +1,10 @@
+# Environment Variables for Render Deployment
+# Copy and paste these into Render dashboard environment variables section
+
+SUPABASE_URL=https://jlfqzcaospvspmzbvbxd.supabase.co
+SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsZnF6Y2Fvc3B2c3BtemJ2YnhkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTM3MDMzNiwiZXhwIjoyMDc2OTQ2MzM2fQ.5xdkvyJSsza79Iz3kiASMEE22WhNbBktQD6QBb2UgBY
+SUPABASE_BUCKET=menu-images
+LLM_MODEL=gpt-4o-mini
+FALLBACK_ENABLED=true
+OPENAI_API_KEY=your-openai-api-key
+ANTHROPIC_API_KEY=your-anthropic-api-key
