@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Menu OCR</string>
+    <string name="capture_image">Capture Image</string>
+    <string name="select_image">Select from Gallery</string>
+    <string name="processing">Processing menu...</string>
+    <string name="error_occurred">An error occurred</string>
+    <string name="no_menu_found">No menu items found</string>
+</resources>

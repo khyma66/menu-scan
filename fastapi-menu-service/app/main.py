@@ -3,7 +3,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routers import ocr, auth
+from app.routers import ocr, auth, payments, user_preferences
 from app.models import HealthResponse, ErrorResponse
 from datetime import datetime
 from contextlib import asynccontextmanager
@@ -38,6 +38,8 @@ app.add_middleware(
 # Include routers
 app.include_router(ocr.router, prefix=settings.api_prefix)
 app.include_router(auth.router, prefix=settings.api_prefix)
+app.include_router(payments.router, prefix=settings.api_prefix)
+app.include_router(user_preferences.router, prefix=settings.api_prefix)
 from app.routers import dishes
 app.include_router(dishes.router, prefix=settings.api_prefix)
 from app.routers import user_info

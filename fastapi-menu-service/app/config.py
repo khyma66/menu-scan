@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     ocr_confidence_threshold: float = 0.7
     max_image_size_mb: int = 10
     allowed_extensions_str: str = ".jpg,.jpeg,.png,.webp"
+
+    # Stripe Configuration
+    stripe_secret_key: Optional[str] = None
+    stripe_publishable_key: Optional[str] = None
+    stripe_webhook_secret: Optional[str] = None
     
     @property
     def allowed_extensions(self) -> list[str]:
