@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # Redis Cache Service
+  redis:
+    image: redis:7-alpine
+    container_name: menu-ocr-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - menu-ocr-network
+
+  # FastAPI Backend Service
+  api:
+    build:
+      context: ./fastapi-menu-service
+      dockerfile: Dockerfile
+    container_name: menu-ocr-api
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - REDIS_TTL=3600
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./fastapi-menu-service:/app
+    networks:
+      - menu-ocr-network
+    restart: unless-stopped
+
+  # Next.js Frontend Service (Development)
+  frontend:
+    build:
+      context: ./menu-ocr-frontend
+      dockerfile: Dockerfile
+    container_name: menu-ocr-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    volumes:
+      - ./menu-ocr-frontend:/app
+      - /app/node_modules
+    networks:
+      - menu-ocr-network
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+    driver: local
+
+networks:
+  menu-ocr-network:
+    driver: bridge
