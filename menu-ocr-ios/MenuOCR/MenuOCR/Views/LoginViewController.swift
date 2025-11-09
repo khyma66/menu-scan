@@ -53,6 +53,13 @@ class LoginViewController: UIViewController {
         return button
     }()
 
+    private let appleSignInButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Sign in with Apple", for: .normal)
+        button.setTitleColor(.systemBlue, for: .normal)
+        return button
+    }()
+
     private let activityIndicator: UIActivityIndicatorView = {
         let indicator = UIActivityIndicatorView(style: .medium)
         indicator.hidesWhenStopped = true
@@ -75,6 +82,7 @@ class LoginViewController: UIViewController {
             signInButton,
             signUpButton,
             googleSignInButton,
+            appleSignInButton,
             activityIndicator
         ])
         stackView.axis = .vertical
@@ -93,6 +101,7 @@ class LoginViewController: UIViewController {
         signInButton.addTarget(self, action: #selector(signInTapped), for: .touchUpInside)
         signUpButton.addTarget(self, action: #selector(signUpTapped), for: .touchUpInside)
         googleSignInButton.addTarget(self, action: #selector(googleSignInTapped), for: .touchUpInside)
+        appleSignInButton.addTarget(self, action: #selector(appleSignInTapped), for: .touchUpInside)
     }
 
     private func setupBindings() {
@@ -169,5 +178,9 @@ class LoginViewController: UIViewController {
 
     @objc private func googleSignInTapped() {
         authViewModel.signInWithGoogle()
+    }
+
+    @objc private func appleSignInTapped() {
+        authViewModel.signInWithApple()
     }
 }

@@ -81,8 +81,8 @@ sealed class PaymentState {
 }
 
 sealed class PaymentHistoryState {
-    object Idle : PaymentState()
-    object Loading : PaymentState()
-    data class Success(val history: PaymentHistoryResponse) : PaymentState()
-    data class Error(val message: String) : PaymentState()
+    object Idle : PaymentHistoryState()
+    object Loading : PaymentHistoryState()
+    data class Success(val history: PaymentHistoryResponse) : PaymentHistoryState()
+    data class Error(val message: String) : PaymentHistoryState()
 }

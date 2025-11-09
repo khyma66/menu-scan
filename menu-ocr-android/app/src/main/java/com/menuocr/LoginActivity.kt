@@ -2,12 +2,14 @@ package com.menuocr
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.menuocr.databinding.ActivityLoginBinding
 import com.menuocr.viewmodel.AuthViewModel
 import com.google.android.material.snackbar.Snackbar
+import com.menuocr.viewmodel.AuthState
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
@@ -90,14 +92,12 @@ class LoginActivity : AppCompatActivity() {
         binding.progressBar.visibility = android.view.View.VISIBLE
         binding.btnSignIn.isEnabled = false
         binding.btnSignUp.isEnabled = false
-        binding.btnGoogleSignIn.isEnabled = false
     }
 
     private fun hideLoading() {
         binding.progressBar.visibility = android.view.View.GONE
         binding.btnSignIn.isEnabled = true
         binding.btnSignUp.isEnabled = true
-        binding.btnGoogleSignIn.isEnabled = true
     }
 
     private fun navigateToMain() {

@@ -57,6 +57,12 @@ class SupabaseService {
         throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Google sign-in not implemented"])
     }
 
+    func signInWithApple() async throws -> User {
+        // Note: Apple sign-in requires additional setup in iOS
+        // This is a placeholder for the implementation
+        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Apple sign-in not implemented"])
+    }
+
     func signOut() async throws {
         try await auth.signOut()
     }

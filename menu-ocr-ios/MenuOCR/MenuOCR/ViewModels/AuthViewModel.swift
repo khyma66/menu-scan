@@ -76,6 +76,23 @@ class AuthViewModel: ObservableObject {
         }
     }
 
+    func signInWithApple() {
+        authState = .loading
+
+        Task {
+            do {
+                let user = try await supabaseService.signInWithApple()
+                await MainActor.run {
+                    authState = .authenticated(user)
+                }
+            } catch {
+                await MainActor.run {
+                    authState = .error(error.localizedDescription)
+                }
+            }
+        }
+    }
+
     func signOut() {
         authState = .loading
 

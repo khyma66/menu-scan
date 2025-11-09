@@ -9,6 +9,7 @@ from app.models import OCRRequest, OCRResponse, ErrorResponse
 # from app.services.redis_cache import RedisCache
 from app.services.supabase_client import SupabaseClient
 from app.services.llm_fallback import LLMFallback
+from app.services.qwen_vision_service import QwenVisionService
 # Health service removed - no longer filtering by health conditions
 # from app.services.health_service import HealthService
 from app.utils.ocr_parser import extract_menu_items
@@ -152,10 +153,12 @@ async def process_image(
                     )
                 )
         
-        # Simple metadata without health filtering
+        # Enhanced metadata
         metadata = {
             "detected_language": detected_lang,
             "translated": True,
+            "qwen_vl_max_used": qwen_used,
+            "llm_enhanced": enhanced and not qwen_used,
             "translation_count": len([item for item in translated_items if item.get("name") != item.get("original_name", item.get("name"))])
         }
         
@@ -328,6 +331,7 @@ async def translate_ocr_result(
 async def process_image_upload(
     image: UploadFile = File(...),
     use_llm_enhancement: bool = Form(True),
+    use_qwen_vision: bool = Form(False),  # New parameter for Qwen vision
     language: str = Form("auto"),
     current_user: Optional[dict] = Depends(get_current_user_optional)
 ):
@@ -394,10 +398,37 @@ async def process_image_upload(
         
         # Extract menu items from raw text
         menu_items = extract_menu_items(raw_text)
-        
-        # Use LLM enhancement if requested (disabled by default for speed)
+
+        # Use Qwen Vision if requested (direct image processing)
         enhanced = False
-        if use_llm_enhancement:
+        qwen_used = False
+        if use_qwen_vision:
+            logger.info("Qwen-VL-Max Vision processing requested")
+            try:
+                qwen_service = QwenVisionService()
+                qwen_result = await qwen_service.process_menu_image(img_data)
+
+                if qwen_result.get("menu_items") and len(qwen_result["menu_items"]) > 0:
+                    # Convert Qwen result to menu items format
+                    menu_items = []
+                    for item in qwen_result["menu_items"]:
+                        from app.models import MenuItem
+                        menu_items.append(MenuItem(
+                            name=item.get("name", "Unknown"),
+                            price=item.get("price"),
+                            description=item.get("description"),
+                            category=item.get("category", "unknown")
+                        ))
+                    enhanced = True
+                    qwen_used = True
+                    logger.info(f"Qwen-VL-Max Vision extracted {len(menu_items)} items")
+                else:
+                    logger.warning("Qwen-VL-Max Vision processing failed, falling back to OCR")
+            except Exception as e:
+                logger.error(f"Qwen-VL-Max Vision processing error: {e}, falling back to OCR")
+
+        # Use LLM enhancement if requested (disabled by default for speed)
+        if not qwen_used and use_llm_enhancement:
             logger.info("LLM enhancement requested - this will slow down processing")
             llm_service = LLMFallback()
             llm_result = await llm_service.enhance_ocr_result(raw_text, detected_lang)

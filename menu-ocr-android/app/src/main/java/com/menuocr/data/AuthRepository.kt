@@ -1,11 +1,9 @@
 package com.menuocr.data
 
-import io.github.jan.supabase.auth.Auth
-import io.github.jan.supabase.auth.providers.Google
-import io.github.jan.supabase.auth.providers.builtin.Email
-import io.github.jan.supabase.auth.user.UserInfo
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import io.github.jan.supabase.gotrue.GoTrue
+import io.github.jan.supabase.gotrue.gotrue
+import io.github.jan.supabase.gotrue.providers.builtin.Email
+import io.github.jan.supabase.gotrue.user.UserInfo
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -14,21 +12,21 @@ class AuthRepository @Inject constructor(
     private val supabaseClientProvider: SupabaseClientProvider
 ) {
 
-    private val auth = supabaseClientProvider.client.auth
+    private val auth: GoTrue = supabaseClientProvider.client.gotrue
 
     val currentUser: UserInfo?
-        get() = auth.currentUserOrNull()
+        get() = auth.currentUserOrNull
 
     val isAuthenticated: Boolean
-        get() = auth.currentUserOrNull() != null
+        get() = auth.currentUserOrNull != null
 
     suspend fun signInWithEmail(email: String, password: String): Result<UserInfo> {
         return try {
-            val result = auth.signInWith(Email) {
+            auth.signInWith(Email) {
                 this.email = email
                 this.password = password
             }
-            Result.success(result)
+            auth.currentUserOrNull?.let { Result.success(it) } ?: Result.failure(IllegalStateException("User not found after sign in"))
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -36,22 +34,13 @@ class AuthRepository @Inject constructor(
 
     suspend fun signUpWithEmail(email: String, password: String): Result<UserInfo> {
         return try {
-            val result = auth.signUpWith(Email) {
+            auth.signUpWith(Email) {
                 this.email = email
                 this.password = password
             }
-            Result.success(result)
+            auth.currentUserOrNull?.let { Result.success(it) } ?: Result.failure(IllegalStateException("User not found after sign up. Email confirmation might be required."))
         } catch (e: Exception) {
             Result.failure(e)
-        }
-    }
-
-    suspend fun signInWithGoogle(): Flow<Result<UserInfo>> = flow {
-        try {
-            val result = auth.signInWith(Google)
-            emit(Result.success(result))
-        } catch (e: Exception) {
-            emit(Result.failure(e))
         }
     }
 
@@ -68,6 +57,17 @@ class AuthRepository @Inject constructor(
         return try {
             auth.resetPasswordForEmail(email)
             Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun signInWithGoogle(): Result<UserInfo> {
+        return try {
+            // Note: Google OAuth requires additional setup in Android
+            // This would need Google Sign-In SDK integration
+            // For now, return a placeholder error
+            Result.failure(NotImplementedError("Google Sign-In requires additional Android setup"))
         } catch (e: Exception) {
             Result.failure(e)
         }

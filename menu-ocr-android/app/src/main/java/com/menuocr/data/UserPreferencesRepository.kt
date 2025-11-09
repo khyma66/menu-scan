@@ -1,7 +1,10 @@
 package com.menuocr.data
 
-import com.menuocr.FoodPreference
+import com.menuocr.FoodPreferenceRequest
+import com.menuocr.UserProfileUpdateRequest
 import com.menuocr.UserPreferences
+import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.postgrest.postgrest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -10,92 +13,51 @@ class UserPreferencesRepository @Inject constructor(
     private val supabaseClientProvider: SupabaseClientProvider
 ) {
 
-    private val supabase = supabaseClientProvider.client
+    private val postgrest: Postgrest = supabaseClientProvider.client.postgrest
 
-    suspend fun getUserPreferences(userId: String): UserPreferences {
-        // Get food preferences
-        val foodPrefsResponse = supabase
-            .from("food_preferences")
-            .select("*")
-            .eq("user_id", userId)
-            .execute()
-
-        val foodPreferences = foodPrefsResponse.data?.map { pref ->
-            FoodPreference(
-                id = pref["id"] as String,
-                preferenceType = pref["preference_type"] as String,
-                foodCategory = pref["food_category"] as String,
-                foodItem = pref["food_item"] as? String,
-                rating = (pref["rating"] as Number).toInt(),
-                notes = pref["notes"] as? String,
-                createdAt = pref["created_at"] as String
-            )
-        } ?: emptyList()
-
-        // Get user profile preferences
-        val profileResponse = supabase
-            .from("user_preferences")
-            .select("*")
-            .eq("user_id", userId)
-            .execute()
-
-        val profileData = profileResponse.data?.firstOrNull()
-        val dietaryRestrictions = (profileData?.get("dietary_restrictions") as? List<*>)?.map { it.toString() } ?: emptyList()
-        val favoriteCuisines = (profileData?.get("favorite_cuisines") as? List<*>)?.map { it.toString() } ?: emptyList()
-
-        return UserPreferences(
-            userId = userId,
-            foodPreferences = foodPreferences,
-            dietaryRestrictions = dietaryRestrictions,
-            favoriteCuisines = favoriteCuisines,
-            spiceTolerance = profileData?.get("spice_tolerance") as? String,
-            budgetPreference = profileData?.get("budget_preference") as? String
-        )
+    suspend fun getFoodPreferences(): Result<UserPreferences> {
+        return try {
+            val result = postgrest.from("user_preferences").select().decodeSingle<UserPreferences>()
+            Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
-    suspend fun addFoodPreference(userId: String, preference: FoodPreference): String {
-        val data = mapOf(
-            "user_id" to userId,
-            "preference_type" to preference.preferenceType,
-            "food_category" to preference.foodCategory,
-            "food_item" to preference.foodItem,
-            "rating" to preference.rating,
-            "notes" to preference.notes
-        )
-
-        val response = supabase
-            .from("food_preferences")
-            .insert(data)
-            .execute()
-
-        return response.data?.firstOrNull()?.get("id") as String
+    suspend fun addFoodPreference(preference: FoodPreferenceRequest): Result<Unit> {
+        return try {
+            postgrest.from("food_preferences").insert(preference)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
-    suspend fun updateUserProfile(userId: String, preferences: UserPreferences): Boolean {
-        val data = mapOf(
-            "user_id" to userId,
-            "dietary_restrictions" to preferences.dietaryRestrictions,
-            "favorite_cuisines" to preferences.favoriteCuisines,
-            "spice_tolerance" to preferences.spiceTolerance,
-            "budget_preference" to preferences.budgetPreference
-        )
-
-        supabase
-            .from("user_preferences")
-            .upsert(data, onConflict = "user_id")
-            .execute()
-
-        return true
+    /*
+    suspend fun updateUserProfile(profile: UserProfileUpdateRequest): Result<Unit> {
+        return try {
+            // Assuming a table named "user_profiles" and a row with a specific user id
+            // This needs to be adapted based on your actual table structure
+            // postgrest.from("user_profiles").update(profile) { filter ->
+            //     filter.eq("user_id", supabaseClientProvider.client.auth.currentUserOrNull()?.id)
+            // }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
+    */
 
-    suspend fun removeFoodPreference(userId: String, preferenceId: String): Boolean {
-        supabase
-            .from("food_preferences")
-            .delete()
-            .eq("id", preferenceId)
-            .eq("user_id", userId)
-            .execute()
-
-        return true
+    /*
+    suspend fun removeFoodPreference(preferenceId: String): Result<Unit> {
+        return try {
+            // postgrest.from("food_preferences").delete { filter ->
+            //     filter.eq("id", preferenceId)
+            // }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
+    */
 }

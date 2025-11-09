@@ -10,8 +10,9 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven { url = uri("https://www.jitpack.io") }
     }
 }
 
-rootProject.name = "Menu OCR"
+rootProject.name = "menu-ocr-android"
 include(":app")

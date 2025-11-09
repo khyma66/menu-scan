@@ -2,11 +2,9 @@ package com.menuocr
 
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
+import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -18,6 +16,9 @@ import com.menuocr.databinding.ActivityMainBinding
 import com.menuocr.viewmodel.AuthViewModel
 import com.menuocr.viewmodel.MenuViewModel
 import com.google.android.material.snackbar.Snackbar
+import com.menuocr.viewmodel.AuthState
+import com.menuocr.viewmodel.Menu
+import com.menuocr.viewmodel.MenuState
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
@@ -63,7 +64,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkAuthentication() {
-        if (!authViewModel.authState.value.isAuthenticated()) {
+        if (authViewModel.authState.value !is AuthState.Authenticated) {
             navigateToLogin()
             return
         }
@@ -138,13 +139,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showLoading() {
-        binding.progressBar.visibility = android.view.View.VISIBLE
-        binding.recyclerView.visibility = android.view.View.GONE
+        binding.progressBar.visibility = View.VISIBLE
+        binding.recyclerView.visibility = View.GONE
     }
 
     private fun hideLoading() {
-        binding.progressBar.visibility = android.view.View.GONE
-        binding.recyclerView.visibility = android.view.View.VISIBLE
+        binding.progressBar.visibility = View.GONE
+        binding.recyclerView.visibility = View.VISIBLE
     }
 
     private fun showMenu(menu: Menu) {
@@ -164,12 +165,12 @@ class MainActivity : AppCompatActivity() {
         finish()
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+    override fun onCreateOptionsMenu(menu: android.view.Menu?): Boolean {
         menuInflater.inflate(R.menu.main_menu, menu)
         return true
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+    override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_sign_out -> {
                 authViewModel.signOut()
@@ -178,8 +179,4 @@ class MainActivity : AppCompatActivity() {
             else -> super.onOptionsItemSelected(item)
         }
     }
-}
-
-private fun AuthState.isAuthenticated(): Boolean {
-    return this is AuthState.Authenticated
 }

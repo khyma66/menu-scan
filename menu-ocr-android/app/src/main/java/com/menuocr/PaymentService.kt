@@ -1,5 +1,6 @@
 package com.menuocr
 
+import androidx.activity.ComponentActivity
 import com.stripe.android.PaymentConfiguration
 import com.stripe.android.paymentsheet.PaymentSheet
 import com.stripe.android.paymentsheet.PaymentSheetResult
@@ -9,20 +10,18 @@ import javax.inject.Singleton
 @Singleton
 class PaymentService @Inject constructor() {
 
-    private var paymentSheet: PaymentSheet? = null
-    private var paymentIntentClientSecret: String? = null
+    private lateinit var paymentSheet: PaymentSheet
 
-    fun initialize(stripePublishableKey: String) {
-        PaymentConfiguration.init(applicationContext = null, publishableKey = stripePublishableKey)
-        paymentSheet = PaymentSheet(this, ::onPaymentSheetResult)
+    fun initialize(activity: ComponentActivity, stripePublishableKey: String) {
+        PaymentConfiguration.init(activity.applicationContext, stripePublishableKey)
+        paymentSheet = PaymentSheet(activity, ::onPaymentSheetResult)
     }
 
     fun presentPaymentSheet(
         paymentIntentClientSecret: String,
         configuration: PaymentSheet.Configuration
     ) {
-        this.paymentIntentClientSecret = paymentIntentClientSecret
-        paymentSheet?.presentWithPaymentIntent(
+        paymentSheet.presentWithPaymentIntent(
             paymentIntentClientSecret,
             configuration
         )
