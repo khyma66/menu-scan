@@ -13,6 +13,7 @@ ENV/
 .env
 .env.local
 .env.*.local
+.env.secrets
 
 # IDE
 .vscode/
