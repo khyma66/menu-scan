@@ -21,16 +21,22 @@ class EnhancedQwenExtractor:
     """
 
     def __init__(self):
-        # LLM clients
-        self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        self.anthropic_client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-        self.fallback_enabled = os.getenv("FALLBACK_ENABLED", "true").lower() == "true"
+        from app.config import settings
+        
+        # LLM clients (only initialize if keys are available)
+        self.openai_client = None
+        if settings.openai_api_key:
+            self.openai_client = OpenAI(api_key=settings.openai_api_key)
+            
+        self.anthropic_client = None
+        if settings.anthropic_api_key:
+            self.anthropic_client = Anthropic(api_key=settings.anthropic_api_key)
+            
+        self.fallback_enabled = settings.is_production  # Only enable fallback in production
 
         # Supabase client for ingredient matching
-        supabase_url = os.getenv("SUPABASE_URL")
-        supabase_key = os.getenv("SUPABASE_KEY")
-        if supabase_url and supabase_key:
-            self.supabase: Client = create_client(supabase_url, supabase_key)
+        if settings.supabase_url and settings.supabase_key:
+            self.supabase: Client = create_client(settings.supabase_url, settings.supabase_key)
         else:
             self.supabase = None
             logger.warning("Supabase credentials not found - ingredient matching disabled")
@@ -68,6 +74,9 @@ class EnhancedQwenExtractor:
             prompt = self._build_menu_extraction_prompt(ocr_text, language)
 
             # Try OpenAI first
+            if not self.openai_client:
+                raise Exception("OpenAI client not initialized")
+                
             response = self.openai_client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[

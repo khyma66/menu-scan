@@ -55,11 +55,10 @@ class BatchTableExtractionResponse(BaseModel):
 def get_qwen_extractor() -> QwenTableExtractor:
     """Get Qwen table extractor instance."""
     # This would typically come from settings
-    import os
-    api_key = os.getenv("TOGETHER_API_KEY")
-    if not api_key:
-        raise HTTPException(status_code=500, detail="Qwen API key not configured")
-    return QwenTableExtractor(api_key)
+    from app.config import settings
+    if not settings.openrouter_api_key:
+        raise HTTPException(status_code=500, detail="OpenRouter API key not configured")
+    return QwenTableExtractor(settings.openrouter_api_key)
 
 
 def get_supabase_client() -> SupabaseClient:

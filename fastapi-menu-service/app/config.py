@@ -4,7 +4,7 @@ Configuration management with security best practices
 import os
 import secrets
 from typing import Optional
-from pydantic import BaseSettings, Field
+from pydantic import BaseSettings, Field, validator
 
 
 class Settings(BaseSettings):
@@ -65,6 +65,20 @@ class Settings(BaseSettings):
     # ==========================================
     sentry_dsn: Optional[str] = Field(default=None, env="SENTRY_DSN")
     log_level: str = Field(default="INFO", env="LOG_LEVEL")
+    cors_origins: list = Field(default=["http://localhost:3000", "http://localhost:8000"], env="CORS_ORIGINS")
+    trusted_hosts: list = Field(default=["localhost", "127.0.0.1"], env="TRUSTED_HOSTS")
+
+    @validator('cors_origins', 'trusted_hosts')
+    def parse_list(cls, v):
+        """Parse list from environment variable"""
+        if isinstance(v, str):
+            import json
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                # Fallback: split by comma
+                return [item.strip() for item in v.split(',') if item.strip()]
+        return v
 
     # ==========================================
     # DATABASE

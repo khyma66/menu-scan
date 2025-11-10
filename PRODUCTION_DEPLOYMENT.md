@@ -43,6 +43,8 @@ cp .env.secrets .env.production
 | `OPENROUTER_API_KEY` | OpenRouter API key | `sk-or-v1-...` |
 | `JWT_SECRET_KEY` | JWT signing key (32+ chars) | Auto-generated |
 | `SECRET_KEY` | Django-style secret (32+ chars) | Auto-generated |
+| `CORS_ORIGINS` | Allowed CORS origins | `["https://domain.com"]` |
+| `TRUSTED_HOSTS` | Trusted hosts for security | `["domain.com", "*.domain.com"]` |
 
 ## 🐳 Docker Security
 

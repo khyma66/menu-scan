@@ -14,7 +14,7 @@ class QwenTableExtractor:
 
     def __init__(self, api_key: str):
         self.api_key = api_key
-        self.base_url = "https://api.together.xyz/v1"
+        self.base_url = "https://openrouter.ai/api/v1"
         self.model = "Qwen/Qwen2.5-Coder-32B-Instruct"
         self.client = httpx.AsyncClient(timeout=30.0)
 
@@ -186,7 +186,7 @@ class SyncQwenTableExtractor:
 
     def __init__(self, api_key: str):
         self.api_key = api_key
-        self.base_url = "https://api.together.xyz/v1"
+        self.base_url = "https://openrouter.ai/api/v1"
         self.model = "Qwen/Qwen2.5-Coder-32B-Instruct"
 
     def extract_table_data(self, text: str, table_format: str = "markdown") -> Dict[str, Any]:

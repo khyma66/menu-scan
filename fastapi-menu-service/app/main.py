@@ -9,6 +9,7 @@ from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.responses import JSONResponse
 import time
 import logging
+import collections
 from typing import Callable
 
 from app.config import settings
@@ -49,13 +50,13 @@ if settings.is_production:
 if settings.is_production:
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=["your-domain.com", "*.your-domain.com"]  # Update with your domain
+        allowed_hosts=settings.trusted_hosts  # Use configurable trusted hosts
     )
 
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:8000"] if settings.is_development else ["https://your-domain.com"],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -99,34 +100,81 @@ async def add_security_headers(request: Request, call_next: Callable) -> Respons
 
     return response
 
-# Rate Limiting (Simple in-memory implementation)
-request_counts = {}
+# Rate Limiting (Optimized in-memory implementation)
+import collections
+
+class RateLimiter:
+    def __init__(self, max_requests=100, window_seconds=60):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self.requests = collections.defaultdict(list)
+        self.last_cleanup = 0
+    
+    def is_rate_limited(self, client_ip: str) -> tuple[bool, int, int]:
+        """Check if client is rate limited. Returns (is_limited, remaining_requests, reset_time)"""
+        current_time = int(time.time())
+        
+        # Clean old entries every 30 seconds (not on every request)
+        if current_time - self.last_cleanup >= 30:
+            cutoff_time = current_time - self.window_seconds
+            self.requests = collections.defaultdict(
+                list, 
+                {ip: [t for t in timestamps if t > cutoff_time] 
+                 for ip, timestamps in self.requests.items() 
+                 if [t for t in timestamps if t > cutoff_time]}
+            )
+            self.last_cleanup = current_time
+        
+        # Check current request count
+        current_requests = self.requests[client_ip]
+        remaining = max(0, self.max_requests - len(current_requests))
+        
+        # If at limit, return reset time
+        if len(current_requests) >= self.max_requests:
+            reset_time = min(current_requests) + self.window_seconds
+            return True, remaining, reset_time
+        
+        # Add current request
+        current_requests.append(current_time)
+        return False, remaining, current_time + self.window_seconds
+
+# Global rate limiter instance
+rate_limiter = RateLimiter()
 
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next: Callable) -> Response:
-    """Simple rate limiting middleware"""
+    """Optimized rate limiting middleware with proper headers"""
     if settings.is_production:
         client_ip = request.client.host if request.client else "unknown"
-        current_time = int(time.time())
-
-        # Clean old entries (older than 60 seconds)
-        cutoff_time = current_time - 60
-        request_counts_copy = request_counts.copy()
-        for ip, timestamps in request_counts_copy.items():
-            request_counts[ip] = [t for t in timestamps if t > cutoff_time]
-
-        # Check rate limit (100 requests per minute)
-        if client_ip in request_counts:
-            if len(request_counts[client_ip]) >= 100:
-                return JSONResponse(
-                    status_code=429,
-                    content={"error": "Rate limit exceeded. Try again later."}
-                )
-            request_counts[client_ip].append(current_time)
-        else:
-            request_counts[client_ip] = [current_time]
+        
+        is_limited, remaining, reset_time = rate_limiter.is_rate_limited(client_ip)
+        
+        if is_limited:
+            response = JSONResponse(
+                status_code=429,
+                content={
+                    "error": "Rate limit exceeded. Try again later.",
+                    "reset_time": reset_time,
+                    "retry_after": reset_time - int(time.time())
+                }
+            )
+            # Add rate limit headers
+            response.headers["X-RateLimit-Limit"] = "100"
+            response.headers["X-RateLimit-Remaining"] = str(remaining)
+            response.headers["X-RateLimit-Reset"] = str(reset_time)
+            response.headers["Retry-After"] = str(reset_time - int(time.time()))
+            return response
 
     response = await call_next(request)
+    
+    # Add rate limit headers to all responses
+    if settings.is_production:
+        client_ip = request.client.host if request.client else "unknown"
+        _, remaining, reset_time = rate_limiter.is_rate_limited(client_ip)
+        response.headers["X-RateLimit-Limit"] = "100"
+        response.headers["X-RateLimit-Remaining"] = str(remaining)
+        response.headers["X-RateLimit-Reset"] = str(reset_time)
+    
     return response
 
 # Health check endpoint
