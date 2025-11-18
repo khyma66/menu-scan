@@ -117,7 +117,7 @@ class PlaylistTranscriptPipeline:
                     "total_gb": estimated_size / (1024 * 1024 * 1024),
                     "file_count": file_count,
                     "limit_bytes": self.storage_limit_bytes,
-                    "limit_gb": self.storage_limit_gb / (1024 * 1024 * 1024),
+                    "limit_gb": self.storage_limit_bytes / (1024 * 1024 * 1024),
                     "usage_percent": (estimated_size / self.storage_limit_bytes) * 100,
                     "is_estimate": True
                 }
@@ -128,7 +128,7 @@ class PlaylistTranscriptPipeline:
                     "total_gb": 0,
                     "file_count": 0,
                     "limit_bytes": self.storage_limit_bytes,
-                    "limit_gb": self.storage_limit_gb / (1024 * 1024 * 1024),
+                    "limit_gb": self.storage_limit_bytes / (1024 * 1024 * 1024),
                     "usage_percent": 0,
                     "is_estimate": True,
                     "error": str(e)
