@@ -1,13 +1,30 @@
 package com.menuocr
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
+import android.widget.Button
+import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.menuocr.databinding.ItemDishBinding
 
-class DishAdapter : ListAdapter<Dish, DishAdapter.DishViewHolder>(DishDiffCallback()) {
+// Updated data class for DoorDash-like dish items
+data class DishItem(
+    val name: String,
+    val description: String,
+    val price: String,
+    val imageRes: Int = android.R.drawable.ic_menu_gallery
+)
+
+class DishAdapter : RecyclerView.Adapter<DishAdapter.DishViewHolder>() {
+
+    private val dishes = mutableListOf<DishItem>()
+
+    fun updateData(dishItems: List<DishItem>) {
+        dishes.clear()
+        dishes.addAll(dishItems)
+        notifyDataSetChanged()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DishViewHolder {
         val binding = ItemDishBinding.inflate(
@@ -17,24 +34,29 @@ class DishAdapter : ListAdapter<Dish, DishAdapter.DishViewHolder>(DishDiffCallba
     }
 
     override fun onBindViewHolder(holder: DishViewHolder, position: Int) {
-        holder.bind(getItem(position))
+        holder.bind(dishes[position])
     }
+
+    override fun getItemCount(): Int = dishes.size
 
     class DishViewHolder(private val binding: ItemDishBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(dish: Dish) {
+        fun bind(dish: DishItem) {
             binding.tvDishName.text = dish.name
-            binding.tvDishPrice.text = dish.price?.let { "$${String.format("%.2f", it)}" } ?: "Price not available"
-            binding.tvDishDescription.text = dish.description ?: "No description available"
-        }
-    }
-
-    class DishDiffCallback : DiffUtil.ItemCallback<Dish>() {
-        override fun areItemsTheSame(oldItem: Dish, newItem: Dish): Boolean {
-            return oldItem.name == newItem.name
-        }
-
-        override fun areContentsTheSame(oldItem: Dish, newItem: Dish): Boolean {
-            return oldItem == newItem
+            binding.tvDishDescription.text = dish.description
+            binding.tvPrice.text = dish.price
+            
+            // Set dish image placeholder
+            binding.ivDishImage.setImageResource(dish.imageRes)
+            
+            // Set click listener for quick add button
+            binding.btnQuickAdd.setOnClickListener {
+                // TODO: Implement add to cart functionality
+                android.widget.Toast.makeText(
+                    itemView.context,
+                    "Added ${dish.name} to cart",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            }
         }
     }
 }

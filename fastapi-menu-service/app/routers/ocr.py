@@ -2,6 +2,7 @@
 
 import time
 import logging
+import os
 from fastapi import APIRouter, HTTPException, status, Header, Depends, UploadFile, File, Form
 from typing import Optional
 from app.models import OCRRequest, OCRResponse, ErrorResponse
@@ -21,6 +22,25 @@ from io import BytesIO
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ocr", tags=["OCR"])
+
+# Set up Tesseract environment at module level
+TESSDATA_PREFIX = "/opt/homebrew/Cellar/tesseract/5.5.1/share/tessdata"
+TESSERACT_CMD = "/opt/homebrew/Cellar/tesseract/5.5.1/bin/tesseract"
+
+# Configure Tesseract environment
+os.environ['TESSDATA_PREFIX'] = TESSDATA_PREFIX
+pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
+
+logger.info(f"Tesseract environment configured at module level: TESSDATA_PREFIX={TESSDATA_PREFIX}, tesseract_cmd={TESSERACT_CMD}")
+
+
+def setup_tesseract_environment():
+    """Set up Tesseract environment variables for proper OCR functionality."""
+    # Ensure environment is set (redundant but safe)
+    os.environ['TESSDATA_PREFIX'] = TESSDATA_PREFIX
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
+    
+    logger.info(f"Tesseract environment verified: TESSDATA_PREFIX={TESSDATA_PREFIX}, tesseract_cmd={TESSERACT_CMD}")
 
 
 def get_current_user_optional(authorization: Optional[str] = Header(None)) -> Optional[dict]:
@@ -43,23 +63,49 @@ async def process_image(
     current_user: Optional[dict] = Depends(get_current_user_optional)
 ):
     """
-    Process a menu image from URL and extract menu items.
+    Process a menu image from URL or base64 and extract menu items.
     
     Optionally filters results based on user's health conditions if authenticated.
     """
+    # Set up Tesseract environment
+    setup_tesseract_environment()
+    
     start_time = time.time()
     
     try:
         # Skip cache for now (Redis is optional) - improves speed
         # Cache check removed to speed up processing
         
-        # Download and process image
-        logger.info(f"Processing image: {request.image_url}")
-        response = requests.get(request.image_url, timeout=30)
-        response.raise_for_status()
+        # Handle both URL and base64 image inputs
+        if request.image_base64:
+            # Decode base64 image
+            import base64
+            try:
+                # Remove data URL prefix if present (e.g., "data:image/jpeg;base64,")
+                base64_data = request.image_base64
+                if ',' in base64_data:
+                    base64_data = base64_data.split(',')[1]
+                
+                img_data = base64.b64decode(base64_data)
+                logger.info(f"Processing base64 image (size: {len(img_data)} bytes)")
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid base64 image data: {str(e)}"
+                )
+        elif request.image_url:
+            # Download and process image from URL
+            logger.info(f"Processing image from URL: {request.image_url}")
+            response = requests.get(request.image_url, timeout=30)
+            response.raise_for_status()
+            img_data = response.content
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Either image_url or image_base64 must be provided"
+            )
         
         # Verify image size
-        img_data = response.content
         if len(img_data) > 10 * 1024 * 1024:  # 10MB limit
             raise HTTPException(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
@@ -68,7 +114,10 @@ async def process_image(
         
         # Process image with Tesseract OCR
         image = Image.open(BytesIO(img_data))
-        raw_text = pytesseract.image_to_string(image, lang=request.language)
+        
+        # Set language for OCR
+        ocr_language = request.language if request.language != "auto" else "eng"
+        raw_text = pytesseract.image_to_string(image, lang=ocr_language)
         
         if not raw_text.strip():
             raise HTTPException(
@@ -77,22 +126,30 @@ async def process_image(
             )
         
         # Auto-detect language if requested
+        detected_lang = request.language
         if request.language == "auto":
             detected_lang = detect_european_language(raw_text)
             logger.info(f"Auto-detected language: {detected_lang}")
             # Re-run OCR with detected language for better accuracy
             if detected_lang != "en":
-                raw_text = pytesseract.image_to_string(image, lang=get_tesseract_language_code(detected_lang))
+                tesseract_lang = get_tesseract_language_code(detected_lang)
+                try:
+                    raw_text = pytesseract.image_to_string(image, lang=tesseract_lang)
+                    logger.info(f"Re-ran OCR with language: {tesseract_lang}")
+                except Exception as e:
+                    logger.warning(f"Failed to use detected language {tesseract_lang}, using English: {e}")
+                    raw_text = pytesseract.image_to_string(image, lang="eng")
         
         # Extract menu items from raw text
         menu_items = extract_menu_items(raw_text)
         
         # Use LLM enhancement if requested (disabled by default for speed)
         enhanced = False
+        qwen_used = False
         if request.use_llm_enhancement:
             logger.info("LLM enhancement requested - this will slow down processing")
             llm_service = LLMFallback()
-            llm_result = await llm_service.enhance_ocr_result(raw_text, request.language)
+            llm_result = await llm_service.enhance_ocr_result(raw_text, detected_lang)
 
             if llm_result.get("enhanced"):
                 menu_items = llm_result.get("menu_items", menu_items)

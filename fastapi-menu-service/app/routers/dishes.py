@@ -4,11 +4,23 @@ from fastapi import APIRouter, HTTPException, Depends, Header
 from typing import Optional, List
 from app.services.dish_service import DishService
 from app.models import Dish, DishCreateRequest, DishRecommendation
+from app.utils.ocr_parser import extract_menu_items
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/dishes", tags=["Dishes"])
 
 dish_service = DishService()
+
+
+class DishExtractRequest(BaseModel):
+    """Request model for extracting dishes from text."""
+    text: str
+    language: str = "en"
+
+
+class DishExtractResponse(BaseModel):
+    """Response model for dish extraction."""
+    dishes: List[dict]
 
 
 async def get_current_user_optional(authorization: Optional[str] = Header(None)) -> Optional[dict]:
@@ -77,6 +89,36 @@ async def get_recommendations(
         condition_list = [c.strip() for c in conditions.split(",")]
         recommendations = await dish_service.get_dish_recommendations(condition_list)
         return recommendations
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/extract", response_model=DishExtractResponse)
+async def extract_dishes(
+    request: DishExtractRequest,
+    current_user: Optional[dict] = Depends(get_current_user_optional)
+):
+    """
+    Extract dishes from OCR text.
+    
+    Args:
+        request: DishExtractRequest with text and language
+    """
+    try:
+        # Extract menu items from text using OCR parser
+        menu_items = extract_menu_items(request.text)
+        
+        # Convert to dish format expected by Android app
+        dishes = []
+        for item in menu_items:
+            dish = {
+                "name": item.get("name", ""),
+                "price": float(item.get("price", "0").replace("$", "").replace("£", "").replace("€", "").replace("¥", "").replace("₹", "").strip()) if item.get("price") else None,
+                "description": item.get("description")
+            }
+            dishes.append(dish)
+        
+        return DishExtractResponse(dishes=dishes)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

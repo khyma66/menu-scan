@@ -1,7 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  webpack: (config, { isServer }) => {
+    // Disable Turbopack features
+    config.experiments = {
+      ...config.experiments,
+      cacheUnaffected: true,
+    };
+    return config;
+  }
 };
 
 export default nextConfig;

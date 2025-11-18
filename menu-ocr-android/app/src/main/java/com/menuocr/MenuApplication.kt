@@ -1,7 +1,8 @@
 package com.menuocr
 
 import android.app.Application
-import dagger.hilt.android.HiltAndroidApp
 
-@HiltAndroidApp
+// Hilt disabled for build compatibility
+// import dagger.hilt.android.HiltAndroidApp
+
 class MenuApplication : Application()

@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: menu-ocr-frontend
+    runtime: static
+    region: oregon
+    buildCommand: echo "Static site - no build needed"
+    staticPublishPath: /
+
+  - type: web
+    name: menu-ocr-api
+    runtime: python
+    region: oregon
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: API_TITLE
+        value: Menu OCR API
+      - key: API_VERSION
+        value: 1.0.0
+      - key: API_PREFIX
+        value: /api/v1
+      - key: DEBUG
+        value: false
+      - key: SUPABASE_URL
+        value: https://jlfqzcaospvspmzbvbxd.supabase.co
+      - key: SUPABASE_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsZnF6Y2Fvc3B2c3BtemJ2YnhkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTM3MDMzNiwiZXhwIjoyMDc2OTQ2MzM2fQ.5xdkvyJSsza79Iz3kiASMEE22WhNbBktQD6QBb2UgBY
+      - key: SUPABASE_BUCKET
+        value: menu-images
+
+databases:
+  - name: menu-ocr-redis
+    databaseName: menu-ocr-redis
+    user: redis
+    plan: starter

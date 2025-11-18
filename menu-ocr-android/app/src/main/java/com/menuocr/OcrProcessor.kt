@@ -4,12 +4,13 @@ import android.graphics.Bitmap
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+// import javax.inject.Inject  // Hilt disabled for build compatibility
+// import javax.inject.Singleton  // Hilt disabled for build compatibility
 import kotlinx.coroutines.tasks.await
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class OcrProcessor @Inject constructor() {
+// @Singleton  // Hilt disabled
+// @Inject constructor()  // Hilt disabled
+class OcrProcessor {
 
     private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 

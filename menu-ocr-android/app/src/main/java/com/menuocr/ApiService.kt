@@ -10,6 +10,9 @@ import retrofit2.http.Path
 
 interface ApiService {
 
+    @GET("/health")
+    suspend fun checkHealth(): Response<Map<String, Any>>
+
     @POST("/ocr/process")
     suspend fun processOcr(@Body request: OcrRequest): Response<MenuResponse>
 
@@ -44,8 +47,20 @@ data class OcrRequest(
 )
 
 data class MenuResponse(
-    val text: String,
-    val language: String
+    val success: Boolean,
+    val menu_items: List<MenuItem>,
+    val raw_text: String,
+    val processing_time_ms: Int,
+    val enhanced: Boolean? = null,
+    val cached: Boolean? = null,
+    val metadata: Map<String, Any>? = null
+)
+
+data class MenuItem(
+    val name: String,
+    val price: String?,
+    val description: String?,
+    val category: String?
 )
 
 data class DishRequest(

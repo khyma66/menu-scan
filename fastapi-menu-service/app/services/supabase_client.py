@@ -91,3 +91,13 @@ class SupabaseClient:
             logger.error(f"Error fetching history: {e}")
             return []
 
+
+# Global instance
+_supabase_client = None
+
+def get_supabase_client():
+    """Get or create Supabase client instance."""
+    global _supabase_client
+    if _supabase_client is None:
+        _supabase_client = SupabaseClient()
+    return _supabase_client

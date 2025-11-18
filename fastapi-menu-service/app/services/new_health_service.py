@@ -273,6 +273,9 @@ class HealthRecommendationEngine:
         """Get health recommendations for menu items."""
         try:
             # Get user's health profile
+            # Get user's health profile using the profile manager directly
+            profile_manager = HealthProfileManager(self.supabase)
+            profile = await profile_manager.get_profile(user_id)
             from app.services.new_health_service import HealthService
             health_service = HealthService()
             profile = await health_service.profile_manager.get_profile(user_id)

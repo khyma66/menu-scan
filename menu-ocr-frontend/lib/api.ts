@@ -39,7 +39,7 @@ export class OCRAPI {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${this.baseUrl}/api/v1/ocr/process`, {
+    const response = await fetch(`${this.baseUrl}/ocr/process`, {
       method: "POST",
       headers,
       body: JSON.stringify({
@@ -71,7 +71,7 @@ export class OCRAPI {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/api/v1/ocr/process-upload`, {
+      const response = await fetch(`${this.baseUrl}/ocr/process-upload`, {
         method: "POST",
         headers,
         body: formData,
@@ -110,7 +110,7 @@ export class OCRAPI {
       throw new Error("Not authenticated. Please sign in first.");
     }
 
-    const response = await fetch(`${this.baseUrl}/api/v1/auth/health-conditions`, {
+    const response = await fetch(`${this.baseUrl}/auth/health-conditions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -143,14 +143,14 @@ export class OCRAPI {
     console.log("addHealthConditions: Token exists:", !!token);
 
     // Add conditions one by one
-    const results = [];
-    const errors = [];
+    const results: any[] = [];
+    const errors: any[] = [];
     
     for (const condition of conditions) {
       try {
         console.log(`Adding condition:`, condition);
         
-        const response = await fetch(`${this.baseUrl}/api/v1/auth/health-conditions`, {
+        const response = await fetch(`${this.baseUrl}/auth/health-conditions`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -205,7 +205,7 @@ export class OCRAPI {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/api/v1/auth/health-conditions`, {
+      const response = await fetch(`${this.baseUrl}/auth/health-conditions`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -236,7 +236,7 @@ export class OCRAPI {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/api/v1/ocr/translate`, {
+      const response = await fetch(`${this.baseUrl}/ocr/translate`, {
         method: "POST",
         headers,
         body: formData,

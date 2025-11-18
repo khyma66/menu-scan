@@ -33,7 +33,8 @@ class DishRecommendation(BaseModel):
 
 class OCRRequest(BaseModel):
     """Request model for OCR processing."""
-    image_url: str = Field(..., description="URL of the menu image")
+    image_url: Optional[str] = Field(None, description="URL of the menu image")
+    image_base64: Optional[str] = Field(None, description="Base64 encoded image data")
     use_llm_enhancement: bool = Field(True, description="Use LLM to enhance OCR results")
     language: str = Field("auto", description="Expected language of the menu (auto for detection)")
 

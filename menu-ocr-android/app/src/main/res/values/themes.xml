@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base DoorDash application theme -->
+    <style name="Theme.DoorDashMenuScanner" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/doordash_primary</item>
+        <item name="colorPrimaryVariant">@color/doordash_secondary</item>
+        <item name="colorOnPrimary">@color/white</item>
+        
+        <item name="colorSecondary">@color/doordash_secondary</item>
+        <item name="colorSecondaryVariant">@color/doordash_accent</item>
+        <item name="colorOnSecondary">@color/white</item>
+        
+        <item name="colorSurface">@color/white</item>
+        <item name="colorOnSurface">@color/gray_900</item>
+        
+        <item name="android:statusBarColor">@color/doordash_primary</item>
+        <item name="android:navigationBarColor">@color/white</item>
+        
+        <!-- Enable edge-to-edge -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
+
+    <!-- Splash Screen theme -->
+    <style name="Theme.DoorDashMenuScanner.Splash" parent="Theme.DoorDashMenuScanner">
+        <item name="android:windowBackground">@color/doordash_primary</item>
+        <item name="android:windowFullscreen">true</item>
+    </style>
+</resources>

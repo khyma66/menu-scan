@@ -4,7 +4,8 @@ Configuration management with security best practices
 import os
 import secrets
 from typing import Optional
-from pydantic import BaseSettings, Field, validator
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -20,8 +21,8 @@ class Settings(BaseSettings):
     # ==========================================
     # SUPABASE CONFIGURATION
     # ==========================================
-    supabase_url: str = Field(..., env="SUPABASE_URL")
-    supabase_key: str = Field(..., env="SUPABASE_KEY")
+    supabase_url: Optional[str] = Field(default="https://jlfqzcaospvspmzbvbxd.supabase.co", env="SUPABASE_URL")
+    supabase_key: Optional[str] = Field(default=None, env="SUPABASE_KEY")
     supabase_service_role_key: Optional[str] = Field(default=None, env="SUPABASE_SERVICE_ROLE_KEY")
 
     # ==========================================
@@ -37,7 +38,7 @@ class Settings(BaseSettings):
     # ==========================================
     # API KEYS (External Services)
     # ==========================================
-    openrouter_api_key: str = Field(..., env="OPENROUTER_API_KEY")
+    openrouter_api_key: Optional[str] = Field(default=None, env="OPENROUTER_API_KEY")
     openai_api_key: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
     anthropic_api_key: Optional[str] = Field(default=None, env="ANTHROPIC_API_KEY")
     apify_api_token: Optional[str] = Field(default=None, env="APIFY_API_TOKEN")
@@ -68,7 +69,8 @@ class Settings(BaseSettings):
     cors_origins: list = Field(default=["http://localhost:3000", "http://localhost:8000"], env="CORS_ORIGINS")
     trusted_hosts: list = Field(default=["localhost", "127.0.0.1"], env="TRUSTED_HOSTS")
 
-    @validator('cors_origins', 'trusted_hosts')
+    @field_validator('cors_origins', 'trusted_hosts')
+    @classmethod
     def parse_list(cls, v):
         """Parse list from environment variable"""
         if isinstance(v, str):
@@ -121,10 +123,11 @@ class Settings(BaseSettings):
             if not self.supabase_service_role_key:
                 raise ValueError("SUPABASE_SERVICE_ROLE_KEY is required in production")
 
-        # Validate required API keys
-        required_keys = [self.supabase_url, self.supabase_key, self.openrouter_api_key]
-        if not all(required_keys):
-            raise ValueError("Missing required environment variables. Check .env.secrets file.")
+        # Validate required API keys only in production
+        if self.is_production:
+            required_keys = [self.supabase_url, self.supabase_key, self.openrouter_api_key]
+            if not all(required_keys):
+                raise ValueError("Missing required environment variables. Check .env.secrets file.")
 
 
 # Global settings instance
