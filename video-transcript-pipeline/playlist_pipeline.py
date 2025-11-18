@@ -29,7 +29,8 @@ class PlaylistTranscriptPipeline:
         self,
         supabase_url: str,
         supabase_key: str,
-        bucket_name: str = "video-transcripts"
+        bucket_name: str = "video-transcripts",
+        storage_limit_gb: float = 1.0
     ):
         """
         Initialize the pipeline
@@ -38,10 +39,14 @@ class PlaylistTranscriptPipeline:
             supabase_url: Supabase project URL
             supabase_key: Supabase anon/service key
             bucket_name: Name of the storage bucket for transcripts
+            storage_limit_gb: Storage limit in GB (default 1.0 for free tier)
         """
         self.supabase_client: Client = create_client(supabase_url, supabase_key)
         self.bucket_name = bucket_name
         self.playlist_extractor = YouTubePlaylistExtractor()
+        self.storage_limit_bytes = int(storage_limit_gb * 1024 * 1024 * 1024)  # Convert GB to bytes
+        self.storage_warning_threshold = int(self.storage_limit_bytes * 0.9)  # Warn at 90%
+        self.storage_limit_gb = storage_limit_gb
         
         # Initialize tables if they don't exist
         self._ensure_tables_exist()
@@ -51,6 +56,120 @@ class PlaylistTranscriptPipeline:
         logger.info("Checking database tables...")
         # Tables will be created via SQL script
         # This is just a placeholder for validation
+    
+    def _get_storage_usage(self) -> Dict[str, any]:
+        """
+        Get current storage usage for the bucket
+        
+        Returns:
+            Dictionary with storage usage information
+        """
+        try:
+            # List all files in the bucket to calculate total size
+            files = self.supabase_client.storage.from_(self.bucket_name).list()
+            
+            total_size = 0
+            file_count = 0
+            
+            # Calculate total size by listing files recursively
+            def get_folder_size(folder_path: str = "") -> int:
+                """Recursively get folder size"""
+                folder_size = 0
+                try:
+                    items = self.supabase_client.storage.from_(self.bucket_name).list(folder_path)
+                    for item in items:
+                        if item.get('id'):  # It's a file
+                            # Get file metadata to get size
+                            # Note: Supabase storage API doesn't directly provide file size
+                            # We'll estimate based on file count and average size
+                            folder_size += item.get('metadata', {}).get('size', 0)
+                        else:  # It's a folder
+                            folder_size += get_folder_size(f"{folder_path}/{item.get('name', '')}" if folder_path else item.get('name', ''))
+                except Exception as e:
+                    logger.warning(f"Error getting folder size for {folder_path}: {e}")
+                return folder_size
+            
+            # Try to get storage usage from bucket info
+            # Since Supabase doesn't provide direct storage usage API,
+            # we'll estimate based on file count and average transcript size
+            # Average transcript is ~50KB, so we'll use that as estimate
+            try:
+                all_files = []
+                # List files in playlists folder
+                playlists_files = self.supabase_client.storage.from_(self.bucket_name).list("playlists")
+                for item in playlists_files:
+                    if item.get('id'):
+                        all_files.append(item)
+                    else:
+                        # It's a folder, list its contents
+                        try:
+                            folder_files = self.supabase_client.storage.from_(self.bucket_name).list(f"playlists/{item.get('name', '')}")
+                            all_files.extend([f for f in folder_files if f.get('id')])
+                        except:
+                            pass
+                
+                # Estimate size: average transcript ~50KB
+                file_count = len(all_files)
+                estimated_size = file_count * 50 * 1024  # 50KB per file estimate
+                
+                return {
+                    "total_bytes": estimated_size,
+                    "total_gb": estimated_size / (1024 * 1024 * 1024),
+                    "file_count": file_count,
+                    "limit_bytes": self.storage_limit_bytes,
+                    "limit_gb": self.storage_limit_gb / (1024 * 1024 * 1024),
+                    "usage_percent": (estimated_size / self.storage_limit_bytes) * 100,
+                    "is_estimate": True
+                }
+            except Exception as e:
+                logger.warning(f"Could not calculate exact storage usage: {e}")
+                return {
+                    "total_bytes": 0,
+                    "total_gb": 0,
+                    "file_count": 0,
+                    "limit_bytes": self.storage_limit_bytes,
+                    "limit_gb": self.storage_limit_gb / (1024 * 1024 * 1024),
+                    "usage_percent": 0,
+                    "is_estimate": True,
+                    "error": str(e)
+                }
+        except Exception as e:
+            logger.error(f"Error getting storage usage: {e}")
+            return {
+                "total_bytes": 0,
+                "total_gb": 0,
+                "error": str(e)
+            }
+    
+    def _check_storage_limit(self, transcript_size: int = 0) -> Dict[str, any]:
+        """
+        Check if storage limit will be exceeded
+        
+        Args:
+            transcript_size: Size of transcript to be stored (bytes)
+        
+        Returns:
+            Dictionary with check result and storage info
+        """
+        storage_info = self._get_storage_usage()
+        current_usage = storage_info.get("total_bytes", 0)
+        projected_usage = current_usage + transcript_size
+        
+        exceeded = projected_usage >= self.storage_limit_bytes
+        warning = projected_usage >= self.storage_warning_threshold
+        
+        return {
+            "exceeded": exceeded,
+            "warning": warning,
+            "current_usage_bytes": current_usage,
+            "current_usage_gb": current_usage / (1024 * 1024 * 1024),
+            "projected_usage_bytes": projected_usage,
+            "projected_usage_gb": projected_usage / (1024 * 1024 * 1024),
+            "limit_bytes": self.storage_limit_bytes,
+            "limit_gb": self.storage_limit_bytes / (1024 * 1024 * 1024),
+            "usage_percent": (current_usage / self.storage_limit_bytes) * 100 if self.storage_limit_bytes > 0 else 0,
+            "storage_info": storage_info
+        }
     
     async def process_channel_playlists(
         self,
@@ -130,11 +249,50 @@ class PlaylistTranscriptPipeline:
                 for video_idx, video in enumerate(videos, 1):
                     logger.info(f"\nProcessing video {video_idx}/{len(videos)}: {video['title']}")
                     
+                    # Check storage limit before processing
+                    transcript_size_estimate = 50 * 1024  # Estimate 50KB per transcript
+                    storage_check = self._check_storage_limit(transcript_size_estimate)
+                    
+                    if storage_check["exceeded"]:
+                        logger.warning(f"\n{'='*60}")
+                        logger.warning(f"⚠️  STORAGE LIMIT EXCEEDED!")
+                        logger.warning(f"Current usage: {storage_check['current_usage_gb']:.2f} GB")
+                        logger.warning(f"Limit: {storage_check['limit_gb']:.2f} GB")
+                        logger.warning(f"Usage: {storage_check['usage_percent']:.1f}%")
+                        logger.warning(f"{'='*60}")
+                        logger.warning("Stopping pipeline to prevent exceeding storage limit.")
+                        playlist_result["status"] = "stopped_storage_limit"
+                        playlist_result["stopped_reason"] = "Storage limit exceeded"
+                        results["stopped_reason"] = "Storage limit exceeded"
+                        results["storage_info"] = storage_check
+                        break
+                    
+                    if storage_check["warning"]:
+                        logger.warning(f"⚠️  Storage warning: {storage_check['usage_percent']:.1f}% used")
+                        logger.warning(f"   Current: {storage_check['current_usage_gb']:.2f} GB / Limit: {storage_check['limit_gb']:.2f} GB")
+                    
                     try:
                         # Extract transcript
                         transcript_result = await extract_transcript(video['url'])
                         
                         if transcript_result.get("success"):
+                            # Check storage again with actual transcript size
+                            actual_transcript_size = len(transcript_result.get("transcript", "").encode('utf-8'))
+                            storage_check_actual = self._check_storage_limit(actual_transcript_size)
+                            
+                            if storage_check_actual["exceeded"]:
+                                logger.warning(f"\n⚠️  Storage limit would be exceeded by this transcript")
+                                logger.warning(f"Skipping video: {video['title']}")
+                                playlist_result["failed_videos"] += 1
+                                results["failed_videos"] += 1
+                                playlist_result["videos"].append({
+                                    "video_title": video['title'],
+                                    "youtube_url": video['url'],
+                                    "status": "skipped_storage_limit",
+                                    "error": "Storage limit exceeded"
+                                })
+                                # Stop processing this playlist
+                                break
                             # Store in Supabase with playlist context
                             storage_result = await self._store_playlist_transcript(
                                 playlist_id=playlist['playlist_id'],

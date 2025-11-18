@@ -35,8 +35,13 @@ async def main():
     pipeline = PlaylistTranscriptPipeline(
         supabase_url=supabase_url,
         supabase_key=supabase_key,
-        bucket_name="video-transcripts"
+        bucket_name="video-transcripts",
+        storage_limit_gb=1.0  # Free tier limit: 1GB
     )
+    
+    # Show storage limit info
+    print(f"   Storage limit: 1.0 GB (free tier)")
+    print(f"   Storage monitoring: Enabled\n")
     
     try:
         # Process channel playlists
@@ -57,6 +62,16 @@ async def main():
         print(f"Playlists processed: {results['processed_playlists']}")
         print(f"Total videos processed: {results['processed_videos']}")
         print(f"Total videos failed: {results['failed_videos']}")
+        
+        # Show storage info if pipeline stopped due to storage limit
+        if results.get('stopped_reason') == 'Storage limit exceeded':
+            print(f"\n⚠️  Pipeline stopped: {results['stopped_reason']}")
+            storage_info = results.get('storage_info', {})
+            if storage_info:
+                print(f"   Current usage: {storage_info.get('current_usage_gb', 0):.2f} GB")
+                print(f"   Limit: {storage_info.get('limit_gb', 1.0):.2f} GB")
+                print(f"   Usage: {storage_info.get('usage_percent', 0):.1f}%")
+        
         print("="*60)
         
         # Print playlist details
