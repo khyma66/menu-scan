@@ -11,6 +11,15 @@
       "headers": {
         "Authorization": "Bearer <apify_api_fN0eoFyxQqYNBYWI96VQrmlVNc7JuA2Ra4OL>"
       }
+    },
+    "notegpt": {
+      "command": "python",
+      "args": [
+        "video-transcript-pipeline/notegpt_mcp_server.py"
+      ],
+      "env": {
+        "PYTHONPATH": "."
+      }
     }
   }
 }
