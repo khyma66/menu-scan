@@ -1,0 +1,11 @@
+# Android App API Configuration
+# Update this file to change the backend URL between local development and production
+
+# Production URL (Render deployment)
+API_BASE_URL=https://menu-ocr-api.onrender.com/
+
+# Local Development URL (Android emulator)
+LOCAL_API_BASE_URL=http://10.0.2.2:8000/
+
+# Environment: "debug" for local development, "release" for production
+ENVIRONMENT=debug
