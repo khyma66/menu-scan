@@ -43,57 +43,110 @@ async def extract_transcript(youtube_url: str) -> Dict[str, Any]:
     try:
         browser, page = await get_browser()
         
-        # Find the input field and paste URL
-        # Try multiple selectors for robustness
+        # Wait for page to load (simpler approach)
+        await asyncio.sleep(3)  # Wait for page to load
+        
+        # Try to find input field with multiple strategies
+        input_element = None
+        used_selector = None
+        
+        # Strategy 1: Try common input selectors
         input_selectors = [
             'input[type="text"]',
+            'input[type="url"]',
             'input[placeholder*="youtube" i]',
             'input[placeholder*="URL" i]',
             'input[placeholder*="link" i]',
+            'input[placeholder*="paste" i]',
             'textarea',
-            'input'
+            'input',
+            '[contenteditable="true"]',
+            '[role="textbox"]'
         ]
         
-        input_element = None
-        used_selector = None
         for selector in input_selectors:
             try:
-                input_element = await page.wait_for_selector(selector, timeout=5000, state="visible")
+                elements = await page.query_selector_all(selector)
+                for elem in elements:
+                    # Check if element is visible
+                    is_visible = await elem.is_visible()
+                    if is_visible:
+                        input_element = elem
+                        used_selector = selector
+                        break
                 if input_element:
-                    used_selector = selector
                     break
             except:
                 continue
         
-        if not input_element or not used_selector:
-            raise Exception("Could not find input field on NoteGPT page")
-        
-        # Clear and fill the input
-        await page.fill(used_selector, youtube_url)
-        
-        # Submit the form
-        submit_selectors = [
-            'button[type="submit"]',
-            'button:has-text("Submit")',
-            'button:has-text("Extract")',
-            'button:has-text("Get")',
-            'button[aria-label*="submit" i]'
-        ]
-        
-        submitted = False
-        for btn_selector in submit_selectors:
+        # Strategy 2: Try finding by text content or labels
+        if not input_element:
             try:
-                submit_button = await page.query_selector(btn_selector)
-                if submit_button:
-                    await submit_button.click()
-                    submitted = True
-                    break
+                # Look for input near "YouTube" or "URL" text
+                input_element = await page.query_selector('input:near(:text("YouTube"), 100)')
+                if input_element:
+                    used_selector = 'input:near(:text("YouTube"), 100)'
             except:
-                continue
+                pass
         
-        if not submitted:
-            # Try pressing Enter
-            await page.press(used_selector, "Enter")
+        # Strategy 3: Try clicking and typing anywhere on page
+        if not input_element:
+            try:
+                # Click on page to focus, then try typing
+                await page.click('body')
+                await page.type(youtube_url, delay=50)
+                await page.press('body', 'Enter')
+                await asyncio.sleep(5)
+                # Try to get transcript anyway
+            except:
+                pass
+        
+        if input_element and used_selector:
+            # Clear and fill the input
+            await input_element.click()
+            await input_element.fill('')
+            await input_element.fill(youtube_url)
+            await asyncio.sleep(1)
+            
+            # Submit
+            await page.press(used_selector, 'Enter')
+        elif not input_element:
+            # Last resort: try typing URL directly
+            logger.warning("Input field not found, trying direct URL navigation")
+            # Try navigating directly with URL parameter
+            note_url = f"{NOTEGPT_WORKSPACE_URL}?url={youtube_url}"
+            await page.goto(note_url)
+            await asyncio.sleep(5)
+        
+        # Submit the form (if we found input)
+        if input_element and used_selector:
+            submit_selectors = [
+                'button[type="submit"]',
+                'button:has-text("Submit")',
+                'button:has-text("Extract")',
+                'button:has-text("Get")',
+                'button:has-text("Generate")',
+                'button[aria-label*="submit" i]',
+                'button[aria-label*="extract" i]'
+            ]
+            
+            submitted = False
+            for btn_selector in submit_selectors:
+                try:
+                    submit_button = await page.query_selector(btn_selector)
+                    if submit_button and await submit_button.is_visible():
+                        await submit_button.click()
+                        submitted = True
+                        break
+                except:
+                    continue
+            
+            if not submitted:
+                # Try pressing Enter
+                try:
+                    await page.press(used_selector, "Enter")
+                except:
+                    pass
         
         # Wait for transcript to be generated (with timeout)
         await asyncio.sleep(5)

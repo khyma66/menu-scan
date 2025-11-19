@@ -11,6 +11,7 @@ from supabase import create_client
 from dotenv import load_dotenv
 from youtube_playlist_extractor import YouTubePlaylistExtractor
 from notegpt_mcp_server import extract_transcript
+from youtube_transcript_extractor import extract_youtube_transcript
 from datetime import datetime
 import logging
 
@@ -26,9 +27,14 @@ async def process_video_url(youtube_url: str, supabase_client, playlist_id: str 
     try:
         logger.info(f"Processing: {youtube_url}")
         
-        # Extract transcript from NoteGPT
-        logger.info("Extracting transcript from NoteGPT.io...")
-        transcript_result = await extract_transcript(youtube_url)
+        # Try YouTube direct extraction first (more reliable)
+        logger.info("Trying YouTube direct transcript extraction...")
+        transcript_result = extract_youtube_transcript(youtube_url)
+        
+        # If YouTube extraction fails, try NoteGPT
+        if not transcript_result.get("success"):
+            logger.info("YouTube extraction failed, trying NoteGPT.io...")
+            transcript_result = await extract_transcript(youtube_url)
         
         if not transcript_result.get("success"):
             logger.error(f"Failed to extract transcript: {transcript_result.get('error')}")
