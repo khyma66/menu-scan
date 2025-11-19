@@ -24,8 +24,20 @@ ffmpeg -version
 
 ### 2. Install Python Dependencies
 
+**Important**: Requires Python 3.10-3.13 (Python 3.14+ not supported)
+
 ```bash
 cd video-transcript-pipeline
+source venv/bin/activate
+
+# Install core dependencies
+pip install -r requirements_telugu.txt
+
+# If Whisper installation fails, try:
+pip install git+https://github.com/openai/whisper.git
+
+# Or use a Python 3.13 virtual environment:
+python3.13 -m venv venv
 source venv/bin/activate
 pip install -r requirements_telugu.txt
 ```
