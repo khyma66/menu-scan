@@ -82,7 +82,7 @@ class TeluguTranscriptionPipeline:
         
         Args:
             youtube_url: YouTube video URL
-            output_path: Path to save audio file
+            output_path: Path to save audio file (without extension)
         
         Returns:
             True if successful
@@ -90,23 +90,41 @@ class TeluguTranscriptionPipeline:
         try:
             logger.info(f"Downloading audio from: {youtube_url}")
             
+            # Ensure output directory exists
+            output_dir = os.path.dirname(output_path)
+            if output_dir and not os.path.exists(output_dir):
+                os.makedirs(output_dir, exist_ok=True)
+            
             # Use yt-dlp to download audio directly
+            # yt-dlp will add .wav extension automatically
             cmd = [
                 'yt-dlp',
                 '-x',  # Extract audio
                 '--audio-format', 'wav',  # Convert to WAV
                 '--audio-quality', '0',  # Best quality
-                '-o', output_path,  # Output file
+                '-o', f'{output_path}.%(ext)s',  # Output file template
                 youtube_url
             ]
             
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
             
             if result.returncode == 0:
-                logger.info(f"✓ Audio extracted to: {output_path}")
-                return True
+                # Check if file was created (yt-dlp might add .wav extension)
+                if os.path.exists(output_path):
+                    logger.info(f"✓ Audio extracted to: {output_path}")
+                    return True
+                elif os.path.exists(f"{output_path}.wav"):
+                    # Rename to expected path
+                    os.rename(f"{output_path}.wav", output_path)
+                    logger.info(f"✓ Audio extracted to: {output_path}")
+                    return True
+                else:
+                    logger.error(f"Audio file not found at expected path: {output_path}")
+                    logger.error(f"yt-dlp output: {result.stdout}")
+                    return False
             else:
                 logger.error(f"Error downloading audio: {result.stderr}")
+                logger.error(f"yt-dlp stdout: {result.stdout}")
                 return False
                 
         except subprocess.TimeoutExpired:
@@ -135,17 +153,38 @@ class TeluguTranscriptionPipeline:
             logger.info(f"Transcribing audio: {audio_path}")
             logger.info(f"Language: Telugu ({self.language})")
             
-            # Transcribe with language specified
+            # Transcribe with language specified and Telugu-specific options
+            # Force Telugu language and use proper Telugu prompt
+            telugu_prompt = "ఇది తెలుగు భాషలో వీడియో. ఇది ధార్మిక లేదా ఆధ్యాత్మిక విషయాలపై చర్చ. తెలుగు అక్షరాలలో వ్రాయండి."
+            
             result = model.transcribe(
                 audio_path,
-                language=self.language,  # Telugu
+                language="te",  # Force Telugu language code
                 task="transcribe",
-                verbose=True
+                verbose=True,
+                initial_prompt=telugu_prompt,  # Telugu prompt to guide transcription
+                condition_on_previous_text=False,  # Disable to avoid script confusion
+                compression_ratio_threshold=2.4,
+                logprob_threshold=-1.0,
+                no_speech_threshold=0.6,
+                fp16=False  # Use FP32 for better accuracy
             )
             
             # Extract text and segments
             transcript_text = result.get("text", "").strip()
             segments = result.get("segments", [])
+            
+            # Verify Telugu script in output
+            telugu_chars = sum(1 for c in transcript_text if 0x0C00 <= ord(c) <= 0x0C7F)
+            total_chars = len([c for c in transcript_text if c.isalnum()])
+            
+            if total_chars > 0:
+                telugu_ratio = telugu_chars / total_chars
+                if telugu_ratio < 0.3:  # Less than 30% Telugu characters
+                    logger.warning(f"⚠️ Low Telugu script ratio: {telugu_ratio:.1%}")
+                    logger.warning(f"   Transcript may be in wrong script. Sample: {transcript_text[:100]}")
+                else:
+                    logger.info(f"✓ Telugu script verified: {telugu_ratio:.1%} Telugu characters")
             
             logger.info(f"✓ Transcription complete: {len(transcript_text)} characters")
             
