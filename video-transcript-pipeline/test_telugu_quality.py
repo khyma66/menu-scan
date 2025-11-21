@@ -56,7 +56,7 @@ async def test_telugu_transcription():
     pipeline = TeluguTranscriptionPipeline(
         supabase_url=supabase_url,
         supabase_key=supabase_key,
-        whisper_model="base",
+        whisper_model="large-v3",  # Best Telugu accuracy
         language="te"  # Telugu
     )
     
