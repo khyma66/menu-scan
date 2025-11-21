@@ -32,7 +32,7 @@ async def main():
     pipeline = TeluguTranscriptionPipeline(
         supabase_url=supabase_url,
         supabase_key=supabase_key,
-        whisper_model="large-v3",  # Best accuracy for Telugu (or use 'large-v2', 'large', 'medium')
+        whisper_model="large-v3",  # Best accuracy for Telugu - 3GB download
         language="te"  # Telugu
     )
     

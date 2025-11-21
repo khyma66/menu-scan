@@ -35,7 +35,7 @@ class TeluguTranscriptionPipeline:
         supabase_url: str,
         supabase_key: str,
         bucket_name: str = "video-transcripts",
-        whisper_model: str = "base",
+        whisper_model: str = "large-v3",
         language: str = "te"  # Telugu language code
     ):
         """
