@@ -497,27 +497,57 @@ Enhanced transcript:"""
     ) -> Dict[str, Any]:
         """Store transcript in Supabase"""
         try:
-            # Upload subtitle files to storage
+            # Check if bucket exists, create if not
+            try:
+                buckets = self.supabase_client.storage.list_buckets()
+                bucket_exists = any(b.name == self.bucket_name for b in buckets)
+                if not bucket_exists:
+                    logger.warning(f"Bucket '{self.bucket_name}' does not exist. Storage uploads will be skipped.")
+                    logger.warning("Please create the bucket manually in Supabase Dashboard:")
+                    logger.warning(f"  1. Go to Storage → Create Bucket")
+                    logger.warning(f"  2. Name: {self.bucket_name}")
+                    logger.warning(f"  3. Public: Yes")
+                    logger.warning(f"  4. Click Create")
+            except Exception as e:
+                logger.warning(f"Could not check bucket existence: {e}")
+            
+            # Upload subtitle files to storage (skip if bucket doesn't exist)
             srt_filename = f"playlists/{playlist_id or 'single'}/{video_id}.srt"
             vtt_filename = f"playlists/{playlist_id or 'single'}/{video_id}.vtt"
+            storage_success = True
             
-            # Upload SRT
-            with open(srt_path, 'rb') as f:
+            try:
+                # Upload SRT
+                with open(srt_path, 'rb') as f:
+                    self.supabase_client.storage.from_(self.bucket_name).upload(
+                        srt_filename,
+                        f.read(),
+                        file_options={"content-type": "text/plain", "upsert": "true"}
+                    )
+                
+                # Upload VTT
+                with open(vtt_path, 'rb') as f:
+                    self.supabase_client.storage.from_(self.bucket_name).upload(
+                        vtt_filename,
+                        f.read(),
+                        file_options={"content-type": "text/vtt", "upsert": "true"}
+                    )
+                
+                # Store full transcript in storage
+                full_transcript_path = f"playlists/{playlist_id or 'single'}/{video_id}_transcript.txt"
                 self.supabase_client.storage.from_(self.bucket_name).upload(
-                    srt_filename,
-                    f.read(),
+                    full_transcript_path,
+                    enhanced_transcript.encode('utf-8'),
                     file_options={"content-type": "text/plain", "upsert": "true"}
                 )
+            except Exception as storage_error:
+                logger.warning(f"Storage upload failed (bucket may not exist): {storage_error}")
+                storage_success = False
+                # Set placeholder URLs
+                srt_filename = f"local/{video_id}.srt"
+                vtt_filename = f"local/{video_id}.vtt"
             
-            # Upload VTT
-            with open(vtt_path, 'rb') as f:
-                self.supabase_client.storage.from_(self.bucket_name).upload(
-                    vtt_filename,
-                    f.read(),
-                    file_options={"content-type": "text/vtt", "upsert": "true"}
-                )
-            
-            # Store in database
+            # Store in database (always try this, even if storage failed)
             insert_data = {
                 "video_id": video_id,
                 "youtube_url": youtube_url,
@@ -529,27 +559,20 @@ Enhanced transcript:"""
                 "full_transcript_storage_path": f"playlists/{playlist_id or 'single'}/{video_id}_transcript.txt",
                 "srt_storage_path": srt_filename,
                 "vtt_storage_path": vtt_filename,
-                "srt_url": f"https://jlfqzcaospvspmzbvbxd.supabase.co/storage/v1/object/public/{self.bucket_name}/{srt_filename}",
-                "vtt_url": f"https://jlfqzcaospvspmzbvbxd.supabase.co/storage/v1/object/public/{self.bucket_name}/{vtt_filename}",
+                "srt_url": f"https://jlfqzcaospvspmzbvbxd.supabase.co/storage/v1/object/public/{self.bucket_name}/{srt_filename}" if storage_success else "local",
+                "vtt_url": f"https://jlfqzcaospvspmzbvbxd.supabase.co/storage/v1/object/public/{self.bucket_name}/{vtt_filename}" if storage_success else "local",
                 "segments_count": len(segments),
                 "metadata": metadata or {},
                 "created_at": datetime.utcnow().isoformat()
             }
-            
-            # Store full transcript in storage
-            full_transcript_path = f"playlists/{playlist_id or 'single'}/{video_id}_transcript.txt"
-            self.supabase_client.storage.from_(self.bucket_name).upload(
-                full_transcript_path,
-                enhanced_transcript.encode('utf-8'),
-                file_options={"content-type": "text/plain", "upsert": "true"}
-            )
             
             # Insert into database
             result = self.supabase_client.table("telugu_transcripts").insert(insert_data).execute()
             
             return {
                 "success": True,
-                "id": result.data[0]['id'] if result.data else None
+                "id": result.data[0]['id'] if result.data else None,
+                "storage_uploaded": storage_success
             }
             
         except Exception as e:

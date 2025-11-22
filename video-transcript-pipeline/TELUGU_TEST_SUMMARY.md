@@ -128,3 +128,4 @@ The pipeline is **functional** but needs improvement for **Telugu script accurac
 3. Monitor Telugu script ratio
 4. Consider fine-tuning for better results
 
+

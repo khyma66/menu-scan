@@ -68,3 +68,4 @@ if __name__ == "__main__":
         print(f"  Telugu %: {result['telugu_percentage']:.1f}%")
         print(f"  Detected scripts: {result['detected_scripts']}")
 
+

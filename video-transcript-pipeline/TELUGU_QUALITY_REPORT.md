@@ -78,3 +78,4 @@ Created `verify_telugu.py` to check:
 3. Adjust parameters if needed
 4. Consider using `large` model for production
 
+
