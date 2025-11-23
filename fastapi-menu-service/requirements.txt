@@ -6,7 +6,8 @@ pydantic-settings==2.7.0
 
 # Database and storage
 supabase==2.3.0
-supabase-auth==0.1.0redis==5.2.1
+supabase-auth==0.1.0
+redis==5.2.1
 
 # OCR processing
 pytesseract==0.3.13
