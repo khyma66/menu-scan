@@ -7,7 +7,7 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends, Request, BackgroundTasks
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
-import stripe
+# import stripe  # Temporarily disabled
 
 from app.routers.auth import get_current_user
 from app.utils.retry_helper import retry_async, RetryConfig

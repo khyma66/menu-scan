@@ -13,7 +13,7 @@ import collections
 from typing import Callable
 
 from app.config import settings
-from app.routers import ocr, auth, payments, user_preferences, table_extraction, new_health_router, dishes, user_management, pricing, menu_enrichment, enhanced_ocr_router
+from app.routers import ocr, auth, user_preferences, table_extraction, new_health_router, dishes, user_management, menu_enrichment, enhanced_ocr_router
 
 # Configure logging
 logging.basicConfig(
@@ -209,12 +209,12 @@ if settings.api_key:
 app.include_router(auth.router)
 app.include_router(ocr.router)
 app.include_router(table_extraction.router)
-app.include_router(payments.router)
+# app.include_router(payments.router)  # Temporarily disabled - Stripe dependency
 app.include_router(user_preferences.router)
 app.include_router(new_health_router.router)
 app.include_router(dishes.router)
 app.include_router(user_management.router)
-app.include_router(pricing.router)
+# app.include_router(pricing.router)  # Temporarily disabled - Stripe dependency
 app.include_router(menu_enrichment.router)
 app.include_router(enhanced_ocr_router.router)
 

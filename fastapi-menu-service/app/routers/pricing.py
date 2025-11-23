@@ -98,7 +98,7 @@ async def subscribe_to_plan(
 ):
     """Subscribe to a pricing plan."""
     try:
-        import stripe
+##        import stripe  # Temporarily disabled  # Temporarily disabled
         from app.services.supabase_client import get_supabase_client
         
         # Initialize Stripe
@@ -193,7 +193,7 @@ async def cancel_subscription(
 ):
     """Cancel user's subscription."""
     try:
-        import stripe
+##        import stripe  # Temporarily disabled  # Temporarily disabled
         from app.services.supabase_client import get_supabase_client
         
         stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
@@ -288,7 +288,7 @@ async def get_current_subscription(current_user: dict = Depends(get_current_user
 async def create_setup_intent(current_user: dict = Depends(get_current_user)):
     """Create a setup intent for adding payment method."""
     try:
-        import stripe
+##        import stripe  # Temporarily disabled  # Temporarily disabled
         
         stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
         if not stripe.api_key:
