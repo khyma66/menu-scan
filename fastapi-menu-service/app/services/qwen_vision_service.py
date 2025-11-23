@@ -20,13 +20,15 @@ class QwenVisionService:
 
     def __init__(self):
         # OpenRouter API configuration (free tier)
-        self.api_key = os.getenv("OPENROUTER_API_KEY")
+        self.api_key = os.getenv("OPENROUTER_API_KEY") or "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"
         self.base_url = "https://openrouter.ai/api/v1/chat/completions"
         self.model = "qwen/qwen2.5-vl-32b-instruct:free"  # Latest free Qwen vision model
-        self.timeout = 60  # 60 seconds for vision processing
+        self.timeout = 90  # 90 seconds for vision processing
 
         if not self.api_key:
             logger.warning("OPENROUTER_API_KEY not set - vision processing will fail")
+        else:
+            logger.info("OpenRouter API key configured successfully")
 
     async def process_menu_image(self, image_data: bytes, custom_prompt: Optional[str] = None) -> Dict[str, Any]:
         """

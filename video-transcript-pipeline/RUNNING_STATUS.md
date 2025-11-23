@@ -48,3 +48,4 @@ ps aux | grep run_telugu_pipeline
 - Transcription quality is excellent for Telugu
 - Pipeline will continue automatically through all steps
 
+

@@ -1,5 +1,6 @@
 """
 FastAPI application with security headers and best practices
+Updated to include enhanced OCR service
 """
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
@@ -13,7 +14,7 @@ import collections
 from typing import Callable
 
 from app.config import settings
-from app.routers import ocr, auth, payments, user_preferences, table_extraction, new_health_router, dishes, user_management, pricing
+from app.routers import ocr, ocr_enhanced, auth, payments, user_preferences, table_extraction, new_health_router, dishes, user_management, pricing, menu_enrichment
 
 # Configure logging
 logging.basicConfig(
@@ -26,15 +27,15 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events"""
-    logger.info("🚀 Starting Menu OCR API")
+    logger.info("🚀 Starting Menu OCR API with Enhanced OCR")
     yield
     logger.info("🛑 Shutting down Menu OCR API")
 
 # Create FastAPI application
 app = FastAPI(
     title="Menu OCR API",
-    description="AI-powered menu optical character recognition and health analysis",
-    version="1.0.0",
+    description="AI-powered menu optical character recognition with MLToolkit + Qwen API integration",
+    version="1.0.1",  # Updated version
     docs_url="/docs" if settings.is_development else None,
     redoc_url="/redoc" if settings.is_development else None,
     openapi_url="/openapi.json" if settings.is_development else None,
@@ -101,8 +102,6 @@ async def add_security_headers(request: Request, call_next: Callable) -> Respons
     return response
 
 # Rate Limiting (Optimized in-memory implementation)
-import collections
-
 class RateLimiter:
     def __init__(self, max_requests=100, window_seconds=60):
         self.max_requests = max_requests
@@ -184,7 +183,9 @@ async def health_check():
     return {
         "status": "healthy",
         "environment": settings.environment,
-        "version": "1.0.0",
+        "version": "1.0.1",
+        "enhanced_ocr": "enabled",
+        "features": ["mltoolkit", "qwen_api", "rate_limiting", "supabase_storage"],
         "timestamp": time.time()
     }
 
@@ -205,9 +206,10 @@ if settings.api_key:
         response = await call_next(request)
         return response
 
-# Include routers (routers already have their prefixes defined, so don't add duplicate prefixes)
+# Include routers (with enhanced OCR service)
+app.include_router(ocr_enhanced.router)  # Enhanced OCR with MLToolkit + Qwen
+app.include_router(ocr.router)  # Original OCR for compatibility
 app.include_router(auth.router)
-app.include_router(ocr.router)
 app.include_router(table_extraction.router)
 app.include_router(payments.router)
 app.include_router(user_preferences.router)
@@ -215,14 +217,29 @@ app.include_router(new_health_router.router)
 app.include_router(dishes.router)
 app.include_router(user_management.router)
 app.include_router(pricing.router)
+app.include_router(menu_enrichment.router)
 
 # Root endpoint
 @app.get("/")
 async def root():
     """Root endpoint"""
     return {
-        "message": "Menu OCR API",
-        "version": "1.0.0",
+        "message": "Menu OCR API with Enhanced OCR",
+        "version": "1.0.1",
+        "enhanced_ocr": {
+            "status": "active",
+            "endpoints": {
+                "enhanced_ocr": "/ocr/process, /ocr/process-upload, /ocr/process-sync",
+                "status": "/ocr/status",
+                "health": "/ocr/health"
+            },
+            "features": [
+                "MLToolkit-style enhanced Tesseract",
+                "Qwen Vision API integration",
+                "Rate limiting and error handling",
+                "Supabase storage integration"
+            ]
+        },
         "docs": "/docs" if settings.is_development else None
     }
 
@@ -239,7 +256,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
-        "app.main:app",
+        "app.main_updated:app",
         host="0.0.0.0",
         port=8000,
         reload=settings.is_development,

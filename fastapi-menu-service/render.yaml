@@ -43,6 +43,8 @@ services:
         value: your-openai-api-key
       - key: ANTHROPIC_API_KEY
         value: your-anthropic-api-key
+      - key: OPENROUTER_API_KEY
+        value: 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
 
 databases:
   - name: menu-ocr-redis

@@ -31,3 +31,4 @@ SELECT schemaname, tablename, policyname, cmd
 FROM pg_policies 
 WHERE tablename = 'telugu_transcripts';
 
+

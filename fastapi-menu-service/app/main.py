@@ -13,7 +13,7 @@ import collections
 from typing import Callable
 
 from app.config import settings
-from app.routers import ocr, auth, payments, user_preferences, table_extraction, new_health_router, dishes, user_management, pricing
+from app.routers import ocr, auth, payments, user_preferences, table_extraction, new_health_router, dishes, user_management, pricing, menu_enrichment, enhanced_ocr_router
 
 # Configure logging
 logging.basicConfig(
@@ -215,6 +215,8 @@ app.include_router(new_health_router.router)
 app.include_router(dishes.router)
 app.include_router(user_management.router)
 app.include_router(pricing.router)
+app.include_router(menu_enrichment.router)
+app.include_router(enhanced_ocr_router.router)
 
 # Root endpoint
 @app.get("/")

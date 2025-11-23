@@ -12,6 +12,16 @@
         "Authorization": "Bearer <apify_api_fN0eoFyxQqYNBYWI96VQrmlVNc7JuA2Ra4OL>"
       }
     },
+    "openrouter": {
+      "command": "python",
+      "args": [
+        "openrouter_mcp_server.py"
+      ],
+      "env": {
+        "OPENROUTER_API_KEY": "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",
+        "PYTHONPATH": "."
+      }
+    },
     "notegpt": {
       "command": "python",
       "args": [

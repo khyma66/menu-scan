@@ -10,6 +10,7 @@ from typing import Optional, Dict, Any
 import stripe
 
 from app.routers.auth import get_current_user
+from app.utils.retry_helper import retry_async, RetryConfig
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +67,7 @@ async def create_payment_intent(
 
     Used for premium OCR processing, advanced features, etc.
     """
-    try:
+    async def _create_intent():
         # Create payment intent
         intent = stripe.PaymentIntent.create(
             amount=request.amount,
@@ -79,6 +80,11 @@ async def create_payment_intent(
             },
             automatic_payment_methods={"enabled": True}
         )
+        return intent
+    
+    try:
+        # Retry Stripe API call
+        intent = await retry_async(_create_intent, config=RetryConfig(delay=10, max_attempts=3))
 
         # Store in our simple history (use database in production)
         payment_history[intent.id] = {
@@ -114,7 +120,7 @@ async def create_subscription(
 
     Used for premium subscriptions, unlimited OCR, etc.
     """
-    try:
+    async def _create_subscription():
         # Get or create customer
         customers = stripe.Customer.list(email=current_user["email"])
         if customers.data:
@@ -141,6 +147,11 @@ async def create_subscription(
             subscription_data["expand"] = ["latest_invoice.payment_intent"]
 
         subscription = stripe.Subscription.create(**subscription_data)
+        return subscription
+    
+    try:
+        # Retry Stripe API call
+        subscription = await retry_async(_create_subscription, config=RetryConfig(delay=10, max_attempts=3))
 
         return SubscriptionResponse(
             subscription_id=subscription.id,
@@ -210,7 +221,7 @@ async def get_payment_history(
 
     Returns payment intents and subscription information.
     """
-    try:
+    async def _fetch_history():
         # Get payment intents from Stripe
         payment_intents = stripe.PaymentIntent.list(
             customer=current_user.get("stripe_customer_id"),
@@ -222,6 +233,12 @@ async def get_payment_history(
             customer=current_user.get("stripe_customer_id"),
             limit=50
         )
+        
+        return payment_intents, subscriptions
+    
+    try:
+        # Retry Stripe API calls
+        payment_intents, subscriptions = await retry_async(_fetch_history, config=RetryConfig(delay=10, max_attempts=3))
 
         return {
             "payment_intents": [

@@ -8,3 +8,4 @@ LLM_MODEL=gpt-4o-mini
 FALLBACK_ENABLED=true
 OPENAI_API_KEY=your-openai-api-key
 ANTHROPIC_API_KEY=your-anthropic-api-key
+OPENROUTER_API_KEY=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

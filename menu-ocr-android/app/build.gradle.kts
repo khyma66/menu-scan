@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("kotlin-parcelize")
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.24"
 }
 
 android {
@@ -70,6 +71,14 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:gotrue-kt:2.1.4")
     implementation("io.github.jan-tennert.supabase:postgrest-kt:2.1.4")
     implementation("io.github.jan-tennert.supabase:storage-kt:2.1.4")
+    
+    // Ktor client for Supabase
+    implementation("io.ktor:ktor-client-android:2.3.7")
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.7")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
+    
+    // Kotlin serialization
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
 
     // Networking
     implementation("com.squareup.retrofit2:retrofit:2.9.0")

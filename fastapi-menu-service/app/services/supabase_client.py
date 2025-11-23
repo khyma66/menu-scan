@@ -43,20 +43,37 @@ class SupabaseClient:
             logger.error(f"Error fetching restaurant info: {e}")
             return None
     
-    async def save_ocr_result(self, image_url: str, result: Dict[str, Any]) -> bool:
-        """Save OCR result to database."""
+    async def save_ocr_result(self, image_url: str, result: Dict[str, Any], user_id: Optional[str] = None, metadata: Optional[Dict[str, Any]] = None) -> bool:
+        """Save OCR result to database with enhanced metadata support."""
         if not self.client:
             return False
         
         try:
-            response = self.client.table("ocr_results").insert({
+            # Prepare enhanced OCR result data
+            enhanced_data = {
                 "image_url": image_url,
                 "result": result,
-                "created_at": "now()"
-            }).execute()
+                "processed_at": "now()",
+                "method": result.get("method", "unknown"),
+                "processing_time_ms": result.get("processing_time_ms", 0),
+                "enhanced": result.get("enhanced", False),
+                "raw_text": result.get("raw_text", ""),
+                "menu_items_count": len(result.get("menu_items", []))
+            }
+            
+            # Add user_id if provided
+            if user_id:
+                enhanced_data["user_id"] = user_id
+            
+            # Add metadata if provided
+            if metadata:
+                enhanced_data["metadata"] = metadata
+            
+            response = self.client.table("ocr_results").insert(enhanced_data).execute()
+            logger.info(f"Enhanced OCR result saved: {enhanced_data['menu_items_count']} items, method: {enhanced_data['method']}")
             return True
         except Exception as e:
-            logger.error(f"Error saving OCR result: {e}")
+            logger.error(f"Error saving enhanced OCR result: {e}")
             return False
     
     async def upload_image(self, image_data: bytes, filename: str) -> Optional[str]:

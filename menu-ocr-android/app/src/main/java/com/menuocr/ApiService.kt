@@ -1,12 +1,19 @@
 package com.menuocr
 
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
+import retrofit2.http.Field
 import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Part
+import okhttp3.MediaType.Companion.toMediaType
 
 interface ApiService {
 
@@ -15,6 +22,29 @@ interface ApiService {
 
     @POST("/ocr/process")
     suspend fun processOcr(@Body request: OcrRequest): Response<MenuResponse>
+
+    @POST("/ocr/process-upload")
+    suspend fun processOcrUpload(
+        
+        @Part image: MultipartBody.Part,
+        @Part("use_llm_enhancement") useLlmEnhancement: RequestBody = RequestBody.create("text/plain".toMediaType(), "true"),
+        @Part("use_qwen_vision") useQwenVision: RequestBody = RequestBody.create("text/plain".toMediaType(), "true"),
+        @Part("language") language: RequestBody = RequestBody.create("text/plain".toMediaType(), "auto")
+    ): Response<MenuResponse>
+
+    // New enhanced OCR endpoints
+    @POST("/enhanced-ocr/process-upload")
+    suspend fun processEnhancedOcrUpload(
+        
+        @Part image: MultipartBody.Part,
+        @Part("enhancement_level") enhancementLevel: RequestBody = RequestBody.create("text/plain".toMediaType(), "high")
+    ): Response<MenuResponse>
+
+    @POST("/enhanced-ocr/process-url")
+    suspend fun processEnhancedOcrUrl(
+        @retrofit2.http.Field("image_url") imageUrl: String,
+        @retrofit2.http.Field("enhancement_level") enhancementLevel: String = "high"
+    ): Response<MenuResponse>
 
     @POST("/dishes/extract")
     suspend fun extractDishes(@Body request: DishRequest): Response<DishResponse>

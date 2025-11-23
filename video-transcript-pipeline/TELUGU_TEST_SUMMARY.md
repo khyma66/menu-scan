@@ -129,3 +129,4 @@ The pipeline is **functional** but needs improvement for **Telugu script accurac
 4. Consider fine-tuning for better results
 
 
+

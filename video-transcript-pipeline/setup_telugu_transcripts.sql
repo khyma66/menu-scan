@@ -49,3 +49,4 @@ CREATE POLICY IF NOT EXISTS "Allow authenticated update" ON telugu_transcripts
     FOR UPDATE USING (true);
 
 
+

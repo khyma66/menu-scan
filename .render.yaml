@@ -14,18 +14,40 @@ services:
         value: Menu OCR API
       - key: API_VERSION
         value: 1.0.0
+      - key: API_PREFIX
+        value: /api/v1
+      - key: DEBUG
+        value: true
+      - key: ENVIRONMENT
+        value: development
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 8000
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_KEY
         sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
       - key: SUPABASE_BUCKET
         sync: false
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: ANTHROPIC_API_KEY
+      - key: OPENROUTER_API_KEY
         sync: false
       - key: LLM_MODEL
-        value: gpt-4o-mini
+        value: qwen/qwen-2.5-72b-instruct
       - key: FALLBACK_ENABLED
         value: true
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: OCR_CONFIDENCE_THRESHOLD
+        value: 0.7
+      - key: MAX_IMAGE_SIZE_MB
+        value: 10
+      - key: ALLOWED_EXTENSIONS
+        value: .jpg,.jpeg,.png,.webp
     healthCheckPath: /health

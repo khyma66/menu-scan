@@ -43,6 +43,12 @@ class Settings(BaseSettings):
     anthropic_api_key: Optional[str] = Field(default=None, env="ANTHROPIC_API_KEY")
     apify_api_token: Optional[str] = Field(default=None, env="APIFY_API_TOKEN")
     render_api_token: Optional[str] = Field(default=None, env="RENDER_API_TOKEN")
+    
+    # ==========================================
+    # OLLAMA CONFIGURATION (Local LLM)
+    # ==========================================
+    ollama_url: str = Field(default="http://localhost:11434", env="OLLAMA_URL")
+    ollama_model: str = Field(default="qwen3:8b", env="OLLAMA_MODEL")
 
     # ==========================================
     # PAYMENT PROCESSING
