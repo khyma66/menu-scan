@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Base64
+import android.util.Log
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
@@ -31,6 +32,7 @@ class EnhancedMainActivity : AppCompatActivity() {
     private lateinit var btnProcessOcr: Button
     private lateinit var btnTestEnhanced: Button
     private lateinit var enhancementLevelText: TextView
+    private lateinit var btnChangeLevel: Button
 
     private var selectedBitmap: Bitmap? = null
     private var apiService: ApiService? = null
@@ -88,15 +90,24 @@ class EnhancedMainActivity : AppCompatActivity() {
         layout.addView(apiText)
         
         // Enhancement level selector
+        val enhancementRow = android.widget.LinearLayout(this)
+        enhancementRow.orientation = android.widget.LinearLayout.HORIZONTAL
+        
         enhancementLevelText = TextView(this)
-        enhancementLevelText.text = "Enhancement Level: $enhancementLevel (high=OpenRouter, balanced=hybrid, fast=tesseract)"
-        enhancementLevelText.setPadding(0, 0, 0, 16)
-        layout.addView(enhancementLevelText)
+        updateEnhancementLevelText()
+        enhancementRow.addView(enhancementLevelText)
+        
+        btnChangeLevel = Button(this)
+        btnChangeLevel.text = "Change Level"
+        btnChangeLevel.setOnClickListener { changeEnhancementLevel() }
+        enhancementRow.addView(btnChangeLevel)
+        
+        layout.addView(enhancementRow)
         
         // Status text
         statusText = TextView(this)
         statusText.text = "Ready to test enhanced OCR functionality with OpenRouter/Qwen integration"
-        statusText.setPadding(0, 0, 0, 16)
+        statusText.setPadding(0, 16, 0, 16)
         layout.addView(statusText)
         
         // Buttons row 1
@@ -239,6 +250,7 @@ class EnhancedMainActivity : AppCompatActivity() {
                     statusText.text = "⚠️ API connection failed. Enhanced OCR unavailable."
                 }
             } catch (e: Exception) {
+                Log.e("API_CONNECTION", "Error connecting to API", e)
                 apiText.text = "FastAPI Backend: http://10.0.2.2:8000\nStatus: ❌ Error - ${e.message}"
                 statusText.text = "❌ Connection error: ${e.message}"
             }
@@ -257,6 +269,7 @@ class EnhancedMainActivity : AppCompatActivity() {
                     Toast.makeText(this@EnhancedMainActivity, "OpenRouter unavailable, using fallback", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
+                Log.e("API_CONNECTION", "Error in testOpenRouterConnection", e)
                 statusText.text = "⚠️ OpenRouter test error: ${e.message}"
             }
         }
@@ -317,6 +330,7 @@ class EnhancedMainActivity : AppCompatActivity() {
                     }
                     
                 } catch (e: Exception) {
+                    Log.e("OCR_PROCESSING", "Error processing image", e)
                     resultText.text = "Enhanced OCR Error: ${e.message}"
                     statusText.text = "❌ Enhanced OCR processing error: ${e.message}"
                     Toast.makeText(this@EnhancedMainActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
@@ -327,6 +341,20 @@ class EnhancedMainActivity : AppCompatActivity() {
         } ?: run {
             Toast.makeText(this, "Please select an image first", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun changeEnhancementLevel() {
+        enhancementLevel = when (enhancementLevel) {
+            "high" -> "balanced"
+            "balanced" -> "fast"
+            else -> "high"
+        }
+        updateEnhancementLevelText()
+        Toast.makeText(this, "Enhancement level set to $enhancementLevel", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun updateEnhancementLevelText() {
+        enhancementLevelText.text = "Enhancement Level: $enhancementLevel (high=OpenRouter, balanced=hybrid, fast=tesseract)"
     }
 
     private fun bitmapToBase64(bitmap: android.graphics.Bitmap): String {

@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ocr", tags=["OCR"])
 
 # Set up Tesseract environment at module level
-TESSDATA_PREFIX = "/opt/homebrew/Cellar/tesseract/5.5.1/share/tessdata"
-TESSERACT_CMD = "/opt/homebrew/Cellar/tesseract/5.5.1/bin/tesseract"
+TESSDATA_PREFIX = "/usr/share/tesseract-ocr/5/tessdata"
+TESSERACT_CMD = "/usr/bin/tesseract"
 
 # Configure Tesseract environment
 os.environ['TESSDATA_PREFIX'] = TESSDATA_PREFIX
