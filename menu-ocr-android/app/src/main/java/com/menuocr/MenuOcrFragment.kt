@@ -96,7 +96,7 @@ class MenuOcrFragment : Fragment() {
 
     private fun setupApiService() {
         val retrofit = Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8000/")
+            .baseUrl(AppConfig.Render.BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 
@@ -197,47 +197,68 @@ class MenuOcrFragment : Fragment() {
 
             uiScope.launch {
                 try {
-                    val result = enhancedOcrProcessor?.processImageWithFallback(bitmap, enhancementLevel)
+                    // Convert bitmap to base64
+                    val byteArrayOutputStream = ByteArrayOutputStream()
+                    bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, byteArrayOutputStream)
+                    val imageBase64 = android.util.Base64.encodeToString(byteArrayOutputStream.toByteArray(), android.util.Base64.DEFAULT)
+
+                    // Create OCR request
+                    val ocrRequest = OcrRequest(
+                        image_base64 = imageBase64,
+                        language = "auto"
+                    )
+
+                    // Call regular OCR endpoint
+                    val response = apiService?.processOcr(ocrRequest)
 
                     val resultTextBuilder = StringBuilder()
 
-                    if (result?.success == true) {
-                        // Processing info
-                        resultTextBuilder.append("Processing Method: ${result.enhancementLevel}\n")
-                        val openRouterText = if (result.openrouterUsed) "✅ Yes" else "❌ No (fallback)"
-                        resultTextBuilder.append("OpenRouter Used: $openRouterText\n")
-                        resultTextBuilder.append("Confidence Score: ${String.format("%.2f", result.confidenceScore * 100)}%\n")
-                        resultTextBuilder.append("Processing Time: ${result.processingTimeMs}ms\n\n")
+                    if (response?.isSuccessful == true) {
+                        response.body()?.let { menuResponse ->
+                            if (menuResponse.success) {
+                                // Processing info
+                                resultTextBuilder.append("Processing Method: Regular OCR\n")
+                                resultTextBuilder.append("Language: ${menuResponse.metadata?.get("detected_language") ?: "auto"}\n")
+                                resultTextBuilder.append("Processing Time: ${menuResponse.processing_time_ms}ms\n\n")
 
-                        // Raw text
-                        resultTextBuilder.append("Raw Extracted Text:\n${result.rawText}\n\n")
+                                // Raw text
+                                resultTextBuilder.append("Raw Extracted Text:\n${menuResponse.raw_text}\n\n")
 
-                        // Menu items
-                        resultTextBuilder.append("Menu Items (${result.menuItems.size}):\n")
-                        result.menuItems.forEachIndexed { index, item ->
-                            resultTextBuilder.append("${index + 1}. ${item.name}")
-                            if (item.price != null) {
-                                resultTextBuilder.append(" - ${item.price}")
+                                // Menu items
+                                resultTextBuilder.append("Menu Items (${menuResponse.menu_items.size}):\n")
+                                menuResponse.menu_items.forEachIndexed { index, item ->
+                                    resultTextBuilder.append("${index + 1}. ${item.name}")
+                                    if (item.price != null) {
+                                        resultTextBuilder.append(" - ${item.price}")
+                                    }
+                                    resultTextBuilder.append("\n")
+                                    if (item.description != null) {
+                                        resultTextBuilder.append("   ${item.description}\n")
+                                    }
+                                    if (item.category != null) {
+                                        resultTextBuilder.append("   Category: ${item.category}\n")
+                                    }
+                                }
+
+                                // Show results
+                                ocrResults.text = resultTextBuilder.toString()
+                                resultsCard.visibility = View.VISIBLE
+                                actionButtons.visibility = View.VISIBLE
+
+                                Toast.makeText(requireContext(), "OCR completed successfully!", Toast.LENGTH_SHORT).show()
+                            } else {
+                                ocrResults.text = "OCR Error: Processing failed"
+                                resultsCard.visibility = View.VISIBLE
+                                Toast.makeText(requireContext(), "OCR failed", Toast.LENGTH_SHORT).show()
                             }
-                            resultTextBuilder.append("\n")
-                            if (item.description != null) {
-                                resultTextBuilder.append("   ${item.description}\n")
-                            }
-                            if (item.category != null) {
-                                resultTextBuilder.append("   Category: ${item.category}\n")
-                            }
+                        } ?: run {
+                            ocrResults.text = "OCR Error: Empty response"
+                            resultsCard.visibility = View.VISIBLE
                         }
-
-                        // Show results
-                        ocrResults.text = resultTextBuilder.toString()
-                        resultsCard.visibility = View.VISIBLE
-                        actionButtons.visibility = View.VISIBLE
-
-                        Toast.makeText(requireContext(), "OCR completed successfully!", Toast.LENGTH_SHORT).show()
                     } else {
-                        ocrResults.text = "OCR Error:\n${result?.errorMessage ?: "Unknown error"}"
+                        ocrResults.text = "OCR Error: HTTP ${response?.code()} - ${response?.message()}"
                         resultsCard.visibility = View.VISIBLE
-                        Toast.makeText(requireContext(), "OCR failed", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), "OCR failed: ${response?.message()}", Toast.LENGTH_SHORT).show()
                     }
 
                 } catch (e: Exception) {
