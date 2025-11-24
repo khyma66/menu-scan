@@ -12,13 +12,13 @@ object AppConfig {
         
         // Get your anon/public key from: https://supabase.com/dashboard/project/jlfqzcaospvspmzbvbxd/settings/api
         // This is a PUBLIC key - safe to use in client apps
-        const val ANON_KEY = "YOUR_SUPABASE_ANON_KEY_HERE"
+        const val ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsZnF6Y2Fvc3B2c3BtemJ2YnhkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTM3MDMzNiwiZXhwIjoyMDc2OTQ2MzM2fQ.5xdkvyJSsza79Iz3kiASMEE22WhNbBktQD6QBb2UgBY"
     }
     
     // Render API Configuration
     object Render {
         // Render deployment URL - update this when you deploy to Render
-        const val BASE_URL = "https://your-app-name.onrender.com"
+        const val BASE_URL = "https://menu-ocr-f4mr.onrender.com"
         
         // API endpoints
         const val OCR_ENDPOINT = "/ocr/process"
