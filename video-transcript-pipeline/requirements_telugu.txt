@@ -1,0 +1,26 @@
+# Requirements for Telugu Video Transcription Pipeline
+# Note: Requires Python 3.10-3.13 (Python 3.14+ not supported by Whisper dependencies)
+
+# Core dependencies
+supabase>=2.0.0
+yt-dlp>=2023.12.30
+python-dotenv>=1.0.0
+
+# Whisper ASR
+# Install with: pip install openai-whisper
+# If installation fails due to Python version, use:
+# pip install git+https://github.com/openai/whisper.git
+openai-whisper>=20231117
+
+# FFmpeg (install separately: brew install ffmpeg)
+# Note: FFmpeg must be installed system-wide
+
+# LLM Enhancement (optional)
+openai>=1.0.0
+anthropic>=0.7.0
+
+# Audio processing (installed automatically with Whisper)
+# torch>=2.0.0
+# torchaudio>=2.0.0
+# numpy>=1.24.0
+
