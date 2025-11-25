@@ -246,10 +246,10 @@ class MenuOcrFragment : Fragment() {
                         bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, byteArrayOutputStream)
                         val imageBytes = byteArrayOutputStream.toByteArray()
 
-                        // Create multipart request
-                        val requestBody = okhttp3.RequestBody.create(okhttp3.MediaType.parse("image/jpeg"), imageBytes)
+                        // Create multipart request using modern extension functions
+                        val requestBody = imageBytes.toRequestBody("image/jpeg".toMediaType())
                         val imagePart = okhttp3.MultipartBody.Part.createFormData("image", "menu_image_$index.jpg", requestBody)
-                        val enhancementLevelBody = okhttp3.RequestBody.create(okhttp3.MediaType.parse("text/plain"), "high")
+                        val enhancementLevelBody = "high".toRequestBody("text/plain".toMediaType())
 
                         val response = apiService?.processEnhancedOcrUpload(imagePart, enhancementLevelBody)
 
@@ -278,34 +278,14 @@ class MenuOcrFragment : Fragment() {
                     }
                 }
 
-                // Build results
-                val resultTextBuilder = StringBuilder()
-                resultTextBuilder.append("Processing Method: Enhanced OCR with Qwen (${selectedBitmaps.size} images)\n")
-                resultTextBuilder.append("Total Processing Time: ${totalProcessingTime}ms\n\n")
-
-                // Raw text from all images
-                resultTextBuilder.append("Raw Extracted Text:\n${allRawText.toString()}\n\n")
-
-                // Combined menu items
-                resultTextBuilder.append("Combined Menu Items (${allMenuItems.size}):\n")
-                allMenuItems.forEachIndexed { index, item ->
-                    resultTextBuilder.append("${index + 1}. ${item.name}")
-                    if (item.price != null) {
-                        resultTextBuilder.append(" - ${item.price}")
-                    }
-                    resultTextBuilder.append("\n")
-                    if (item.description != null) {
-                        resultTextBuilder.append("   ${item.description}\n")
-                    }
-                    if (item.category != null) {
-                        resultTextBuilder.append("   Category: ${item.category}\n")
-                    }
+                // Navigate to results activity
+                val intent = android.content.Intent(requireContext(), OcrResultsActivity::class.java).apply {
+                    putExtra("menu_items", ArrayList(allMenuItems))
+                    putExtra("raw_text", allRawText.toString())
+                    putExtra("method", "Enhanced OCR with Qwen (${selectedBitmaps.size} images)")
+                    putExtra("processing_time", totalProcessingTime.toInt())
                 }
-
-                // Show results
-                ocrResults.text = resultTextBuilder.toString()
-                resultsCard.visibility = View.VISIBLE
-                actionButtons.visibility = View.VISIBLE
+                startActivity(intent)
 
                 Toast.makeText(requireContext(), "OCR completed for ${selectedBitmaps.size} images!", Toast.LENGTH_SHORT).show()
 

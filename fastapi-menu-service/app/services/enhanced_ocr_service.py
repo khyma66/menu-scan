@@ -40,7 +40,22 @@ class EnhancedOCRService:
         self.qwen_cooldown_period = 300  # 5 minutes cooldown after errors
         
         logger.info("Enhanced OCR Service initialized")
-    
+
+    async def process_image_with_fallback(self, image_data: bytes, enhancement_level: str = "high") -> Dict[str, Any]:
+        """
+        Process image with fallback to Qwen based on enhancement level
+
+        Args:
+            image_data: Raw image bytes
+            enhancement_level: "fast", "balanced", or "high" - determines if Qwen is used
+
+        Returns:
+            Dict containing OCR results and metadata
+        """
+        # Force Qwen usage for "high" enhancement level
+        use_qwen = enhancement_level == "high"
+        return await self.process_menu_image(image_data, use_qwen)
+
     async def process_menu_image(self, image_data: bytes, use_qwen_fallback: bool = True) -> Dict[str, Any]:
         """
         Process menu image with multiple OCR engines and intelligent fallbacks
