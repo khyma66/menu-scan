@@ -1,7 +1,6 @@
 package com.menuocr
 
 import android.content.pm.PackageManager
-import com.menuocr.BuildConfig
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
@@ -97,10 +96,10 @@ class MenuOcrFragment : Fragment() {
 
     private fun setupApiService() {
         // Use local backend for development/emulator, Render for production
-        val baseUrl = if (BuildConfig.DEBUG) {
-            "http://10.0.2.2:8000/"  // Emulator localhost
+        val baseUrl = if (requireContext().applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0) {
+            "http://10.0.2.2:8000/"  // Emulator localhost for debug builds
         } else {
-            AppConfig.Render.BASE_URL  // Production Render URL
+            AppConfig.Render.BASE_URL  // Production Render URL for release builds
         }
 
         val retrofit = Retrofit.Builder()
