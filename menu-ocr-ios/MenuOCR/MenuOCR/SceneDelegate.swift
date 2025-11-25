@@ -15,7 +15,31 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
         // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
-        guard let _ = (scene as? UIWindowScene) else { return }
+        guard let windowScene = (scene as? UIWindowScene) else { return }
+
+        // Create the window
+        window = UIWindow(windowScene: windowScene)
+
+        // Create tab bar controller
+        let tabBarController = UITabBarController()
+        tabBarController.tabBar.tintColor = UIColor(red: 1.0, green: 0.3, blue: 0.22, alpha: 1.0) // DoorDash orange
+
+        // Create view controllers for each tab
+        let restaurantDiscoveryVC = RestaurantDiscoveryViewController()
+        restaurantDiscoveryVC.tabBarItem = UITabBarItem(title: "🍽️ Discovery", image: UIImage(systemName: "fork.knife"), tag: 0)
+
+        let menuOCVC = MenuOCRViewController()
+        menuOCVC.tabBarItem = UITabBarItem(title: "📱 OCR", image: UIImage(systemName: "camera"), tag: 1)
+
+        let googleDriveVC = GoogleDriveViewController()
+        googleDriveVC.tabBarItem = UITabBarItem(title: "☁️ Drive", image: UIImage(systemName: "icloud"), tag: 2)
+
+        // Set view controllers
+        tabBarController.viewControllers = [restaurantDiscoveryVC, menuOCVC, googleDriveVC]
+
+        // Set root view controller
+        window?.rootViewController = tabBarController
+        window?.makeKeyAndVisible()
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {

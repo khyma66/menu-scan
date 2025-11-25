@@ -99,7 +99,10 @@
                         android:background="@drawable/button_primary"
                         android:text="📷 Capture"
                         android:textColor="@android:color/white"
-                        android:textSize="14sp" />
+                        android:textSize="14sp"
+                        android:minHeight="48dp"
+                        android:clickable="true"
+                        android:focusable="true" />
 
                     <Button
                         android:id="@+id/btn_select_gallery"
@@ -110,7 +113,10 @@
                         android:background="@drawable/button_secondary"
                         android:text="🖼️ Gallery"
                         android:textColor="@color/orange_500"
-                        android:textSize="14sp" />
+                        android:textSize="14sp"
+                        android:minHeight="48dp"
+                        android:clickable="true"
+                        android:focusable="true" />
 
                 </LinearLayout>
 
@@ -158,6 +164,9 @@
             android:textColor="@android:color/white"
             android:textSize="16sp"
             android:textStyle="bold"
+            android:minHeight="48dp"
+            android:clickable="true"
+            android:focusable="true"
             android:visibility="gone" />
 
         <!-- Loading Progress -->

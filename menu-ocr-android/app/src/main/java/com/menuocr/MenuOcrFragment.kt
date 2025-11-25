@@ -95,12 +95,8 @@ class MenuOcrFragment : Fragment() {
     }
 
     private fun setupApiService() {
-        // Use local backend for development/emulator, Render for production
-        val baseUrl = if (requireContext().applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0) {
-            "http://10.0.2.2:8000/"  // Emulator localhost for debug builds
-        } else {
-            AppConfig.Render.BASE_URL  // Production Render URL for release builds
-        }
+        // Always use local backend for testing - change to production URL when deploying
+        val baseUrl = "http://10.0.2.2:8000/"  // Emulator localhost
 
         val retrofit = Retrofit.Builder()
             .baseUrl(baseUrl)
