@@ -25,16 +25,16 @@ class MenuOcrFragment : Fragment() {
     private lateinit var connectionStatus: TextView
     private lateinit var btnCaptureImage: Button
     private lateinit var btnSelectGallery: Button
-    private lateinit var imagePreviewCard: androidx.cardview.widget.CardView
-    private lateinit var imagePreview: ImageView
-    private lateinit var imageStatus: TextView
+    private lateinit var imagesPreviewCard: androidx.cardview.widget.CardView
+    private lateinit var selectedImagesContainer: LinearLayout
+    private lateinit var btnAddMoreImages: Button
     private lateinit var btnProcessOcr: Button
     private lateinit var loadingProgress: LinearLayout
     private lateinit var resultsCard: androidx.cardview.widget.CardView
     private lateinit var ocrResults: TextView
     private lateinit var actionButtons: LinearLayout
 
-    private var selectedBitmap: Bitmap? = null
+    private var selectedBitmaps: MutableList<Bitmap> = mutableListOf()
     private var apiService: ApiService? = null
     private var enhancedOcrProcessor: EnhancedOcrProcessor? = null
     private val uiScope = CoroutineScope(Dispatchers.Main)
@@ -45,10 +45,11 @@ class MenuOcrFragment : Fragment() {
     ) { result ->
         if (result.resultCode == android.app.Activity.RESULT_OK) {
             result.data?.data?.let { uri ->
-                selectedBitmap = BitmapFactory.decodeStream(requireContext().contentResolver.openInputStream(uri))
-                showImagePreview()
+                val bitmap = BitmapFactory.decodeStream(requireContext().contentResolver.openInputStream(uri))
+                selectedBitmaps.add(bitmap)
+                showImagesPreview()
                 btnProcessOcr.visibility = View.VISIBLE
-                Toast.makeText(requireContext(), "Image selected successfully", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Image added successfully", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -79,9 +80,9 @@ class MenuOcrFragment : Fragment() {
         connectionStatus = view.findViewById(R.id.connection_status)
         btnCaptureImage = view.findViewById(R.id.btn_capture_image)
         btnSelectGallery = view.findViewById(R.id.btn_select_gallery)
-        imagePreviewCard = view.findViewById(R.id.image_preview_card)
-        imagePreview = view.findViewById(R.id.image_preview)
-        imageStatus = view.findViewById(R.id.image_status)
+        imagesPreviewCard = view.findViewById(R.id.images_preview_card)
+        selectedImagesContainer = view.findViewById(R.id.selected_images_container)
+        btnAddMoreImages = view.findViewById(R.id.btn_add_more_images)
         btnProcessOcr = view.findViewById(R.id.btn_process_ocr)
         loadingProgress = view.findViewById(R.id.loading_progress)
         resultsCard = view.findViewById(R.id.results_card)
@@ -123,8 +124,12 @@ class MenuOcrFragment : Fragment() {
             checkPermissionsAndPickImage(false)
         }
 
+        btnAddMoreImages.setOnClickListener {
+            checkPermissionsAndPickImage(false) // Default to gallery for adding more
+        }
+
         btnProcessOcr.setOnClickListener {
-            processImageWithEnhancedOCR()
+            processImagesWithEnhancedOCR()
         }
     }
 
@@ -167,11 +172,25 @@ class MenuOcrFragment : Fragment() {
         }
     }
 
-    private fun showImagePreview() {
-        selectedBitmap?.let { bitmap ->
-            imagePreview.setImageBitmap(bitmap)
-            imagePreviewCard.visibility = View.VISIBLE
-            imageStatus.text = "Image selected! Ready for OCR processing"
+    private fun showImagesPreview() {
+        if (selectedBitmaps.isNotEmpty()) {
+            selectedImagesContainer.removeAllViews()
+
+            selectedBitmaps.forEachIndexed { index, bitmap ->
+                val imageView = ImageView(requireContext()).apply {
+                    layoutParams = LinearLayout.LayoutParams(100, 100).apply {
+                        marginEnd = 8
+                    }
+                    setImageBitmap(bitmap)
+                    scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                    background = android.graphics.drawable.ColorDrawable(android.graphics.Color.LTGRAY)
+                    setPadding(4, 4, 4, 4)
+                }
+                selectedImagesContainer.addView(imageView)
+            }
+
+            imagesPreviewCard.visibility = View.VISIBLE
+            btnAddMoreImages.visibility = View.VISIBLE
         }
     }
 
@@ -199,8 +218,107 @@ class MenuOcrFragment : Fragment() {
         connectionStatus.text = message
     }
 
-    private fun processImageWithEnhancedOCR() {
-        selectedBitmap?.let { bitmap ->
+    private fun processImagesWithEnhancedOCR() {
+        if (selectedBitmaps.isEmpty()) {
+            Toast.makeText(requireContext(), "Please select at least one image first", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Show loading
+        loadingProgress.visibility = View.VISIBLE
+        btnProcessOcr.isEnabled = false
+        resultsCard.visibility = View.GONE
+        actionButtons.visibility = View.GONE
+
+        uiScope.launch {
+            try {
+                val allMenuItems = mutableListOf<MenuItem>()
+                val allRawText = StringBuilder()
+                var totalProcessingTime = 0L
+
+                // Process each image
+                selectedBitmaps.forEachIndexed { index, bitmap ->
+                    try {
+                        // Convert bitmap to base64
+                        val byteArrayOutputStream = ByteArrayOutputStream()
+                        bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, byteArrayOutputStream)
+                        val imageBytes = byteArrayOutputStream.toByteArray()
+
+                        // Create multipart request
+                        val requestBody = okhttp3.RequestBody.create("image/jpeg".toMediaType(), imageBytes)
+                        val imagePart = okhttp3.MultipartBody.Part.createFormData("image", "menu_image_$index.jpg", requestBody)
+                        val enhancementLevelBody = okhttp3.RequestBody.create("text/plain".toMediaType(), "high")
+
+                        val response = apiService?.processEnhancedOcrUpload(imagePart, enhancementLevelBody)
+
+                        if (response?.isSuccessful == true) {
+                            response.body()?.let { menuResponse ->
+                                if (menuResponse.success) {
+                                    // Add image separator
+                                    if (index > 0) allRawText.append("\n\n--- Image ${index + 1} ---\n\n")
+                                    allRawText.append(menuResponse.raw_text)
+
+                                    // Add menu items with image reference
+                                    menuResponse.menu_items.forEach { item ->
+                                        allMenuItems.add(item.copy(
+                                            name = "${item.name} (Image ${index + 1})"
+                                        ))
+                                    }
+
+                                    totalProcessingTime += menuResponse.processing_time_ms
+                                }
+                            }
+                        } else {
+                            android.util.Log.w("MenuOcrFragment", "Failed to process image $index: ${response?.message()}")
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("MenuOcrFragment", "Error processing image $index", e)
+                    }
+                }
+
+                // Build results
+                val resultTextBuilder = StringBuilder()
+                resultTextBuilder.append("Processing Method: Enhanced OCR with Qwen (${selectedBitmaps.size} images)\n")
+                resultTextBuilder.append("Total Processing Time: ${totalProcessingTime}ms\n\n")
+
+                // Raw text from all images
+                resultTextBuilder.append("Raw Extracted Text:\n${allRawText.toString()}\n\n")
+
+                // Combined menu items
+                resultTextBuilder.append("Combined Menu Items (${allMenuItems.size}):\n")
+                allMenuItems.forEachIndexed { index, item ->
+                    resultTextBuilder.append("${index + 1}. ${item.name}")
+                    if (item.price != null) {
+                        resultTextBuilder.append(" - ${item.price}")
+                    }
+                    resultTextBuilder.append("\n")
+                    if (item.description != null) {
+                        resultTextBuilder.append("   ${item.description}\n")
+                    }
+                    if (item.category != null) {
+                        resultTextBuilder.append("   Category: ${item.category}\n")
+                    }
+                }
+
+                // Show results
+                ocrResults.text = resultTextBuilder.toString()
+                resultsCard.visibility = View.VISIBLE
+                actionButtons.visibility = View.VISIBLE
+
+                Toast.makeText(requireContext(), "OCR completed for ${selectedBitmaps.size} images!", Toast.LENGTH_SHORT).show()
+
+            } catch (e: Exception) {
+                android.util.Log.e("MenuOcrFragment", "OCR processing failed", e)
+                ocrResults.text = "OCR Error: ${e.localizedMessage ?: e.message ?: "Unknown error"}"
+                resultsCard.visibility = View.VISIBLE
+                Toast.makeText(requireContext(), "Processing failed: ${e.localizedMessage ?: "Check connection"}", Toast.LENGTH_LONG).show()
+            } finally {
+                // Hide loading
+                loadingProgress.visibility = View.GONE
+                btnProcessOcr.isEnabled = true
+            }
+        }
+    }
             // Show loading
             loadingProgress.visibility = View.VISIBLE
             btnProcessOcr.isEnabled = false
@@ -220,8 +338,13 @@ class MenuOcrFragment : Fragment() {
                         language = "auto"
                     )
 
-                    // Call regular OCR endpoint
-                    val response = apiService?.processOcr(ocrRequest)
+                    // Call enhanced OCR endpoint using multipart upload
+                    val imageBytes = android.util.Base64.decode(ocrRequest.image_base64, android.util.Base64.DEFAULT)
+                    val requestBody = okhttp3.RequestBody.create("image/jpeg".toMediaType(), imageBytes)
+                    val imagePart = okhttp3.MultipartBody.Part.createFormData("image", "menu_image.jpg", requestBody)
+                    val enhancementLevelBody = okhttp3.RequestBody.create("text/plain".toMediaType(), "high")
+
+                    val response = apiService?.processEnhancedOcrUpload(imagePart, enhancementLevelBody)
 
                     val resultTextBuilder = StringBuilder()
 

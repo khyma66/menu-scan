@@ -124,32 +124,63 @@
 
         </androidx.cardview.widget.CardView>
 
-        <!-- Selected Image Preview -->
+        <!-- Selected Images Preview -->
         <androidx.cardview.widget.CardView
-            android:id="@+id/image_preview_card"
+            android:id="@+id/images_preview_card"
             android:layout_width="match_parent"
-            android:layout_height="200dp"
+            android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             android:elevation="4dp"
             android:visibility="gone"
             app:cardCornerRadius="12dp">
 
-            <ImageView
-                android:id="@+id/image_preview"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop" />
-
-            <TextView
-                android:id="@+id/image_status"
-                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:background="@drawable/status_badge"
-                android:padding="8dp"
-                android:text="Image selected! Ready for OCR processing"
-                android:textColor="@color/green_700"
-                android:textSize="12sp" />
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="Selected Images"
+                    android:textColor="@color/gray_900"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="120dp"
+                    android:layout_marginBottom="8dp"
+                    android:scrollbars="horizontal">
+
+                    <LinearLayout
+                        android:id="@+id/selected_images_container"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <!-- Images will be added here dynamically -->
+
+                    </LinearLayout>
+
+                </HorizontalScrollView>
+
+                <Button
+                    android:id="@+id/btn_add_more_images"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/button_secondary"
+                    android:text="+ Add More Images"
+                    android:textColor="@color/blue_500"
+                    android:textSize="12sp"
+                    android:minHeight="36dp"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+            </LinearLayout>
 
         </androidx.cardview.widget.CardView>
 
