@@ -178,10 +178,12 @@ class MenuOcrFragment : Fragment() {
                     val healthData = response.body()
                     updateConnectionStatus("✅ Backend connected - Ready to process")
                 } else {
-                    updateConnectionStatus("❌ Backend connection failed")
+                    updateConnectionStatus("⚠️ Backend not available - Check connection")
                 }
             } catch (e: Exception) {
-                updateConnectionStatus("❌ Connection error: ${e.message}")
+                updateConnectionStatus("⚠️ Connection error - Will retry when processing")
+                // Don't crash the app, just show warning
+                android.util.Log.w("MenuOcrFragment", "Backend connection failed: ${e.message}")
             }
         }
     }
@@ -265,9 +267,10 @@ class MenuOcrFragment : Fragment() {
                     }
 
                 } catch (e: Exception) {
-                    ocrResults.text = "OCR Error: ${e.message}"
+                    android.util.Log.e("MenuOcrFragment", "OCR processing failed", e)
+                    ocrResults.text = "OCR Error: ${e.localizedMessage ?: e.message ?: "Unknown error"}"
                     resultsCard.visibility = View.VISIBLE
-                    Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), "Processing failed: ${e.localizedMessage ?: "Check connection"}", Toast.LENGTH_LONG).show()
                 } finally {
                     // Hide loading
                     loadingProgress.visibility = View.GONE

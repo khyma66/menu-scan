@@ -24,9 +24,30 @@ struct OcrRequest: Codable {
     let language: String = "en"
 }
 
+struct MenuItem: Codable, Identifiable {
+    let id: String?
+    let name: String
+    let price: Double?
+    let description: String?
+    let category: String?
+
+    init(name: String, price: Double? = nil, description: String? = nil, category: String? = nil) {
+        self.id = UUID().uuidString
+        self.name = name
+        self.price = price
+        self.description = description
+        self.category = category
+    }
+}
+
 struct MenuResponse: Codable {
-    let text: String
-    let language: String
+    let success: Bool
+    let menu_items: [MenuItem]
+    let raw_text: String
+    let processing_time_ms: Int
+    let enhanced: Bool
+    let cached: Bool
+    let metadata: [String: String]?
 }
 
 struct DishRequest: Codable {
