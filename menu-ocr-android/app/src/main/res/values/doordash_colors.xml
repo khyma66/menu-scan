@@ -67,6 +67,28 @@
     <color name="purple_700">#7C3AED</color>
     <color name="purple_800">#6B21A8</color>
     <color name="purple_900">#581C87</color>
+
+    <!-- Teal Colors -->
+    <color name="teal_100">#E0F2F1</color>
+    <color name="teal_200">#B2DFDB</color>
+    <color name="teal_300">#80CBC4</color>
+    <color name="teal_400">#4DB6AC</color>
+    <color name="teal_500">#26A69A</color>
+    <color name="teal_600">#009688</color>
+    <color name="teal_700">#00897B</color>
+    <color name="teal_800">#00796B</color>
+    <color name="teal_900">#00695C</color>
+
+    <!-- Brown Colors -->
+    <color name="brown_100">#EFEBE9</color>
+    <color name="brown_200">#D7CCC8</color>
+    <color name="brown_300">#BCAAA4</color>
+    <color name="brown_400">#A1887F</color>
+    <color name="brown_500">#8D6E63</color>
+    <color name="brown_600">#795548</color>
+    <color name="brown_700">#5D4037</color>
+    <color name="brown_800">#4E342E</color>
+    <color name="brown_900">#3E2723</color>
     
     <!-- Status Colors -->
     <color name="success_bg">#D1FAE5</color>

@@ -155,6 +155,7 @@
 
         <!-- Restaurant Cards -->
         <LinearLayout
+            android:id="@+id/restaurants_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
