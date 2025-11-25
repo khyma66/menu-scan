@@ -98,8 +98,15 @@ class MenuOcrFragment : Fragment() {
         // Always use local backend for testing - change to production URL when deploying
         val baseUrl = "http://10.0.2.2:8000/"  // Emulator localhost
 
+        val okHttpClient = okhttp3.OkHttpClient.Builder()
+            .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
+
         val retrofit = Retrofit.Builder()
             .baseUrl(baseUrl)
+            .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 
