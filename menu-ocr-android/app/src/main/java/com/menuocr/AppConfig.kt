@@ -39,7 +39,7 @@ object AppConfig {
     // Stripe Configuration
     object Stripe {
         // Replace with your actual Stripe publishable key
-        const val PUBLISHABLE_KEY = "pk_test_your_stripe_publishable_key"
+        const val PUBLISHABLE_KEY = "pk_test_51SWk8N1HFXSHAnudIASPucwXm6GPQdWk52CfSUXVC71R5rVLjQ3TFySSfJr6NNg1azeJ54PpVAhJog0QXdE2vPjI00tTJMuDZD"
     }
     
     // Feature Flags
