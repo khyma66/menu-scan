@@ -16,6 +16,8 @@ import com.github.dhaval2404.imagepicker.ImagePicker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.ByteArrayOutputStream
@@ -245,9 +247,9 @@ class MenuOcrFragment : Fragment() {
                         val imageBytes = byteArrayOutputStream.toByteArray()
 
                         // Create multipart request
-                        val requestBody = okhttp3.RequestBody.create("image/jpeg".toMediaType(), imageBytes)
+                        val requestBody = okhttp3.RequestBody.create(okhttp3.MediaType.parse("image/jpeg"), imageBytes)
                         val imagePart = okhttp3.MultipartBody.Part.createFormData("image", "menu_image_$index.jpg", requestBody)
-                        val enhancementLevelBody = okhttp3.RequestBody.create("text/plain".toMediaType(), "high")
+                        val enhancementLevelBody = okhttp3.RequestBody.create(okhttp3.MediaType.parse("text/plain"), "high")
 
                         val response = apiService?.processEnhancedOcrUpload(imagePart, enhancementLevelBody)
 
