@@ -1,0 +1,52 @@
+XCODE AUTO-SYNC SETUP INSTRUCTIONS
+===================================
+
+Follow these steps to integrate auto-sync with Xcode:
+
+1. OPEN XCODE PROJECT:
+   - Open menu-ocr-ios/MenuOCR.xcworkspace in Xcode
+   - Select the "MenuOCR" project in the Project Navigator
+
+2. ADD PRE-BUILD SCRIPT:
+   - Select the "MenuOCR" target
+   - Go to "Build Phases" tab
+   - Click "+" → "New Run Script Phase"
+   - Move it to the top (before "Compile Sources")
+   - Name it: "Auto Sync with Repository"
+   - Add this script:
+
+   # Auto-sync with latest repository changes
+   export AUTO_SYNC_XCODE=true
+   "${PROJECT_DIR}/auto_sync_xcode.sh" --quiet
+
+3. SET ENVIRONMENT VARIABLE:
+   - In Xcode menu: Product → Scheme → Edit Scheme
+   - Select "Build" on the left
+   - Click "Pre-actions"
+   - Click "+" to add a new pre-action
+   - Select your target and build configuration
+   - Add environment variable:
+     Name: AUTO_SYNC_XCODE
+     Value: true
+
+4. TEST THE SETUP:
+   - Make a small change to any file
+   - Commit and push to repository
+   - In Xcode: Product → Clean Build Folder
+   - Then: Product → Build
+   - Check console for sync messages
+
+5. VERIFY WORKING:
+   - Look for these messages in Xcode console:
+     🔄 Auto-syncing Xcode project...
+     ✅ Xcode project auto-synced
+
+TROUBLESHOOTING:
+- If sync fails, check Xcode console for error messages
+- Ensure git repository is properly configured
+- Make sure all scripts are executable: chmod +x *.sh
+- Check that you have push/pull permissions to the repository
+
+ALTERNATIVE MANUAL SYNC:
+- Run: ./sync_xcode.sh
+- This will sync manually with verbose output
