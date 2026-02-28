@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ollama Model Manager</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+            --accent: #38bdf8;
+            --success: #22c55e;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        h1 { font-size: 1.5rem; margin-bottom: 1.5rem; color: var(--accent); }
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #64748b; }
+        .dot.online { background: var(--success); }
+        
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            background: #334155;
+            color: white;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            cursor: pointer;
+        }
+        
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.9; }
+        
+        .models-list {
+            margin-top: 1.5rem;
+        }
+        .model-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem;
+            border-bottom: 1px solid #334155;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Ollama Model Manager</h1>
+        <div class="status">
+            <div id="status-dot" class="dot"></div>
+            <span id="status-text">Checking Ollama...</span>
+        </div>
+
+        <label for="active-model">Select Model in UI:</label>
+        <select id="active-model">
+            <option value="loading">Loading models...</option>
+        </select>
+
+        <button onclick="refreshModels()">Refresh Model List</button>
+
+        <div class="models-list" id="models-container">
+            <!-- Models will be listed here -->
+        </div>
+    </div>
+
+    <script>
+        async function checkStatus() {
+            try {
+                const response = await fetch('http://localhost:11434/api/tags');
+                const data = await response.json();
+                document.getElementById('status-dot').classList.add('online');
+                document.getElementById('status-text').innerText = 'Ollama Online';
+                updateModelSelect(data.models);
+            } catch (e) {
+                document.getElementById('status-text').innerText = 'Ollama Offline (Check port 11434)';
+            }
+        }
+
+        function updateModelSelect(models) {
+            const select = document.getElementById('active-model');
+            const container = document.getElementById('models-container');
+            select.innerHTML = '';
+            container.innerHTML = '<h3>Available Local Models:</h3>';
+            
+            models.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.name;
+                opt.innerText = m.name;
+                select.appendChild(opt);
+
+                const item = document.createElement('div');
+                item.className = 'model-item';
+                item.innerHTML = `<span>${m.name}</span> <span style="color:#64748b">${(m.size/1e9).toFixed(1)}GB</span>`;
+                container.appendChild(item);
+            });
+        }
+
+        function refreshModels() {
+            checkStatus();
+        }
+
+        checkStatus();
+        setInterval(checkStatus, 5000);
+    </script>
+</body>
+</html>

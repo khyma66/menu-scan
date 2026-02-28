@@ -1,48 +1,85 @@
 package com.menuocr
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.SeekBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import org.maplibre.android.MapLibre
+import org.maplibre.android.annotations.MarkerOptions
+import org.maplibre.android.camera.CameraPosition
+import org.maplibre.android.camera.CameraUpdateFactory
+import org.maplibre.android.geometry.LatLng
+import org.maplibre.android.maps.MapView
+import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.OnMapReadyCallback
 
-data class Restaurant(
-    val name: String,
-    val cuisine: String,
-    val distance: Double,
-    val rating: Double,
-    val deliveryTime: String,
-    val deliveryFee: Double,
-    val tags: List<String>
-)
+/**
+ * Restaurant Discovery Fragment
+ * 
+ * Uses Android Location APIs to get user location and Overpass API
+ * to query nearby restaurants from OpenStreetMap data.
+ * 
+ * DoorDash-like UI with distance slider, map display, and dynamic restaurant cards.
+ */
+class RestaurantDiscoveryFragment : Fragment(), OnMapReadyCallback {
 
-class RestaurantDiscoveryFragment : Fragment() {
-
+    // UI Components
     private lateinit var cuisineContainer: LinearLayout
     private lateinit var restaurantsContainer: LinearLayout
+    private lateinit var searchBar: EditText
+    private lateinit var locationLoadingOverlay: View
+    private lateinit var locationStatusBar: LinearLayout
+    private lateinit var locationStatusText: TextView
+    private lateinit var enableLocationBtn: Button
+    private lateinit var loadingContainer: View
+    private lateinit var emptyState: View
+    private lateinit var statsRestaurantsCount: TextView
+    private lateinit var statsRadius: TextView
+    private lateinit var statsAccuracy: TextView
+    private lateinit var distanceSeekBar: SeekBar
+    private lateinit var distanceValueText: TextView
+    private lateinit var refreshBtn: Button
+    private lateinit var deliveryLocationText: TextView
+    private lateinit var deliveryAddressText: TextView
+    private lateinit var mapView: MapView
+    
+    // Map
+    private var mapLibreMap: MapLibreMap? = null
+
+    // Services
+    private lateinit var locationService: LocationService
+    private lateinit var overpassApiService: OverpassApiService
+    private var apiService: ApiService? = null
+
+    // State
     private var selectedCuisine: String? = null
+    private var searchQuery: String = ""
+    private var currentUserLocation: UserLocation? = null
+    private var allRestaurants: List<OverpassRestaurant> = emptyList()
+    private var hasLocationPermission = false
+    private var currentRadiusMiles = 10
 
-    private val allRestaurants = listOf(
-        Restaurant("Tony's Pizzeria", "Italian", 0.8, 4.8, "25-35 min", 2.99, listOf("Free delivery", "Fast delivery")),
-        Restaurant("El Corazón Mexican", "Mexican", 1.2, 4.9, "20-30 min", 3.49, listOf("Popular", "Spicy")),
-        Restaurant("Spice Route Indian", "Indian", 0.5, 4.7, "30-40 min", 4.99, listOf("Authentic", "Vegetarian")),
-        Restaurant("Sakura Japanese", "Japanese", 2.1, 4.6, "35-45 min", 3.99, listOf("Sushi", "Fresh")),
-        Restaurant("Golden Dragon Chinese", "Chinese", 1.8, 4.5, "25-35 min", 2.49, listOf("Fast delivery", "Popular")),
-        Restaurant("Mediterranean Breeze", "Mediterranean", 0.9, 4.8, "20-30 min", 3.99, listOf("Healthy", "Fresh")),
-        Restaurant("Burger Haven", "American", 1.5, 4.4, "15-25 min", 1.99, listOf("Quick", "Burgers")),
-        Restaurant("Taco Fiesta", "Mexican", 0.7, 4.7, "15-25 min", 2.49, listOf("Authentic", "Fresh")),
-        Restaurant("Curry Palace", "Indian", 1.3, 4.9, "40-50 min", 5.99, listOf("Premium", "Spicy")),
-        Restaurant("Pasta Bella", "Italian", 2.0, 4.6, "30-40 min", 3.49, listOf("Fresh pasta", "Traditional"))
-    )
+    // Cuisines for filtering (extracted from data)
+    private val availableCuisines = mutableSetOf<String>()
 
-    private val cuisines = listOf(
-        "All", "Italian", "Mexican", "Indian", "Japanese", "Chinese", "Mediterranean", "American"
-    )
+    companion object {
+        private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
+        private const val METERS_PER_MILE = 1609.34
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -55,17 +92,362 @@ class RestaurantDiscoveryFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Initialize services
+        locationService = LocationService(requireContext())
+        overpassApiService = OverpassApiService()
+        apiService = ApiClient.getApiService()
+
+        // Initialize UI components
+        initializeViews(view)
+        setupMap(savedInstanceState)
+        setupSearchBar()
+        setupDistanceSelector()
+        setupRefreshButton()
+        loadDiscoveryPreferences()
+        checkLocationPermissions()
+    }
+
+    private fun loadDiscoveryPreferences() {
+        lifecycleScope.launch {
+            try {
+                val response = apiService?.getDiscoveryPreferences()
+                val body = if (response?.isSuccessful == true) response.body() else null
+                if (body != null) {
+                    currentRadiusMiles = body.search_radius_miles.coerceIn(1, 20)
+                    selectedCuisine = body.selected_cuisines.firstOrNull()?.takeIf { it.isNotBlank() }
+                    distanceSeekBar.progress = currentRadiusMiles - 1
+                    updateDistanceUi()
+                }
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    private fun persistDiscoveryPreferences() {
+        lifecycleScope.launch {
+            try {
+                val location = currentUserLocation
+                apiService?.updateDiscoveryPreferences(
+                    DiscoveryPreferencesRequest(
+                        search_radius_miles = currentRadiusMiles,
+                        selected_cuisines = selectedCuisine?.let { listOf(it) } ?: emptyList(),
+                        location_label = deliveryAddressText.text?.toString()?.takeIf { it.isNotBlank() },
+                        latitude = location?.latitude,
+                        longitude = location?.longitude,
+                    )
+                )
+            } catch (_: Exception) {
+            }
+        }
+    }
+    
+    private fun setupMap(savedInstanceState: Bundle?) {
+        // Get the MapView
+        mapView = view?.findViewById(R.id.map_view) ?: return
+        mapView.onCreate(savedInstanceState)
+        mapView.getMapAsync(this)
+    }
+    
+    override fun onMapReady(map: MapLibreMap) {
+        mapLibreMap = map
+        
+        // Configure map with OSM style
+        map.setStyle(AppConfig.OSM.MAP_STYLE_URL) { style ->
+            // Style loaded
+            android.util.Log.d("RestaurantDiscovery", "Map style loaded")
+        }
+        
+        // Set default camera position
+        map.cameraPosition = CameraPosition.Builder()
+            .zoom(12.0)
+            .build()
+            
+        // If we already have location, move camera
+        currentUserLocation?.let { location ->
+            moveMapCamera(location.latitude, location.longitude)
+        }
+    }
+    
+    private fun moveMapCamera(lat: Double, lon: Double, zoom: Double = 13.0) {
+        mapLibreMap?.moveCamera(
+            CameraUpdateFactory.newLatLngZoom(LatLng(lat, lon), zoom)
+        )
+    }
+    
+    private fun addRestaurantMarkers(restaurants: List<OverpassRestaurant>) {
+        mapLibreMap?.clear()
+        
+        // Add user location marker
+        currentUserLocation?.let { location ->
+            mapLibreMap?.addMarker(
+                MarkerOptions()
+                    .position(LatLng(location.latitude, location.longitude))
+                    .title("Your Location")
+                    .snippet("You are here")
+            )
+        }
+        
+        // Add restaurant markers
+        restaurants.forEach { restaurant ->
+            mapLibreMap?.addMarker(
+                MarkerOptions()
+                    .position(LatLng(restaurant.latitude, restaurant.longitude))
+                    .title(restaurant.name)
+                    .snippet(restaurant.getCuisineDisplayName())
+            )
+        }
+    }
+
+    private fun initializeViews(view: View) {
         cuisineContainer = view.findViewById(R.id.cuisine_categories)
         restaurantsContainer = view.findViewById(R.id.restaurants_container)
+        searchBar = view.findViewById(R.id.search_bar)
+        locationLoadingOverlay = view.findViewById(R.id.location_loading_overlay)
+        locationStatusBar = view.findViewById(R.id.location_status_bar)
+        locationStatusText = view.findViewById(R.id.location_status_text)
+        enableLocationBtn = view.findViewById(R.id.enable_location_btn)
+        loadingContainer = view.findViewById(R.id.loading_container)
+        emptyState = view.findViewById(R.id.empty_state)
+        statsRestaurantsCount = view.findViewById(R.id.stats_restaurants_count)
+        statsRadius = view.findViewById(R.id.stats_radius)
+        statsAccuracy = view.findViewById(R.id.stats_accuracy)
+        distanceSeekBar = view.findViewById(R.id.distance_seekbar)
+        distanceValueText = view.findViewById(R.id.distance_value_text)
+        refreshBtn = view.findViewById(R.id.refresh_btn)
+        deliveryLocationText = view.findViewById(R.id.delivery_location_text)
+        deliveryAddressText = view.findViewById(R.id.delivery_address_text)
+    }
 
+    private fun setupDistanceSelector() {
+        // SeekBar: 1-20 miles (progress 0-19)
+        distanceSeekBar.max = 19
+        distanceSeekBar.progress = currentRadiusMiles - 1
+        updateDistanceUi()
+
+        distanceSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                currentRadiusMiles = progress + 1
+                updateDistanceUi()
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) = Unit
+
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                if (hasLocationPermission && currentUserLocation != null) {
+                    fetchRestaurants()
+                }
+                persistDiscoveryPreferences()
+            }
+        })
+    }
+
+    private fun updateDistanceUi() {
+        val radiusText = "$currentRadiusMiles mi"
+        distanceValueText.text = radiusText
+        statsRadius.text = radiusText
+    }
+
+    private fun setupSearchBar() {
+        searchBar.setOnEditorActionListener { _, _, _ ->
+            searchQuery = searchBar.text.toString().trim()
+            filterAndDisplayRestaurants()
+            true
+        }
+    }
+
+    private fun setupRefreshButton() {
+        refreshBtn.setOnClickListener {
+            if (hasLocationPermission) {
+                fetchUserLocationAndRestaurants()
+            } else {
+                requestLocationPermissions()
+            }
+        }
+    }
+
+    private fun checkLocationPermissions() {
+        hasLocationPermission = locationService.hasLocationPermissions()
+        
+        if (hasLocationPermission) {
+            showLocationEnabled()
+            fetchUserLocationAndRestaurants()
+        } else {
+            showLocationDisabled()
+        }
+    }
+
+    private fun showLocationDisabled() {
+        locationStatusBar.visibility = View.VISIBLE
+        locationStatusText.text = "Location permission required to find nearby restaurants"
+        enableLocationBtn.visibility = View.VISIBLE
+        enableLocationBtn.setOnClickListener {
+            requestLocationPermissions()
+        }
+        
+        // Show empty state
+        restaurantsContainer.removeAllViews()
+        emptyState.visibility = View.VISIBLE
+        statsRestaurantsCount.text = "--"
+        statsAccuracy.text = "--"
+        deliveryAddressText.text = "Enable location to continue"
+    }
+
+    private fun showLocationEnabled() {
+        locationStatusBar.visibility = View.GONE
+        enableLocationBtn.visibility = View.GONE
+    }
+
+    private fun requestLocationPermissions() {
+        requestPermissions(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ),
+            LOCATION_PERMISSION_REQUEST_CODE
+        )
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            hasLocationPermission = grantResults.isNotEmpty() && 
+                grantResults.any { it == PackageManager.PERMISSION_GRANTED }
+            
+            if (hasLocationPermission) {
+                showLocationEnabled()
+                fetchUserLocationAndRestaurants()
+            } else {
+                showLocationDisabled()
+                Toast.makeText(requireContext(), "Location permission denied.", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun fetchUserLocationAndRestaurants() {
+        locationLoadingOverlay.visibility = View.VISIBLE
+        
+        lifecycleScope.launch {
+            try {
+                val location = locationService.getCurrentLocation()
+                
+                if (location != null) {
+                    currentUserLocation = UserLocation.fromLocation(location)
+                    showLocationEnabled()
+                    updateLocationUi()
+                    fetchRestaurants()
+                } else {
+                    // Fallback to last known location
+                    val lastLocation = locationService.getLastKnownLocation()
+                    if (lastLocation != null) {
+                        currentUserLocation = UserLocation.fromLocation(lastLocation)
+                        updateLocationUi()
+                        fetchRestaurants()
+                    } else {
+                        showLocationDisabled()
+                        emptyState.visibility = View.VISIBLE
+                        restaurantsContainer.visibility = View.GONE
+                        Toast.makeText(requireContext(), "Could not get current location.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                Toast.makeText(
+                    requireContext(),
+                    "Location error: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
+                showLocationDisabled()
+                emptyState.visibility = View.VISIBLE
+                restaurantsContainer.visibility = View.GONE
+            } finally {
+                locationLoadingOverlay.visibility = View.GONE
+            }
+        }
+    }
+    
+    private fun updateLocationUi() {
+        val location = currentUserLocation ?: return
+        // Location display removed - just update stats
+    }
+
+    private fun fetchRestaurants() {
+        val location = currentUserLocation ?: return
+        
+        loadingContainer.visibility = View.VISIBLE
+        emptyState.visibility = View.GONE
+        restaurantsContainer.visibility = View.GONE
+        
+        lifecycleScope.launch {
+            val result = overpassApiService.queryRestaurants(
+                latitude = location.latitude,
+                longitude = location.longitude,
+                radius = (currentRadiusMiles * METERS_PER_MILE).toInt()
+            )
+            
+            loadingContainer.visibility = View.GONE
+            
+            result.fold(
+                onSuccess = { restaurants ->
+                    allRestaurants = restaurants.sortedBy { 
+                        it.distanceFrom(location.latitude, location.longitude) 
+                    }
+                    
+                    // Update stats
+                    statsRestaurantsCount.text = allRestaurants.size.toString()
+                    location.accuracy?.let { 
+                        statsAccuracy.text = String.format("%.0f", it)
+                    } ?: run {
+                        statsAccuracy.text = "--"
+                    }
+                    
+                    // Move map camera to user location
+                    moveMapCamera(location.latitude, location.longitude)
+                    
+                    // Add markers to map
+                    addRestaurantMarkers(allRestaurants)
+                    
+                    // Extract cuisines
+                    extractCuisines()
+                    
+                    // Display restaurants
+                    filterAndDisplayRestaurants()
+                },
+                onFailure = { error ->
+                    Toast.makeText(
+                        requireContext(),
+                        "Failed to fetch restaurants: ${error.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    emptyState.visibility = View.VISIBLE
+                }
+            )
+        }
+    }
+
+    private fun extractCuisines() {
+        availableCuisines.clear()
+        availableCuisines.add("All")
+        
+        allRestaurants.forEach { restaurant ->
+            if (restaurant.cuisine.isNotEmpty() && restaurant.cuisine != "Unknown") {
+                // Handle multiple cuisines (semicolon-separated in OSM)
+                restaurant.cuisine.split(";").forEach { cuisine ->
+                    availableCuisines.add(cuisine.trim().lowercase().replaceFirstChar { it.uppercase() })
+                }
+            }
+        }
+        
         setupCuisineButtons()
-        displayRestaurants(allRestaurants)
     }
 
     private fun setupCuisineButtons() {
         cuisineContainer.removeAllViews()
 
-        cuisines.forEach { cuisine ->
+        availableCuisines.take(10).forEach { cuisine ->
             val button = createCuisineButton(cuisine)
             cuisineContainer.addView(button)
         }
@@ -105,7 +487,7 @@ class RestaurantDiscoveryFragment : Fragment() {
         // Update button states
         for (i in 0 until cuisineContainer.childCount) {
             val button = cuisineContainer.getChildAt(i) as Button
-            val buttonCuisine = cuisines[i]
+            val buttonCuisine = availableCuisines.elementAtOrNull(i) ?: continue
 
             if (buttonCuisine == cuisine) {
                 button.setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
@@ -117,17 +499,36 @@ class RestaurantDiscoveryFragment : Fragment() {
         }
 
         // Filter and display restaurants
-        val filteredRestaurants = if (selectedCuisine == null) {
-            allRestaurants
-        } else {
-            allRestaurants.filter { it.cuisine == selectedCuisine }
-        }.sortedBy { it.distance }
-
-        displayRestaurants(filteredRestaurants)
+        filterAndDisplayRestaurants()
+        persistDiscoveryPreferences()
     }
 
-    private fun displayRestaurants(restaurants: List<Restaurant>) {
+    private fun filterAndDisplayRestaurants() {
+        val location = currentUserLocation ?: return
+        
+        val filtered = allRestaurants.filter { restaurant ->
+            val matchesCuisine = selectedCuisine == null || 
+                restaurant.cuisine.contains(selectedCuisine!!, ignoreCase = true)
+            val matchesSearch = searchQuery.isEmpty() ||
+                    restaurant.name.contains(searchQuery, ignoreCase = true) ||
+                    restaurant.cuisine.contains(searchQuery, ignoreCase = true)
+            matchesCuisine && matchesSearch
+        }.sortedBy { it.distanceFrom(location.latitude, location.longitude) }
+
+        displayRestaurants(filtered)
+    }
+
+    private fun displayRestaurants(restaurants: List<OverpassRestaurant>) {
         restaurantsContainer.removeAllViews()
+
+        if (restaurants.isEmpty()) {
+            emptyState.visibility = View.VISIBLE
+            restaurantsContainer.visibility = View.GONE
+            return
+        }
+
+        emptyState.visibility = View.GONE
+        restaurantsContainer.visibility = View.VISIBLE
 
         restaurants.forEach { restaurant ->
             val card = createRestaurantCard(restaurant)
@@ -135,7 +536,16 @@ class RestaurantDiscoveryFragment : Fragment() {
         }
     }
 
-    private fun createRestaurantCard(restaurant: Restaurant): CardView {
+    private fun createRestaurantCard(restaurant: OverpassRestaurant): CardView {
+        val location = currentUserLocation!!
+        val distanceKm = restaurant.distanceFrom(location.latitude, location.longitude)
+        val distanceMiles = distanceKm * 0.621371
+        val distanceText = if (distanceMiles < 0.1) {
+            "${String.format("%.0f", distanceMiles * 5280)} ft"
+        } else {
+            "${String.format("%.1f", distanceMiles)} mi"
+        }
+
         val card = CardView(requireContext()).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -145,6 +555,7 @@ class RestaurantDiscoveryFragment : Fragment() {
             }
             radius = 12f
             cardElevation = 4f
+            setCardBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.white))
         }
 
         val cardLayout = LinearLayout(requireContext()).apply {
@@ -177,8 +588,9 @@ class RestaurantDiscoveryFragment : Fragment() {
             setTextColor(ContextCompat.getColor(requireContext(), R.color.gray_900))
         }
 
+        val cuisineDisplayName = restaurant.getCuisineDisplayName()
         val detailsText = TextView(requireContext()).apply {
-            text = "${restaurant.cuisine} • ${restaurant.distance} miles • ${restaurant.rating}★"
+            text = "$cuisineDisplayName • $distanceText"
             textSize = 12f
             setTextColor(ContextCompat.getColor(requireContext(), R.color.gray_600))
         }
@@ -189,7 +601,7 @@ class RestaurantDiscoveryFragment : Fragment() {
             setPadding(0, 4, 0, 0)
         }
 
-        restaurant.tags.take(2).forEach { tag ->
+        restaurant.tags.take(3).forEach { tag ->
             val tagText = TextView(requireContext()).apply {
                 text = tag
                 textSize = 10f
@@ -210,8 +622,8 @@ class RestaurantDiscoveryFragment : Fragment() {
         contentLayout.addView(detailsText)
         contentLayout.addView(tagsLayout)
 
-        // Delivery info
-        val deliveryLayout = LinearLayout(requireContext()).apply {
+        // Info layout
+        val infoLayout = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -221,75 +633,120 @@ class RestaurantDiscoveryFragment : Fragment() {
             }
         }
 
-        val timeText = TextView(requireContext()).apply {
-            text = restaurant.deliveryTime
-            textSize = 12f
-            setTextColor(ContextCompat.getColor(requireContext(), R.color.gray_600))
-        }
-
-        val feeText = TextView(requireContext()).apply {
-            text = "$${String.format("%.2f", restaurant.deliveryFee)} delivery"
-            textSize = 12f
+        // Show distance prominently
+        val distanceView = TextView(requireContext()).apply {
+            text = distanceText
+            textSize = 14f
+            setTextColor(ContextCompat.getColor(requireContext(), R.color.orange_500))
             setTypeface(null, android.graphics.Typeface.BOLD)
-            setTextColor(ContextCompat.getColor(requireContext(), R.color.green_600))
         }
+        infoLayout.addView(distanceView)
 
-        deliveryLayout.addView(timeText)
-        deliveryLayout.addView(feeText)
+        if (restaurant.delivery) {
+            val deliveryText = TextView(requireContext()).apply {
+                text = "Delivery"
+                textSize = 10f
+                setTextColor(ContextCompat.getColor(requireContext(), R.color.green_600))
+            }
+            infoLayout.addView(deliveryText)
+        } else if (restaurant.takeaway) {
+            val takeawayText = TextView(requireContext()).apply {
+                text = "Takeaway"
+                textSize = 10f
+                setTextColor(ContextCompat.getColor(requireContext(), R.color.blue_600))
+            }
+            infoLayout.addView(takeawayText)
+        }
 
         cardLayout.addView(iconView)
         cardLayout.addView(contentLayout)
-        cardLayout.addView(deliveryLayout)
+        cardLayout.addView(infoLayout)
 
         card.addView(cardLayout)
+
+        // Add click listener
+        card.setOnClickListener {
+            showRestaurantDetails(restaurant)
+        }
+
         return card
+    }
+
+    private fun showRestaurantDetails(restaurant: OverpassRestaurant) {
+        val message = buildString {
+            append(restaurant.name)
+            restaurant.address?.let { append("\n$it") }
+            restaurant.phone?.let { append("\n📞 $it") }
+            restaurant.website?.let { append("\n🌐 $it") }
+            restaurant.openingHours?.let { append("\n🕐 $it") }
+        }
+        
+        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
     }
 
     private fun getCuisineIconBackground(cuisine: String): Int {
         return when (cuisine.lowercase()) {
-            "italian" -> R.drawable.pizza_icon_background
-            "mexican" -> R.drawable.mexican_icon_background
+            "pizza", "italian" -> R.drawable.pizza_icon_background
+            "mexican", "tacos" -> R.drawable.mexican_icon_background
             else -> R.drawable.pizza_icon_background
         }
     }
 
     private fun getTagTextColor(tag: String): Int {
         return when (tag.lowercase()) {
-            "free delivery" -> ContextCompat.getColor(requireContext(), R.color.green_700)
-            "fast delivery" -> ContextCompat.getColor(requireContext(), R.color.blue_700)
-            "popular" -> ContextCompat.getColor(requireContext(), R.color.orange_700)
-            "spicy" -> ContextCompat.getColor(requireContext(), R.color.red_700)
-            "authentic" -> ContextCompat.getColor(requireContext(), R.color.purple_700)
-            "vegetarian" -> ContextCompat.getColor(requireContext(), R.color.green_700)
-            "sushi" -> ContextCompat.getColor(requireContext(), R.color.blue_700)
-            "fresh" -> ContextCompat.getColor(requireContext(), R.color.teal_700)
-            "healthy" -> ContextCompat.getColor(requireContext(), R.color.green_700)
-            "quick" -> ContextCompat.getColor(requireContext(), R.color.orange_700)
-            "burgers" -> ContextCompat.getColor(requireContext(), R.color.red_700)
-            "premium" -> ContextCompat.getColor(requireContext(), R.color.purple_700)
-            "fresh pasta" -> ContextCompat.getColor(requireContext(), R.color.blue_700)
-            "traditional" -> ContextCompat.getColor(requireContext(), R.color.brown_700)
+            "takeaway" -> ContextCompat.getColor(requireContext(), R.color.green_700)
+            "delivery" -> ContextCompat.getColor(requireContext(), R.color.blue_700)
+            "wheelchair" -> ContextCompat.getColor(requireContext(), R.color.purple_700)
+            "outdoor seating" -> ContextCompat.getColor(requireContext(), R.color.teal_700)
+            "wifi" -> ContextCompat.getColor(requireContext(), R.color.blue_700)
             else -> ContextCompat.getColor(requireContext(), R.color.gray_700)
         }
     }
 
     private fun getTagBackground(tag: String): Int {
         return when (tag.lowercase()) {
-            "free delivery" -> R.drawable.tag_background_green
-            "fast delivery" -> R.drawable.tag_background_blue
-            "popular" -> R.drawable.tag_background_orange
-            "spicy" -> R.drawable.tag_background_red
-            "authentic" -> R.drawable.tag_background_purple
-            "vegetarian" -> R.drawable.tag_background_green
-            "sushi" -> R.drawable.tag_background_blue
-            "fresh" -> R.drawable.tag_background_teal
-            "healthy" -> R.drawable.tag_background_green
-            "quick" -> R.drawable.tag_background_orange
-            "burgers" -> R.drawable.tag_background_red
-            "premium" -> R.drawable.tag_background_purple
-            "fresh pasta" -> R.drawable.tag_background_blue
-            "traditional" -> R.drawable.tag_background_brown
+            "takeaway" -> R.drawable.tag_background_green
+            "delivery" -> R.drawable.tag_background_blue
+            "wheelchair" -> R.drawable.tag_background_purple
+            "outdoor seating" -> R.drawable.tag_background_teal
+            "wifi" -> R.drawable.tag_background_blue
             else -> R.drawable.tag_background_gray
         }
+    }
+    
+    // MapView lifecycle methods
+    override fun onStart() {
+        super.onStart()
+        mapView.onStart()
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        mapView.onResume()
+    }
+    
+    override fun onPause() {
+        super.onPause()
+        mapView.onPause()
+    }
+    
+    override fun onStop() {
+        super.onStop()
+        mapView.onStop()
+    }
+    
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        mapView.onSaveInstanceState(outState)
+    }
+    
+    override fun onLowMemory() {
+        super.onLowMemory()
+        mapView.onLowMemory()
+    }
+    
+    override fun onDestroyView() {
+        super.onDestroyView()
+        mapView.onDestroy()
     }
 }

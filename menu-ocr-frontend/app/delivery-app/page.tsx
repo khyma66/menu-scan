@@ -35,21 +35,19 @@ export default function DeliveryAppPage() {
           <div className="flex space-x-8">
             <button
               onClick={() => setActiveTab("delivery")}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
-                activeTab === "delivery"
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition ${activeTab === "delivery"
                   ? "border-orange-500 text-orange-600"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
+                }`}
             >
               🍽️ Restaurant Discovery
             </button>
             <button
               onClick={() => setActiveTab("menu-ocr")}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
-                activeTab === "menu-ocr"
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition ${activeTab === "menu-ocr"
                   ? "border-orange-500 text-orange-600"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
+                }`}
             >
               📱 Menu OCR
             </button>
@@ -68,7 +66,7 @@ export default function DeliveryAppPage() {
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">
                 Upload Menu Image
               </h2>
-              
+
               <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                 <p className="text-sm text-green-800">✅ Backend connected</p>
               </div>
@@ -78,7 +76,7 @@ export default function DeliveryAppPage() {
                 onError={handleError}
                 onLoading={handleLoading}
               />
-              
+
               {error && (
                 <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                   <p className="text-sm text-red-800">{error}</p>
@@ -91,7 +89,7 @@ export default function DeliveryAppPage() {
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">
                 Extracted Menu Items
               </h2>
-              <MenuDisplay items={menuItems} />
+              <MenuDisplay items={menuItems} userTier="free" />
             </div>
           </div>
         )}

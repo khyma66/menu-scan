@@ -3,92 +3,126 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/gray_50">
+    android:background="@color/gray_50"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="@dimen/screen_padding">
 
-        <!-- Title -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="8dp"
-            android:text="📱 Menu OCR"
-            android:textColor="@color/gray_900"
-            android:textSize="24sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="16dp"
-            android:text="Extract menu items from images using AI-powered OCR"
-            android:textColor="@color/gray_600"
-            android:textSize="14sp" />
-
-        <!-- Connection Status -->
-        <TextView
-            android:id="@+id/connection_status"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:background="@drawable/status_background"
-            android:drawableStart="@drawable/ic_check_circle"
-            android:drawablePadding="8dp"
-            android:padding="12dp"
-            android:text="✅ Backend connected - Ready to process"
-            android:textColor="@color/green_700"
-            android:textSize="12sp" />
-
-        <!-- Upload Area -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:elevation="4dp"
-            app:cardCornerRadius="12dp">
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="3dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center"
+                android:background="@drawable/bg_header_scan"
                 android:orientation="vertical"
-                android:padding="32dp">
-
-                <ImageView
-                    android:layout_width="64dp"
-                    android:layout_height="64dp"
-                    android:layout_marginBottom="16dp"
-                    android:src="@drawable/ic_camera" />
+                android:padding="16dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:text="📸 Upload Menu Image"
-                    android:textColor="@color/gray_900"
-                    android:textSize="16sp"
+                    android:text="Menu Scan"
+                    android:textColor="@color/white"
+                    android:textSize="22sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    android:gravity="center"
-                    android:text="Take a photo or select from gallery\nDrag and drop or click to select an image"
-                    android:textColor="@color/gray_600"
-                    android:textSize="12sp" />
+                    android:layout_marginTop="4dp"
+                    android:text="Capture menus, enrich dishes, and explore details instantly"
+                    android:textColor="#EDE4FF"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Point camera at a menu and get instant analysis"
+                    android:textColor="#F6F0FF"
+                    android:textSize="13sp" />
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="220dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_scan_viewfinder"
+                    android:padding="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="Point camera at a menu"
+                        android:textColor="#99FFFFFF"
+                        android:textSize="12sp" />
+                </FrameLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:weightSum="2">
+                    android:layout_marginTop="10dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/tag_background_blue"
+                        android:paddingLeft="10dp"
+                        android:paddingTop="4dp"
+                        android:paddingRight="10dp"
+                        android:paddingBottom="4dp"
+                        android:text="Instant Analysis"
+                        android:textColor="@color/blue_700"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/tag_background_green"
+                        android:paddingLeft="10dp"
+                        android:paddingTop="4dp"
+                        android:paddingRight="10dp"
+                        android:paddingBottom="4dp"
+                        android:text="Allergy Alerts"
+                        android:textColor="@color/green_700"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/tag_background_gray"
+                    android:paddingLeft="10dp"
+                    android:paddingTop="4dp"
+                    android:paddingRight="10dp"
+                    android:paddingBottom="4dp"
+                    android:text="Smart Tips"
+                    android:textColor="@color/gray_700"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:id="@+id/upload_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
                     <Button
                         android:id="@+id/btn_capture_image"
@@ -96,13 +130,13 @@
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="8dp"
                         android:layout_weight="1"
-                        android:background="@drawable/button_primary"
-                        android:text="📷 Capture"
-                        android:textColor="@android:color/white"
-                        android:textSize="14sp"
-                        android:minHeight="48dp"
-                        android:clickable="true"
-                        android:focusable="true" />
+                        android:background="@drawable/bg_scan_primary_btn"
+                        android:backgroundTint="@null"
+                        app:backgroundTint="@null"
+                        android:minHeight="44dp"
+                        android:text="📸 Capture"
+                        android:textColor="@color/white"
+                        android:textSize="14sp" />
 
                     <Button
                         android:id="@+id/btn_select_gallery"
@@ -111,18 +145,150 @@
                         android:layout_marginStart="8dp"
                         android:layout_weight="1"
                         android:background="@drawable/button_secondary"
-                        android:text="🖼️ Gallery"
-                        android:textColor="@color/orange_500"
-                        android:textSize="14sp"
-                        android:minHeight="48dp"
-                        android:clickable="true"
-                        android:focusable="true" />
+                        android:backgroundTint="@null"
+                        app:backgroundTint="@null"
+                        android:minHeight="44dp"
+                        android:text="🖼 Gallery"
+                        android:textColor="@color/gray_900"
+                        android:textSize="14sp" />
 
                 </LinearLayout>
 
             </LinearLayout>
 
         </androidx.cardview.widget.CardView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:orientation="horizontal"
+            android:weightSum="3">
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="10dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🔍"
+                        android:textSize="18sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="Instant Analysis"
+                        android:textColor="@color/gray_900"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:gravity="center"
+                        android:text="Get nutritional info in seconds"
+                        android:textColor="@color/gray_500"
+                        android:textSize="10sp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:layout_marginEnd="3dp"
+                android:layout_weight="1"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="10dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⚠️"
+                        android:textSize="18sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="Allergy Alerts"
+                        android:textColor="@color/gray_900"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:gravity="center"
+                        android:text="Auto-detect your allergens"
+                        android:textColor="@color/gray_500"
+                        android:textSize="10sp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="10dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="💡"
+                        android:textSize="18sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="Smart Tips"
+                        android:textColor="@color/gray_900"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:gravity="center"
+                        android:text="Personalized health guidance"
+                        android:textColor="@color/gray_500"
+                        android:textSize="10sp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+        </LinearLayout>
 
         <!-- Selected Images Preview -->
         <androidx.cardview.widget.CardView
@@ -173,8 +339,10 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@drawable/button_secondary"
-                    android:text="+ Add More Images"
-                    android:textColor="@color/blue_500"
+                    android:backgroundTint="@null"
+                    app:backgroundTint="@null"
+                    android:text="➕ Add More"
+                    android:textColor="@color/gray_900"
                     android:textSize="12sp"
                     android:minHeight="36dp"
                     android:clickable="true"
@@ -191,8 +359,10 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             android:background="@drawable/button_primary"
-            android:text="🔍 Process with OCR"
-            android:textColor="@android:color/white"
+            android:backgroundTint="@null"
+            app:backgroundTint="@null"
+            android:text="⚡ Start Analysis"
+            android:textColor="@color/gray_900"
             android:textSize="16sp"
             android:textStyle="bold"
             android:minHeight="48dp"
@@ -218,49 +388,238 @@
                 android:layout_marginBottom="8dp" />
 
             <TextView
+                android:id="@+id/loading_status_text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Processing image with OCR..."
+                android:text="Analyzing Menu..."
                 android:textColor="@color/gray_600"
                 android:textSize="14sp" />
 
         </LinearLayout>
 
-        <!-- OCR Results -->
-        <androidx.cardview.widget.CardView
+        <!-- OCR Results Table -->
+        <LinearLayout
             android:id="@+id/results_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:elevation="4dp"
-            android:visibility="gone"
-            app:cardCornerRadius="12dp">
+            android:layout_marginTop="8dp"
+            android:orientation="vertical"
+            android:visibility="gone">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:layout_marginBottom="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:text="📋 OCR Results"
+                    android:layout_weight="1"
+                    android:text="Dishes"
                     android:textColor="@color/gray_900"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/ocr_results"
-                    android:layout_width="match_parent"
+                <Button
+                    android:id="@+id/btn_add_more_results"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="monospace"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/button_secondary"
+                    android:backgroundTint="@null"
+                    app:backgroundTint="@null"
+                    android:minHeight="36dp"
+                    android:paddingLeft="12dp"
+                    android:paddingRight="12dp"
+                    android:text="➕ Add"
+                    android:textAllCaps="false"
+                    android:textColor="@color/gray_900"
+                    android:textSize="12sp" />
+
+                <Button
+                    android:id="@+id/btn_reset_results"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/button_secondary"
+                    android:backgroundTint="@null"
+                    app:backgroundTint="@null"
+                    android:minHeight="36dp"
+                    android:paddingLeft="12dp"
+                    android:paddingRight="12dp"
+                    android:text="🔄 Reset"
+                    android:textAllCaps="false"
+                    android:textColor="@color/gray_900"
+                    android:textSize="12sp" />
+
+                <Switch
+                    android:id="@+id/switch_translate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Translate"
                     android:textColor="@color/gray_700"
                     android:textSize="12sp" />
 
+                <Spinner
+                    android:id="@+id/spinner_translate_language"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:minWidth="110dp"
+                    android:visibility="gone" />
             </LinearLayout>
 
-        </androidx.cardview.widget.CardView>
+            <TextView
+                android:id="@+id/ocr_results"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:textColor="@color/gray_700"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/text_gemini_list_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:text="Dish List"
+                android:textColor="@color/gray_900"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/gemini_dish_links_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:orientation="vertical" />
+
+            <LinearLayout
+                android:id="@+id/qwen_detail_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/loading_background"
+                android:orientation="vertical"
+                android:padding="12dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btn_back_to_dishes"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@android:color/transparent"
+                        android:backgroundTint="@null"
+                        app:backgroundTint="@null"
+                        android:minHeight="28dp"
+                        android:paddingLeft="4dp"
+                        android:paddingRight="8dp"
+                        android:text="←"
+                        android:textAllCaps="false"
+                        android:textColor="@color/gray_900"
+                        android:textSize="24sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:text="Additional Details"
+                        android:textColor="@color/gray_900"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/detail_dish_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:textColor="@color/gray_900"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/detail_price"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textColor="@color/gray_700"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/detail_description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@color/gray_700"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/detail_ingredients"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@color/gray_700"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/detail_taste"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@color/gray_700"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/detail_similar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@color/gray_700"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/detail_recommendation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@color/gray_700"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/detail_allergens"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@color/gray_700"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/detail_spiciness"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@color/gray_700"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/detail_preparation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@color/gray_700"
+                    android:textSize="13sp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
 
         <!-- Action Buttons -->
         <LinearLayout
@@ -270,28 +629,17 @@
             android:layout_marginTop="16dp"
             android:orientation="horizontal"
             android:visibility="gone"
-            android:weightSum="2">
-
-            <Button
-                android:id="@+id/btn_save_drive"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:layout_weight="1"
-                android:background="@drawable/button_secondary"
-                android:text="💾 Save to Drive"
-                android:textColor="@color/blue_500"
-                android:textSize="12sp" />
+            android:weightSum="1">
 
             <Button
                 android:id="@+id/btn_share_results"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
                 android:background="@drawable/button_secondary"
-                android:text="🔗 Share"
-                android:textColor="@color/green_500"
+                android:backgroundTint="@null"
+                app:backgroundTint="@null"
+                android:text="📤 Share"
+                android:textColor="@color/gray_900"
                 android:textSize="12sp" />
 
         </LinearLayout>

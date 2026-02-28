@@ -1,11 +1,14 @@
 # Android App API Configuration
 # Update this file to change the backend URL between local development and production
 
-# Production URL (Render deployment)
-API_BASE_URL=https://menu-ocr-api.onrender.com/
+# Production URL (Cloudflare Worker API)
+API_BASE_URL=https://menu-ocr.youraccount.workers.dev/
 
-# Local Development URL (Android emulator)
-LOCAL_API_BASE_URL=http://10.0.2.2:8000/
+# Local Development URL (Android emulator -> local worker)
+LOCAL_API_BASE_URL=http://10.0.2.2:8787/
+
+# Local MCP bridge for Android app
+LOCAL_MCP_BASE_URL=http://10.0.2.2:8001/
 
 # Environment: "debug" for local development, "release" for production
 ENVIRONMENT=debug

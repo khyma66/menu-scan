@@ -11,6 +11,15 @@ class MenuItem(BaseModel):
     price: Optional[str] = None
     description: Optional[str] = None
     category: Optional[str] = None
+    ingredients: List[str] = []
+    taste: Optional[str] = None
+    similarDish1: Optional[str] = None
+    similarDish2: Optional[str] = None
+    recommendation: Optional[str] = None
+    recommendation_reason: Optional[str] = None
+    allergens: List[str] = []
+    spiciness_level: Optional[str] = None
+    preparation_method: Optional[str] = None
 
 
 class Dish(BaseModel):
@@ -43,6 +52,8 @@ class OCRResponse(BaseModel):
     """Response model for OCR processing."""
     success: bool
     menu_items: List[MenuItem]
+    gemini_menu_items: Optional[List[MenuItem]] = None
+    qwen_menu_items: Optional[List[MenuItem]] = None
     raw_text: str
     processing_time_ms: int
     enhanced: bool = Field(False, description="Whether LLM enhancement was used")

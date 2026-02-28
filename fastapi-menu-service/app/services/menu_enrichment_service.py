@@ -56,7 +56,7 @@ class MenuEnrichmentService:
             if self.supabase.client:
                 try:
                     response = self.supabase.client.table("menu").select(
-                        '"Dish Name", ingredients, description, vegetarian, non_vegetarian'
+                        '"Dish Name", ingredients, vegetarian, non_vegetarian'
                     ).eq("enrichment_status", status_filter).order("Dish Name").limit(limit).offset(offset).execute()
                     
                     dishes = response.data if hasattr(response, 'data') and response.data else []

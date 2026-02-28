@@ -1,0 +1,911 @@
+
+# SPEC.md — Menu OCR (Cloudflare Workers + Queues + Supabase + Gemini Flash API)
+# Single file complete implementation ready for Cursor
+# Date: 2026-02-12, User: India (Rasapūdipalem, Andhra Pradesh)
+
+project_name: "menu-ocr-app-gemini"
+description: "Handwritten EU menu scanner → Gemini Flash OCR+translate+similar dishes (web search) → per-user results"
+
+## WHY GEMINI FLASH (not Vision + Translate separately)
+- One API call does: OCR (handwriting) + translate to target lang + structure JSON
+- Cheaper per-menu than Vision+Translation combo at scale (Flash pricing is aggressive)
+- Built-in reasoning for "similar typical dishes in user country cuisine"
+- Can include web search grounding (Gemini Search Grounding) for real-time dish info
+- Simpler implementation (one API, not two)
+
+---
+
+## Services & Connections
+
+### A) Mobile App (Android/iOS + ML Kit)
+Purpose: Capture 2–3 menu pages, authenticate user, upload.
+
+Connects to:
+- Supabase Auth → login/signup, get JWT `access_token`
+- Cloudflare API Worker → POST /v1/menus:scan with JWT + pages
+
+Request:
+POST https://menu-ocr.youraccount.workers.dev/v1/menus:scan
+Headers:
+Authorization: Bearer <supabase_access_token>
+Content-Type: multipart/form-data
+Body:
+pages: [image1.jpg, image2.jpg, image3.jpg]
+target_lang: "en" # output language (e.g., "en", "hi", "de")
+user_country: "IN" # for similar dishes filter
+
+text
+
+Response:
+```json
+{
+  "job_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "queued"
+}
+B) Cloudflare Worker #1: API Worker (FastAPI Python)
+Purpose: Fast synchronous API for auth + enqueue.
+
+Connects to:
+
+Supabase: validate JWT, insert jobs row, read user metadata
+
+Cloudflare R2: store uploaded images
+
+Cloudflare Queues: enqueue OCR job
+
+No direct Gemini call (kept in consumer for scale)
+
+Endpoints:
+
+POST /v1/menus:scan → enqueue, return job_id
+
+GET /v1/jobs/{job_id} → return job status + results when done
+
+POST /v1/auth/refresh → refresh JWT if needed (optional)
+
+Key code patterns:
+
+FastAPI via ASGI adapter on Workers
+
+JWT verification using SUPABASE_JWT_SECRET
+
+R2 upload: each page as user_id/{job_id}/page_{n}.jpg
+
+Queue produce: send job metadata to menu-ocr-jobs queue
+
+C) Cloudflare Worker #2: Consumer Worker (Queue handler)
+Purpose: Process jobs asynchronously; call Gemini Flash for OCR+translate+similar dishes.
+
+Connects to:
+
+Cloudflare R2: download images
+
+Google Gemini Flash API: one call per job
+
+Input: base64 images + prompt (OCR + translate + similar)
+
+Output: structured JSON (table + similar dishes + web refs)
+
+Supabase: update job status, insert results into menus table
+
+Google Search Grounding (optional): ground similar dishes in web results (Gemini can do this natively)
+
+Process flow:
+
+Receive message from queue: {job_id, user_id, r2_keys, target_lang, user_country}
+
+Download pages from R2
+
+Encode as base64
+
+Call Gemini Flash API with prompt:
+
+text
+You are a restaurant menu OCR specialist.
+
+Given handwritten menu pages (images below), extract and return a JSON object:
+{
+  "table": {
+    "currency": "EUR",
+    "sections": [
+      {
+        "name": "Pasta",
+        "items": [
+          {"name": "Carbonara", "description": "guanciale, egg, pecorino", "price": 14.5}
+        ]
+      }
+    ]
+  },
+  "similar_dishes": {
+    "country": "IN",
+    "dishes": [
+      {"name": "similar dish from India", "reason": "...", "web_ref": "..."}
+    ]
+  }
+}
+
+Requirements:
+- Extract all menu items with prices in EUR (or infer currency)
+- Translate all text fields to language: {target_lang}
+- For "similar_dishes": suggest 5 typical dishes from {user_country} cuisine that match the menu style/ingredients
+- If available, cite web sources or restaurant reviews for similar dishes
+
+Pages: [base64 images]
+Parse response JSON
+
+Embed dish names for vector search (optional; can use Gemini embeddings or skip for MVP)
+
+Update Supabase jobs table: status='done', menu_id=<new_menu_id>
+
+Insert into menus table: user_id, ocr_text, table_json, similar_dishes_json, created_at
+
+Ack queue message
+
+Concurrency:
+
+Set max_concurrency = 20 in wrangler to allow safe parallelism
+
+Gemini Flash has rate limits; tune based on quota (can scale to 1000s requests/min with API key quotas)
+
+D) Cloudflare R2 (Object Storage)
+Purpose: Store uploaded menu pages temporarily (can delete after processing).
+
+Bucket: menu-ocr-pages
+Keys: {user_id}/{job_id}/page_{0..2}.jpg
+
+E) Supabase (Postgres + Auth + RLS)
+Purpose: Auth (JWT), store jobs + menus per user, enforce data isolation.
+
+Region: Singapore (low latency to India/EU)
+
+Connects to:
+
+API Worker: validate JWT, insert/select jobs
+
+Consumer Worker: update jobs, insert menus
+
+Mobile app: login/signup via Supabase Auth
+
+F) Google Gemini Flash API
+Purpose: Single-call OCR + translate + reason about similar dishes.
+
+Model: gemini-2.0-flash (or gemini-2.0-flash-thinking-lite if you want reasoning)
+
+Pricing: ~$0.075/M input tokens + $0.3/M output tokens (Flash is the cheapest multimodal)
+
+Rate limits: 15 requests/min free, 1000 requests/min with API key
+
+Connects to:
+
+Consumer Worker: receive images + prompt, return structured JSON
+
+
+
+=================================
+# SPEC.md — Menu OCR v2 (Permanent storage + Nutrition + Similar dishes across regions)
+# Updated: 2026-02-12, Madhuravada, Andhra Pradesh, India
+
+project_name: "menu-ocr-app-v2"
+description: "Handwritten EU menu scanner → permanent storage + nutrition values + similar dishes across regions (premium)"
+
+---
+
+## KEY CHANGES FROM v1
+1. **Permanent image storage**: Keep all user images in R2 (not auto-delete)
+2. **Nutrition database**: Store dish name + price + description + nutrition (calories, protein, fat, carbs, fiber)
+3. **Caching**: Check Supabase first before Gemini call; reuse if same menu/region exists
+4. **Premium similar dishes**: Vector similarity search across regions (India→Italy→France, etc.)
+5. **Deduplication**: If user scans same menu twice, second scan is instant (Supabase hit)
+
+---
+
+## Updated Data Model (Supabase schema)
+
+### Tables to create:
+
+```sql
+-- 1. Users (existing)
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT UNIQUE,
+  country TEXT DEFAULT 'IN',
+  subscription TEXT DEFAULT 'free', -- free|premium
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. Jobs (existing, enhanced)
+CREATE TABLE jobs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id),
+  status TEXT DEFAULT 'queued', -- queued|processing|done|failed
+  r2_keys JSONB NOT NULL, -- ["r2/key1", "r2/key2", ...]
+  target_lang TEXT DEFAULT 'en',
+  user_country TEXT DEFAULT 'IN',
+  error TEXT,
+  menu_id UUID,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. Menus (enhanced: now stores detailed dish info with nutrition)
+CREATE TABLE menus (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id),
+  restaurant_name TEXT,
+  region TEXT, -- "Italy", "France", "India", etc.
+  cuisine_type TEXT, -- "Italian", "French", "Indian", etc.
+  r2_image_keys JSONB NOT NULL, -- ["r2/user-123/menu-abc/page_0.jpg", ...]
+  ocr_raw TEXT,
+  table_json JSONB NOT NULL, -- {currency, sections: [{name, items: [...]}]}
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, restaurant_name, region) -- prevent duplicate scans
+);
+
+-- 4. Dishes (new: detailed per-dish info with nutrition)
+CREATE TABLE dishes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  menu_id UUID REFERENCES menus(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id),
+  name TEXT NOT NULL,
+  description TEXT,
+  price DECIMAL(10, 2),
+  currency TEXT DEFAULT 'EUR',
+  category TEXT, -- "Pasta", "Appetizer", "Dessert", etc.
+  
+  -- Nutrition (per 100g or per serving, normalize later)
+  calories INT,
+  protein_g DECIMAL(5, 2),
+  fat_g DECIMAL(5, 2),
+  carbs_g DECIMAL(5, 2),
+  fiber_g DECIMAL(5, 2),
+  
+  -- Vector embedding for similarity search
+  embedding VECTOR(1536), -- Gemini embeddings dimension
+  
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 5. Similar Dishes (new: premium feature, stores cross-region matches)
+CREATE TABLE similar_dishes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  source_dish_id UUID REFERENCES dishes(id) ON DELETE CASCADE,
+  target_dish_id UUID REFERENCES dishes(id) ON DELETE CASCADE,
+  similarity_score DECIMAL(3, 2), -- 0.0 to 1.0
+  reason TEXT, -- "Similar creamy sauce", "Same protein base", etc.
+  source_region TEXT,
+  target_region TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 6. Nutrition Cache (new: pre-computed nutrition for common dishes)
+CREATE TABLE nutrition_cache (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  dish_name TEXT UNIQUE,
+  source TEXT, -- "usda", "usda_sr", "fatsecret", "edamam"
+  calories INT,
+  protein_g DECIMAL(5, 2),
+  fat_g DECIMAL(5, 2),
+  carbs_g DECIMAL(5, 2),
+  fiber_g DECIMAL(5, 2),
+  embedding VECTOR(1536),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 7. Premium Features Log (new: track which users use premium)
+CREATE TABLE premium_features (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id),
+  menu_id UUID REFERENCES menus(id),
+  feature_type TEXT, -- "cross_region_similar"
+  used_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes for performance
+CREATE INDEX idx_menus_user_id ON menus(user_id);
+CREATE INDEX idx_menus_region ON menus(region);
+CREATE INDEX idx_dishes_menu_id ON dishes(menu_id);
+CREATE INDEX idx_dishes_embedding ON dishes USING ivfflat(embedding vector_cosine_ops);
+CREATE INDEX idx_similar_dishes_source ON similar_dishes(source_dish_id);
+CREATE INDEX idx_similar_dishes_similarity ON similar_dishes(similarity_score DESC);
+
+-- Enable RLS
+ALTER TABLE jobs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE menus ENABLE ROW LEVEL SECURITY;
+ALTER TABLE dishes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE similar_dishes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE premium_features ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies
+CREATE POLICY "User own data" ON jobs FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "User own data" ON menus FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "User own data" ON dishes FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "User own data" ON premium_features FOR ALL USING (user_id = auth.uid());
+
+-- Premium similar dishes: users can read all regions, but log if they do
+CREATE POLICY "Similar dishes visible to premium" ON similar_dishes FOR SELECT 
+USING (
+  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND subscription = 'premium')
+);
+
+-- RPC Functions for common queries
+CREATE FUNCTION get_user_menus(p_user_id UUID)
+RETURNS TABLE(menu_id UUID, restaurant_name TEXT, region TEXT, dish_count INT) AS $$
+SELECT m.id, m.restaurant_name, m.region, COUNT(d.id)::INT
+FROM menus m
+LEFT JOIN dishes d ON m.id = d.menu_id
+WHERE m.user_id = p_user_id
+GROUP BY m.id, m.restaurant_name, m.region;
+$$ LANGUAGE sql;
+
+-- Find similar dishes within user's own region (free)
+CREATE FUNCTION find_similar_dishes_free(p_dish_id UUID, p_limit INT DEFAULT 5)
+RETURNS TABLE(target_dish_id UUID, target_dish_name TEXT, similarity_score DECIMAL, reason TEXT) AS $$
+SELECT sd.target_dish_id, d.name, sd.similarity_score, sd.reason
+FROM similar_dishes sd
+JOIN dishes d ON sd.target_dish_id = d.id
+WHERE sd.source_dish_id = p_dish_id
+AND sd.source_region = sd.target_region
+ORDER BY sd.similarity_score DESC
+LIMIT p_limit;
+$$ LANGUAGE sql;
+
+-- Find similar dishes across regions (premium)
+CREATE FUNCTION find_similar_dishes_premium(p_dish_id UUID, p_limit INT DEFAULT 10)
+RETURNS TABLE(target_dish_id UUID, target_dish_name TEXT, target_region TEXT, similarity_score DECIMAL, reason TEXT) AS $$
+SELECT sd.target_dish_id, d.name, sd.target_region, sd.similarity_score, sd.reason
+FROM similar_dishes sd
+JOIN dishes d ON sd.target_dish_id = d.id
+WHERE sd.source_dish_id = p_dish_id
+ORDER BY sd.similarity_score DESC
+LIMIT p_limit;
+$$ LANGUAGE sql;
+
+
+Updated workflow (with caching + nutrition + premium)
+A) User scans menu (first time)
+API Worker receives images + JWT
+
+Check Supabase: SELECT * FROM menus WHERE user_id = ? AND restaurant_name = ? AND region = ?
+
+If exists → return cached results instantly (no Gemini call)
+
+If not → continue
+
+Upload images to R2 (permanent storage)
+
+Create job, enqueue to Cloudflare Queues
+
+B) Consumer Worker processes (only on first scan)
+Download images from R2
+
+Call Gemini Flash with prompt:
+
+text
+Extract menu JSON with:
+{
+  "restaurant_name": "...",
+  "region": "Italy",
+  "sections": [{
+    "name": "Pasta",
+    "items": [{
+      "name": "Carbonara",
+      "description": "guanciale, egg, pecorino",
+      "price": 14.5,
+      "category": "Pasta"
+    }]
+  }]
+}
+Translate to: {target_lang}
+For EACH dish in result:
+
+Insert into dishes table (with user_id, menu_id)
+
+Call Gemini embeddings API to create vector embedding for dish name+description
+
+Query nutrition from external API (USDA, FatSecret, Edamam) or use nutrition_cache
+
+Store nutrition values (calories, protein, fat, carbs, fiber) in dishes table
+
+Insert into menus table with R2 image keys
+
+Find similar dishes within region (free):
+
+Query vector similarity: SELECT * FROM dishes WHERE region = source_region ORDER BY embedding <=> source_embedding LIMIT 5
+
+Store results in similar_dishes table
+
+Update job status: done
+
+C) User requests "similar dishes across regions" (premium feature)
+API endpoint: GET /v1/menus/{menu_id}/similar-dishes?premium=true
+
+Check: SELECT subscription FROM users WHERE id = ?
+
+If "free" → return only same-region similar dishes
+
+If "premium" → return cross-region similar dishes
+
+Query similar_dishes table filtered by target_region != source_region
+
+Log in premium_features table (for analytics)
+
+Return results with region labels
+
+D) User scans same menu again
+API Worker checks menus table for duplicate
+
+If found: SELECT * FROM dishes WHERE menu_id = ? → return cached results
+
+No Gemini call, no Queues message
+
+Response in <50ms
+
+API Endpoints (updated)
+POST /v1/menus:scan (unchanged input, enhanced output)
+text
+Request:
+POST /v1/menus:scan
+Authorization: Bearer <jwt>
+Body: files (3 images), target_lang, user_country
+
+Response:
+{
+  "job_id": "abc-123",
+  "status": "queued",
+  "is_cached": false, -- true if duplicate menu found
+  "cache_hit_from": "2025-12-01" -- if cached
+}
+GET /v1/jobs/{job_id} (enhanced)
+text
+Response (done):
+{
+  "status": "done",
+  "menu": {
+    "id": "menu-xyz",
+    "restaurant_name": "Trattoria Roma",
+    "region": "Italy",
+    "dishes": [
+      {
+        "id": "dish-1",
+        "name": "Carbonara",
+        "price": 14.5,
+        "nutrition": {
+          "calories": 650,
+          "protein_g": 25,
+          "fat_g": 45,
+          "carbs_g": 35,
+          "fiber_g": 2
+        }
+      }
+    ],
+    "similar_dishes_within_region": [...] -- free tier
+  }
+}
+GET /v1/menus/{menu_id}/similar-dishes (new)
+text
+Request:
+GET /v1/menus/{menu_id}/similar-dishes?premium=true&limit=10
+Authorization: Bearer <jwt>
+
+Response (premium user):
+{
+  "source_dish": "Carbonara",
+  "similar": [
+    {
+      "name": "Butter Chicken",
+      "region": "India",
+      "similarity": 0.87,
+      "reason": "Creamy sauce, protein-based"
+    },
+    {
+      "name": "Cacio e Pepe",
+      "region": "Italy",
+      "similarity": 0.92,
+      "reason": "Same sauce style"
+    }
+  ]
+}
+GET /v1/user/menus (new: list all scanned menus)
+text
+Response:
+{
+  "menus": [
+    {
+      "id": "menu-1",
+      "restaurant_name": "Trattoria Roma",
+      "region": "Italy",
+      "dish_count": 12,
+      "scanned_at": "2026-02-12",
+      "r2_thumbnails": ["r2/...", "r2/..."]
+    }
+  ]
+}
+
+Use R2 for images (cheap, permanent storage). Store only metadata (URLs) in Supabase.
+
+Premium:
+@app.get("/v1/menus/{menu_id}/similar-dishes")
+async def get_similar(menu_id: str, premium: bool = False, user=Depends(get_user)):
+    user_sub = sb.table("users").select("subscription").eq("id", user["id"]).execute()
+    
+    if premium and user_sub.data["subscription"] != "premium":
+        raise HTTPException(403, "Premium feature requires subscription")
+    
+    if premium:
+        # Cross-region query
+        similar = sb.rpc("find_similar_dishes_premium", {"p_dish_id": dish_id}).execute()
+        # Log usage
+        sb.table("premium_features").insert({"user_id": user["id"], "feature_type": "cross_region_similar"}).execute()
+    else:
+        # Same-region query
+        similar = sb.rpc("find_similar_dishes_free", {"p_dish_i
+
+  ================
+
+  # SPEC.md — Menu OCR v3 (LLM-Driven Health Recommendations)
+# Complete implementation where Gemini extracts ALL data (ingredients, health triggers, nutrition)
+# Date: 2026-02-12, Madhuravada, Andhra Pradesh, India
+
+project_name: "menu-ocr-health-aware-llm-driven"
+description: "Handwritten EU menu scanner → Gemini extracts ingredients + nutrition + health recommendations in one call"
+
+---
+
+## KEY CHANGE: Gemini as Single Source of Truth
+
+Instead of:
+- Hard-coded ingredient databases
+- Pre-curated trigger mappings
+- Manual nutrition lookups
+
+**Gemini does it all in one API call:**
+1. OCR handwritten text
+2. Extract dishes + prices
+3. Identify ALL ingredients per dish
+4. Calculate nutrition values
+5. Analyze against user health conditions
+6. Generate personalized recommendations
+7. Suggest alternatives
+
+---
+
+## Updated Consumer Worker Flow (LLM-Driven)
+
+### Process:
+Download images from R2
+
+Fetch user health profile from Supabase
+
+Call Gemini Flash with:
+
+Images (base64)
+
+User health conditions (asthma, lactose intolerance, etc.)
+
+Prompt: "Extract menu + ingredients + health analysis"
+
+Gemini returns structured JSON with:
+
+Dishes
+
+Ingredients (per dish)
+
+Nutrition
+
+Health recommendations (per user condition)
+
+Alternatives
+
+Store results in Supabase
+
+
+---
+
+## Simplified Supabase Schema (LLM-Friendly)
+
+```sql
+-- 1. Users (unchanged)
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT UNIQUE,
+  country TEXT DEFAULT 'IN',
+  subscription TEXT DEFAULT 'free',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. User Health Profile (simplified - Gemini handles the rest)
+CREATE TABLE user_health_profiles (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  health_conditions TEXT[], -- ["asthma", "lactose intolerance", "cough", "diabetes", etc.]
+  allergies TEXT[], -- ["peanuts", "shellfish", "gluten"]
+  dietary_preferences TEXT[], -- ["vegetarian", "vegan", "no-red-meat"]
+  medical_notes TEXT, -- "Severe asthma, triggers include sulfites and smoke"
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. Menus (stores raw + processed)
+CREATE TABLE menus (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id),
+  restaurant_name TEXT,
+  region TEXT, -- "Italy", "France", "India"
+  cuisine_type TEXT,
+  r2_image_keys JSONB, -- ["r2/user-123/menu-abc/page_0.jpg", ...]
+  ocr_raw TEXT, -- raw OCR text from Gemini
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, restaurant_name, region)
+);
+
+-- 4. Dishes (enriched by Gemini)
+CREATE TABLE dishes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  menu_id UUID REFERENCES menus(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id),
+  name TEXT NOT NULL,
+  description TEXT,
+  price DECIMAL(10, 2),
+  currency TEXT DEFAULT 'EUR',
+  category TEXT, -- "Pasta", "Appetizer", "Dessert"
+  
+  -- Gemini-extracted ingredients
+  ingredients_raw TEXT, -- "butter, cream, eggs, guanciale, pecorino cheese"
+  ingredients_json JSONB, -- {"items": [{"name": "butter", "quantity": "50g", "note": "high saturated fat"}]}
+  
+  -- Gemini-calculated nutrition (per serving)
+  calories INT,
+  protein_g DECIMAL(5, 2),
+  fat_g DECIMAL(5, 2),
+  carbs_g DECIMAL(5, 2),
+  fiber_g DECIMAL(5, 2),
+  sugar_g DECIMAL(5, 2),
+  sodium_mg INT,
+  cholesterol_mg INT,
+  
+  -- Gemini-detected flags
+  is_vegetarian BOOLEAN,
+  is_vegan BOOLEAN,
+  contains_dairy BOOLEAN,
+  contains_gluten BOOLEAN,
+  contains_nuts BOOLEAN,
+  contains_shellfish BOOLEAN,
+  
+  -- Gemini-assigned health score (0.0 = unhealthy, 1.0 = very healthy)
+  health_score DECIMAL(3, 2),
+  
+  -- Embedding for similarity (Gemini embeddings API)
+  embedding VECTOR(1536),
+  
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 5. Dish Health Recommendations (per user + dish)
+CREATE TABLE dish_health_recommendations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  dish_id UUID REFERENCES dishes(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  
+  -- Gemini-generated recommendation
+  recommendation_level TEXT, -- "safe", "caution", "avoid"
+  
+  -- Explanation from Gemini
+  risk_summary TEXT, -- "Carbonara contains cream and butter (high dairy content) - AVOID if lactose intolerant"
+  
+  -- Gemini-identified trigger ingredients
+  trigger_ingredients JSONB, -- [{"name": "cream", "reason": "High lactose", "risk": "severe"}, ...]
+  
+  -- Gemini-suggested alternative
+  alternative_suggestion TEXT, -- "Try 'Aglio e Olio' instead - uses olive oil, no dairy"
+  alternative_dish_name TEXT, -- "Aglio e Olio"
+  
+  -- Gemini-identified health conditions triggered
+  triggered_health_conditions TEXT[], -- ["lactose intolerance", "high cholesterol"]
+  
+  -- Detailed breakdown (from Gemini)
+  gemini_analysis JSONB, -- Full Gemini response for transparency
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(dish_id, user_id)
+);
+
+-- 6. Jobs (unchanged)
+CREATE TABLE jobs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id),
+  status TEXT DEFAULT 'queued',
+  r2_keys JSONB,
+  target_lang TEXT DEFAULT 'en',
+  user_country TEXT DEFAULT 'IN',
+  error TEXT,
+  menu_id UUID,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_dishes_menu_id ON dishes(menu_id);
+CREATE INDEX idx_dishes_embedding ON dishes USING ivfflat(embedding vector_cosine_ops);
+CREATE INDEX idx_recommendations_user ON dish_health_recommendations(user_id);
+CREATE INDEX idx_recommendations_dish ON dish_health_recommendations(dish_id);
+CREATE INDEX idx_health_profiles_user ON user_health_profiles(user_id);
+
+-- Enable RLS
+ALTER TABLE user_health_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE dishes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE dish_health_recommendations ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "User owns health profile" ON user_health_profiles FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "User sees own dishes" ON dishes FOR SELECT USING (user_id = auth.uid());
+CREATE POLICY "User sees own recommendations" ON dish_health_recommendations FOR SELECT USING (user_id = auth.uid());
+
+-- RPC: Get personalized menu (Gemini analysis already stored)
+CREATE FUNCTION get_personalized_menu(p_menu_id UUID, p_user_id UUID)
+RETURNS TABLE(
+  dish_id UUID,
+  dish_name TEXT,
+  price DECIMAL,
+  ingredients TEXT,
+  calories INT,
+  recommendation_level TEXT,
+  risk_summary TEXT,
+  trigger_ingredients JSONB,
+  alternative_suggestion TEXT,
+  health_score DECIMAL
+) AS $$
+SELECT
+  d.id,
+  d.name,
+  d.price,
+  d.ingredients_raw,
+  d.calories,
+  COALESCE(dhr.recommendation_level, 'unknown'),
+  COALESCE(dhr.risk_summary, 'No health risks detected'),
+  COALESCE(dhr.trigger_ingredients, '[]'::JSONB),
+  COALESCE(dhr.alternative_suggestion, NULL),
+  d.health_score
+FROM dishes d
+LEFT JOIN dish_health_recommendations dhr ON d.id = dhr.dish_id AND dhr.user_id = p_user_id
+WHERE d.menu_id = p_menu_id
+ORDER BY CASE
+  WHEN dhr.recommendation_level = 'avoid' THEN 1
+  WHEN dhr.recommendation_level = 'caution' THEN 2
+  WHEN dhr.recommendation_level = 'safe' THEN 3
+  ELSE 4
+END;
+$$ LANGUAGE sql;
+
+Consumer Worker Code (LLM-Driven)
+workers/consumer-worker/src/consumer.py
+python
+import base64, json, asyncio
+import google.generativeai as genai
+from supabase import create_client
+import os
+
+async def handle_queue_messages(batch, env):
+    """Queue consumer: Gemini extracts ALL data (OCR + ingredients + nutrition + health analysis)"""
+    
+    r2 = env.PAGES_BUCKET
+    sb = create_client(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY)
+    
+    genai.configure(api_key=env.GEMINI_API_KEY)
+    model = genai.GenerativeModel("gemini-2.0-flash")
+    
+    for message in batch.messages:
+        try:
+            job_data = json.loads(message.body)
+            job_id = job_data["job_id"]
+            user_id = job_data["user_id"]
+            r2_keys = job_data["r2_keys"]
+            target_lang = job_data["target_lang"]
+            user_country = job_data["user_country"]
+            
+            # Update job status
+            sb.table("jobs").update({"status": "processing"}).eq("id", job_id).execute()
+            
+            # Fetch user health profile
+            health_profile = sb.table("user_health_profiles").select("*").eq("user_id", user_id).execute()
+            health_conditions = []
+            allergies = []
+            dietary_prefs = []
+            if health_profile.data:
+                hp = health_profile.data
+                health_conditions = hp.get("health_conditions", [])
+                allergies = hp.get("allergies", [])
+                dietary_prefs = hp.get("dietary_preferences", [])
+            
+            # Download pages from R2
+            images_b64 = []
+            for key in r2_keys:
+                page_obj = r2.get(key)
+                content = page_obj.body.read()
+                b64 = base64.b64encode(content).decode()
+                images_b64.append(b64)
+            
+            # Build Gemini prompt (ONE call does everything)
+            gemini_prompt = f"""You are a restaurant menu OCR specialist with expertise in nutrition, ingredients, and health analysis.
+
+USER HEALTH PROFILE:
+- Health Conditions: {', '.join(health_conditions) if health_conditions else 'None specified'}
+- Allergies: {', '.join(allergies) if allergies else 'None'}
+- Dietary Preferences: {', '.join(dietary_prefs) if dietary_prefs else 'None'}
+- Country: {user_country}
+
+TASK: Extract handwritten menu from {len(images_b64)} page(s) and return ONLY this exact JSON structure (no markdown, no extra text):
+
+{{
+  "restaurant_name": "extracted restaurant name or 'Unknown'",
+  "region": "guessed region based on cuisine style (e.g., Italy, France, India)",
+  "cuisine_type": "type of cuisine",
+  "currency": "detected currency (EUR, GBP, INR, etc.) or EUR if unknown",
+  
+  "dishes": [
+    {{
+      "name": "Carbonara",
+      "description": "Italian pasta with eggs, bacon, cheese, and pepper",
+      "price": 14.50,
+      "category": "Pasta",
+      
+      "ingredients": [
+        {{"name": "pasta", "quantity": "400g", "note": "contains gluten"}},
+        {{"name": "eggs", "quantity": "4", "note": "none"}},
+        {{"name": "bacon", "quantity": "200g", "note": "processed meat"}},
+        {{"name": "cream", "quantity": "100ml", "note": "high dairy content"}},
+        {{"name": "pecorino cheese", "quantity": "100g", "note": "dairy, lactose"}}
+      ],
+      
+      "nutrition_per_serving": {{
+        "calories": 650,
+        "protein_g": 28,
+        "fat_g": 48,
+        "carbs_g": 35,
+        "fiber_g": 2,
+        "sugar_g": 1,
+        "sodium_mg": 800,
+        "cholesterol_mg": 220
+      }},
+      
+      "flags": {{
+        "is_vegetarian": false,
+        "is_vegan": false,
+        "contains_dairy": true,
+        "contains_gluten": true,
+        "contains_nuts": false,
+        "contains_shellfish": false
+      }},
+      
+      "health_score": 0.45,
+      
+      "health_recommendation": {{
+        "level": "avoid",
+        "summary": "Carbonara contains high dairy (cream, cheese) and refined carbs. AVOID if lactose intolerant or watching saturated fat. Contains gluten if you have celiac disease.",
+        "trigger_ingredients": [
+          {{"name": "cream", "reason": "High lactose (100ml cream = ~5g lactose)", "risk_level": "severe", "triggered_condition": "lactose intolerance"}},
+          {{"name": "pecorino cheese", "reason": "High lactose and sodium", "risk_level": "severe", "triggered_condition": "lactose intolerance"}},
+          {{"name": "pasta", "reason": "Contains gluten", "risk_level": "severe", "triggered_condition": "celiac disease"}},
+          {{"name": "bacon", "reason": "High saturated fat and sodium", "risk_level": "moderate", "triggered_condition": "high cholesterol"}}
+        ],
+        "triggered_health_conditions": ["lactose intolerance", "celiac disease", "high cholesterol"],
+        "alternative_suggestion": "Try 'Aglio e Olio' - uses olive oil instead of cream, no dairy, and pairs well with gluten-free pasta options."
+      }}
+    }}
+  ]
+}}
+
+CRITICAL REQUIREMENTS:
+1. Extract ALL visible ingredients from dish descriptions
+2. For each ingredient, estimate quantity and note allergen/health concerns
+3. Calculate nutrition using standard USDA/food database values (be realistic)
+4. Assign health_score (0.0 = unhealthy, 1.0 = very healthy) based on:
+   - High sugar/sodium = lower score
+   - High protein/fiber = higher score
+   - Processed foods = lower score
+   - Whole foods = higher score
+5. Generate personalized health recommendations based on user conditions:
+   - If user has lactose intolerance and dish has dairy → "avoid"
+   - If user has asthma and dish has sulfites (wine, dried fruits) → "caution"
+   - If user has gluten sensitivity and dish has wheat → "avoid"
+   - If user has diabetes and dish is high carb/sugar → "caution"
+   - Otherwise → "safe"
+6. Suggest
+7.Check if ocr results needs to be stored?

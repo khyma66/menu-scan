@@ -1,125 +1,139 @@
-# Menu OCR iOS App
+# MenuOCR iOS App
 
-A native iOS application that uses Apple's Vision framework for OCR to extract text from menu images and processes them using a FastAPI backend with Supabase authentication.
+A DoorDash-style iOS app for menu OCR and restaurant discovery.
 
 ## Features
 
-- 📷 Capture images using device camera
-- 🖼️ Select images from photo library
-- 🔍 OCR text recognition using Apple's Vision framework
-- 🌐 Backend integration with FastAPI service
-- 🔐 Supabase authentication (Email/Password)
-- 📱 Native iOS UI with SwiftUI and UIKit
-- 🔄 Real-time menu processing and display
+### 1. Restaurant Discovery (Nearby Tab)
+- **Location-based restaurant search** using OpenStreetMap Overpass API
+- **DoorDash-like UI** with:
+  - Distance slider (1-20 miles)
+  - Cuisine category filters
+  - Restaurant cards with distance, tags, and delivery info
+  - Search functionality
+- **Real-time location** using CoreLocation
 
-## Tech Stack
+### 2. Menu OCR (OCR Tab)
+- **Camera capture** for menu images
+- **Gallery selection** with multi-image support
+- **AI-powered OCR** via FastAPI backend
+- **Menu item extraction** with dish names, prices, and descriptions
+- **Export functionality** for extracted menu items
 
-- **Language**: Swift 5.0
-- **Architecture**: MVVM with Combine
-- **UI Framework**: UIKit with programmatic layout
-- **OCR**: Apple's Vision framework
-- **Networking**: URLSession with async/await
-- **Authentication**: Supabase Swift SDK
-- **Dependency Management**: Swift Package Manager
-
-## Setup
-
-### Prerequisites
-- Xcode 15.0 or later
-- iOS 15.0 or later
-- Swift 5.0 or later
-
-### Installation
-
-1. **Clone and Open**:
-   ```bash
-   cd menu-ocr-ios
-   open MenuOCR.xcworkspace
-   ```
-
-2. **Install Dependencies**:
-   - The project uses Swift Package Manager
-   - Supabase dependency will be automatically resolved
-
-3. **Backend Setup**:
-   - Ensure FastAPI backend is running
-   - Update `SupabaseService.swift` with your Supabase credentials
-   - Update `ApiService.swift` with your backend URL
-
-4. **Run**:
-   - Select a simulator or device
-   - Build and run (Cmd + R)
+### 3. Health Conditions (Health Tab)
+- **Health profile management** with:
+  - Health conditions
+  - Allergies
+  - Dietary preferences
+  - Medical notes
+- **Backend sync** with FastAPI
 
 ## Architecture
 
 ```
 MenuOCR/
-├── Models/                 # Data models (MenuModels.swift)
-├── Views/                  # UI ViewControllers
+├── Config/
+│   └── AppConfig.swift          # API URLs and configuration
+├── Models/
+│   └── MenuModels.swift         # Data models
+├── Services/
+│   ├── ApiService.swift         # FastAPI communication
+│   ├── OcrService.swift         # Vision + API OCR
+│   ├── LocationService.swift    # CoreLocation wrapper
+│   ├── OverpassApiService.swift # Restaurant data
+│   ├── SupabaseService.swift    # Auth integration
+│   └── PaymentService.swift     # Stripe integration
+├── ViewModels/
+│   ├── AuthViewModel.swift      # Auth state
+│   ├── MenuViewModel.swift      # Menu state
+│   └── PaymentViewModel.swift   # Payment state
+├── Views/
+│   ├── DoorDashTabBarController.swift  # Main tab bar
+│   ├── RestaurantDiscoveryViewController.swift
+│   ├── MenuOCRViewController.swift
+│   ├── HealthConditionsViewController.swift
+│   ├── ProfileViewController.swift
 │   ├── LoginViewController.swift
-│   ├── MainViewController.swift
 │   └── DishTableViewCell.swift
-├── ViewModels/             # Business logic
-│   ├── MenuViewModel.swift
-│   └── AuthViewModel.swift
-├── Services/               # External integrations
-│   ├── OcrService.swift    # Vision OCR
-│   ├── ApiService.swift    # FastAPI client
-│   └── SupabaseService.swift # Auth & DB
-└── Utilities/              # Helpers
+└── Utils/
+    └── RetryHelper.swift        # Network retry logic
 ```
 
-## Permissions
+## Requirements
 
-The app requires the following permissions in `Info.plist`:
-- `NSCameraUsageDescription`: Camera access for capturing menu images
-- `NSPhotoLibraryUsageDescription`: Photo library access for selecting images
+- iOS 15.0+
+- Xcode 14.0+
+- Swift 5.0+
 
-## API Integration
+## Dependencies
 
-The app communicates with the FastAPI backend through:
-- `POST /ocr/process`: Process image for OCR
-- `POST /dishes/extract`: Extract dishes from text
+The app uses native iOS frameworks:
+- **UIKit** - UI framework
+- **Vision** - Local OCR processing
+- **CoreLocation** - Location services
+- **PhotosUI** - Image picking
 
-## Supabase Integration
+For Supabase integration, add the Supabase Swift SDK via Swift Package Manager:
+```
+https://github.com/supabase/supabase-swift
+```
 
-- **Authentication**: Email/password sign in/up
-- **Database**: User session management
-- **Storage**: Potential for image storage (future feature)
+## Configuration
 
-## Building for App Store
+Update [`AppConfig.swift`](MenuOCR/Config/AppConfig.swift) with your API endpoints:
 
-1. **Code Signing**:
-   - Create Apple Developer account
-   - Generate provisioning profiles
-   - Configure code signing in Xcode
+```swift
+enum AppConfig {
+    enum Supabase {
+        static let url = "YOUR_SUPABASE_URL"
+        static let anonKey = "YOUR_SUPABASE_ANON_KEY"
+    }
+    
+    enum MenuOcrApi {
+        static let baseURL = "https://your-api.onrender.com"
+        static let localBaseURL = "http://localhost:8000"
+        static let useLocal = false  // Set to true for local testing
+    }
+}
+```
 
-2. **App Store Connect**:
-   - Create app record
-   - Upload screenshots and metadata
-   - Configure in-app purchases if needed
+## Building
 
-3. **Build & Upload**:
-   - Archive build (Product → Archive)
-   - Upload using Xcode or Transporter
+1. Open `MenuOCR.xcodeproj` in Xcode
+2. Select your target device or simulator
+3. Press ⌘B to build or ⌘R to run
+
+## API Endpoints Used
+
+- `GET /health` - Health check
+- `POST /ocr/process` - OCR processing
+- `GET /health/profile` - Get health profile
+- `POST /health/profile` - Update health profile
+- Overpass API for restaurant data
+
+## Permissions Required
+
+The app requires the following permissions (configured in Info.plist):
+
+- **Camera** - To capture menu images
+- **Photo Library** - To select menu images
+- **Location (When In Use)** - To find nearby restaurants
 
 ## Testing
 
-- Unit tests for ViewModels and Services
-- UI tests with Xcode's testing framework
-- Integration tests for API calls
-- Manual testing on multiple device sizes
+1. Start the FastAPI backend:
+   ```bash
+   cd fastapi-menu-service
+   uvicorn app.main:app --host 0.0.0.0 --port 8000
+   ```
 
-## Contributing
+2. Set `useLocal = true` in AppConfig.swift
 
-1. Follow Swift coding guidelines
-2. Use meaningful commit messages
-3. Test on multiple iOS versions
-4. Update documentation for new features
+3. Run the app in simulator or device
 
-## Cross-Platform Sync
+## Notes
 
-This iOS app is designed to work alongside the Android version, sharing:
-- Same Supabase backend and authentication
-- Same FastAPI endpoints and data models
-- Consistent user experience across platforms
+- The app uses async/await for all network calls
+- Retry logic is built into API calls
+- Location services handle permission requests gracefully
+- OCR uses Vision framework locally before sending to API for better results

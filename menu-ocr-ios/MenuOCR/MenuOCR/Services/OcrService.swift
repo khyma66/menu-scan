@@ -24,32 +24,17 @@ class OcrService {
             throw OCRError.invalidImage
         }
         
-        // Preprocess image for better OCR results
-        let processedImage = preprocessImage(image)
-        guard let processedCGImage = processedImage.cgImage else {
-            throw OCRError.imageProcessingFailed
-        }
-        
-        let requestHandler = VNImageRequestHandler(cgImage: processedCGImage, options: [:])
+        let requestHandler = VNImageRequestHandler(cgImage: cgImage, options: [:])
         
         return try await withCheckedThrowingContinuation { continuation in
-            textRecognitionRequest.completionHandler = { request, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-                
-                guard let observations = request.results as? [VNRecognizedTextObservation] else {
+            do {
+                try requestHandler.perform([textRecognitionRequest])
+                guard let observations = textRecognitionRequest.results as? [VNRecognizedTextObservation] else {
                     continuation.resume(throwing: OCRError.noTextFound)
                     return
                 }
-                
                 let recognizedText = self.extractTextFromObservations(observations)
                 continuation.resume(returning: recognizedText)
-            }
-            
-            do {
-                try requestHandler.perform([textRecognitionRequest])
             } catch {
                 continuation.resume(throwing: error)
             }
@@ -59,106 +44,58 @@ class OcrService {
     // MARK: - Backend API OCR Processing
     
     func processImageViaAPI(_ image: UIImage, language: String = "en") async throws -> MenuResponse {
-        // Convert image to base64 with compression
         let base64String = try await compressAndEncodeImage(image, quality: 0.8, maxSize: 1024)
-        
-        let request = OcrRequest(image_base64: base64String, language: language)
+        let request = OcrRequest(image_base64: base64String)
         return try await apiService.processOcr(request: request)
     }
     
     func processImageBatchViaAPI(_ images: [UIImage], language: String = "en") async throws -> [MenuResponse] {
-        let requests = try await images.asyncMap { image in
+        var requests: [OcrRequest] = []
+        for image in images {
             let base64String = try await compressAndEncodeImage(image, quality: 0.8, maxSize: 1024)
-            return OcrRequest(image_base64: base64String, language: language)
+            requests.append(OcrRequest(image_base64: base64String))
         }
-        
         return try await apiService.processOcrBatch(requests: requests)
     }
     
     // MARK: - Image Processing & Table Extraction
     
     func processImageForTableExtraction(_ image: UIImage) async throws -> TableExtractionResponse {
-        // First get OCR text
         let ocrText = try await processImageLocally(image)
-        
-        // Then extract table data using Qwen AI
         return try await apiService.extractTableFromOCR(ocrText: ocrText, imageUrl: nil)
     }
     
     func extractTableFromText(_ text: String, format: String = "markdown") async throws -> TableExtractionResponse {
         let request = TableExtractionRequest(
             text: text,
-            format: format,
-            source: "manual"
+            source: "manual",
+            imageUrl: nil
         )
         return try await apiService.extractTable(request: request)
     }
     
-    // MARK: - Translation Services
-    
-    func translateRecognizedText(_ text: String, targetLanguage: String, sourceLanguage: String? = nil) async throws -> String {
-        // Use backend translation service
-        // This would call the translation endpoint from the FastAPI backend
-        let translationRequest = TranslationRequest(
-            text: text,
-            targetLanguage: targetLanguage,
-            sourceLanguage: sourceLanguage
-        )
-        
-        // For now, return original text as translation is handled by backend
-        // In a real implementation, you'd call the translation API
-        return text
-    }
-    
     // MARK: - Helper Methods
-    
-    private func preprocessImage(_ image: UIImage) -> UIImage {
-        // Convert to grayscale for better text recognition
-        guard let ciImage = CIImage(image: image) else { return image }
-        
-        let context = CIContext(options: nil)
-        guard let filter = CIFilter.colorControls() else { return image }
-        
-        filter.inputImage = ciImage
-        filter.saturation = 0.0 // Remove color
-        filter.contrast = 1.1   // Slightly increase contrast
-        
-        guard let outputImage = filter.outputImage,
-              let cgImage = context.createCGImage(outputImage, from: outputImage.extent) else {
-            return image
-        }
-        
-        return UIImage(cgImage: cgImage)
-    }
     
     private func extractTextFromObservations(_ observations: [VNRecognizedTextObservation]) -> String {
         var allText: [String] = []
-        
         for observation in observations {
             if let candidate = observation.topCandidates(1).first {
                 allText.append(candidate.string)
             }
         }
-        
         return allText.joined(separator: "\n")
     }
     
     private func compressAndEncodeImage(_ image: UIImage, quality: CGFloat, maxSize: CGFloat) async throws -> String {
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
-                do {
-                    let compressedImage = self.resizeAndCompressImage(image, maxSize: maxSize, quality: quality)
-                    
-                    guard let data = compressedImage.jpegData(compressionQuality: quality) else {
-                        continuation.resume(throwing: OCRError.imageCompressionFailed)
-                        return
-                    }
-                    
-                    let base64String = data.base64EncodedString()
-                    continuation.resume(returning: base64String)
-                } catch {
-                    continuation.resume(throwing: error)
+                let compressedImage = self.resizeAndCompressImage(image, maxSize: maxSize, quality: quality)
+                guard let data = compressedImage.jpegData(compressionQuality: quality) else {
+                    continuation.resume(throwing: OCRError.imageCompressionFailed)
+                    return
                 }
+                let base64String = data.base64EncodedString()
+                continuation.resume(returning: base64String)
             }
         }
     }
@@ -182,23 +119,6 @@ class OcrService {
         return resizedImage ?? image
     }
     
-    // MARK: - Camera & Gallery Integration
-    
-    func captureImageFromCamera() async throws -> UIImage {
-        return try await withCheckedThrowingContinuation { continuation in
-            // This would integrate with UIImagePickerController for camera capture
-            // Implementation depends on the view controller that calls this method
-            continuation.resume(throwing: OCRError.cameraNotAvailable)
-        }
-    }
-    
-    func selectImageFromGallery() async throws -> UIImage {
-        return try await withCheckedThrowingContinuation { continuation in
-            // This would integrate with UIImagePickerController for gallery selection
-            continuation.resume(throwing: OCRError.galleryNotAvailable)
-        }
-    }
-    
     // MARK: - OCR Analysis & Results
     
     func analyzeOcrResults(_ text: String) -> OcrAnalysisResult {
@@ -206,13 +126,8 @@ class OcrService {
         let lineCount = text.components(separatedBy: .newlines).count
         let characterCount = text.count
         
-        // Detect if text looks like a menu
         let isLikelyMenu = isLikelyMenuText(text)
-        
-        // Extract potential dish names
         let potentialDishes = extractPotentialDishes(text)
-        
-        // Extract potential prices
         let potentialPrices = extractPotentialPrices(text)
         
         return OcrAnalysisResult(
@@ -233,7 +148,6 @@ class OcrService {
     }
     
     private func extractPotentialDishes(_ text: String) -> [String] {
-        // Simple pattern matching for dish names
         let lines = text.components(separatedBy: .newlines)
         return lines.filter { line in
             !line.trimmingCharacters(in: .whitespaces).isEmpty &&
@@ -258,12 +172,10 @@ class OcrService {
                 }
             }
         }
-        
         return prices
     }
     
     private func calculateConfidence(_ text: String) -> Float {
-        // Simple confidence calculation based on text characteristics
         let hasProperSpacing = text.range(of: #"\s{2,}"#, options: .regularExpression) == nil
         let hasReasonableLength = text.count > 10 && text.count < 5000
         let hasCommonWords = text.lowercased().contains("the") || text.lowercased().contains("and")
@@ -319,30 +231,4 @@ struct OcrAnalysisResult {
     let potentialDishes: [String]
     let potentialPrices: [Double]
     let confidence: Float
-}
-
-struct TranslationRequest: Codable {
-    let text: String
-    let targetLanguage: String
-    let sourceLanguage: String?
-}
-
-struct TranslationResponse: Codable {
-    let translatedText: String
-    let sourceLanguage: String
-    let targetLanguage: String
-    let confidence: Float?
-}
-
-// MARK: - Async Extension for Arrays
-
-extension Array {
-    func asyncMap<T>(_ transform: (Element) async throws -> T) async throws -> [T] {
-        var results = [T]()
-        for element in self {
-            let result = try await transform(element)
-            results.append(result)
-        }
-        return results
-    }
 }

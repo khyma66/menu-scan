@@ -65,7 +65,11 @@ class DishTableViewCell: UITableViewCell {
 
     func configure(with dish: Dish) {
         nameLabel.text = dish.name
-        priceLabel.text = dish.price != nil ? String(format: "$%.2f", dish.price!) : "Price not available"
+        if let price = dish.price, !price.isEmpty {
+            priceLabel.text = price.hasPrefix("$") ? price : "$\(price)"
+        } else {
+            priceLabel.text = "Price not available"
+        }
         descriptionLabel.text = dish.description ?? "No description available"
     }
 }

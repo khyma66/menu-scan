@@ -64,9 +64,28 @@ app/
 
 ## API Integration
 
-The app communicates with the FastAPI backend through:
-- `POST /ocr/process`: Process image for OCR
-- `POST /dishes/extract`: Extract dishes from text
+The app communicates with the v3 Menu OCR backend through:
+- `POST /v1/menus:scan`: Upload pages and enqueue OCR+health analysis
+- `GET /v1/jobs/{job_id}`: Poll processing status
+- `GET /v1/menus/{menu_id}/personalized`: Fetch personalized dish recommendations
+- `GET /v1/user/health-profile`: Fetch user health profile
+- `PUT /v1/user/health-profile`: Update user health profile
+
+Legacy endpoints still exist in code for backward compatibility, but new flow uses the v3 routes.
+
+## MCP Server (Android)
+
+A lightweight MCP server was added at [scripts/android_mcp_server.py](../scripts/android_mcp_server.py) and registered in [config/mcp.json](../config/mcp.json) as `android-menu-ocr`.
+
+### One-command local smoke test
+
+From repo root:
+
+`./scripts/smoke_test_v3_mcp.sh`
+
+Optional authenticated run:
+
+`SMOKE_TEST_BEARER_TOKEN=<supabase_access_token> ./scripts/smoke_test_v3_mcp.sh`
 
 ## Building for Release
 

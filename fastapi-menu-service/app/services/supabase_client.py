@@ -25,7 +25,13 @@ class SupabaseClient:
             return None
         
         try:
-            response = self.client.table("menus").select("*").eq("restaurant_id", restaurant_id).single().execute()
+            response = (
+                self.client.table("menus")
+                .select("id,restaurant_id,name,created_at,updated_at")
+                .eq("restaurant_id", restaurant_id)
+                .single()
+                .execute()
+            )
             return response.data if response.data else None
         except Exception as e:
             logger.error(f"Error fetching menu info: {e}")
@@ -37,7 +43,13 @@ class SupabaseClient:
             return None
         
         try:
-            response = self.client.table("restaurants").select("*").eq("id", restaurant_id).single().execute()
+            response = (
+                self.client.table("restaurants")
+                .select("id,name,address,city,country,created_at")
+                .eq("id", restaurant_id)
+                .single()
+                .execute()
+            )
             return response.data if response.data else None
         except Exception as e:
             logger.error(f"Error fetching restaurant info: {e}")
@@ -102,7 +114,14 @@ class SupabaseClient:
             return []
         
         try:
-            response = self.client.table("ocr_results").select("*").order("created_at", desc=True).limit(limit).execute()
+            limit = max(1, min(limit, 50))
+            response = (
+                self.client.table("ocr_results")
+                .select("id,user_id,image_url,menu_items_count,method,processing_time_ms,created_at")
+                .order("created_at", desc=True)
+                .limit(limit)
+                .execute()
+            )
             return response.data if response.data else []
         except Exception as e:
             logger.error(f"Error fetching history: {e}")

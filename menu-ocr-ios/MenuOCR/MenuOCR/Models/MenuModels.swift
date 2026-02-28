@@ -5,13 +5,22 @@ import Foundation
 struct Dish: Codable, Identifiable, Equatable {
     let id: String
     let name: String
-    let price: Double?
+    let price: String?
     let description: String?
     let ingredients: [String]?
     let dietaryInfo: [String]?
 
     enum CodingKeys: String, CodingKey {
         case id, name, price, description, ingredients, dietaryInfo
+    }
+    
+    init(id: String = UUID().uuidString, name: String, price: String? = nil, description: String? = nil, ingredients: [String]? = nil, dietaryInfo: [String]? = nil) {
+        self.id = id
+        self.name = name
+        self.price = price
+        self.description = description
+        self.ingredients = ingredients
+        self.dietaryInfo = dietaryInfo
     }
 }
 
@@ -21,22 +30,59 @@ struct Menu: Codable {
 
 struct OcrRequest: Codable {
     let image_base64: String
-    let language: String = "en"
+    let language: String
+    
+    init(image_base64: String, language: String = "en") {
+        self.image_base64 = image_base64
+        self.language = language
+    }
 }
 
 struct MenuItem: Codable, Identifiable {
     let id: String?
     let name: String
-    let price: Double?
+    let price: String?
     let description: String?
     let category: String?
 
-    init(name: String, price: Double? = nil, description: String? = nil, category: String? = nil) {
+    init(name: String, price: String? = nil, description: String? = nil, category: String? = nil) {
         self.id = UUID().uuidString
         self.name = name
         self.price = price
         self.description = description
         self.category = category
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case id, name, price, description, category
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        category = try container.decodeIfPresent(String.self, forKey: .category)
+        
+        // Handle price that could be String, Int, or Double
+        if let priceString = try? container.decode(String.self, forKey: .price) {
+            price = priceString
+        } else if let priceDouble = try? container.decode(Double.self, forKey: .price) {
+            price = String(format: "%.2f", priceDouble)
+        } else if let priceInt = try? container.decode(Int.self, forKey: .price) {
+            price = String(priceInt)
+        } else {
+            price = nil
+        }
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(price, forKey: .price)
+        try container.encodeIfPresent(description, forKey: .description)
+        try container.encodeIfPresent(category, forKey: .category)
     }
 }
 
@@ -73,6 +119,7 @@ enum AuthState {
     case loading
     case authenticated(User)
     case unauthenticated
+    case passwordResetSent
     case error(String)
 }
 
@@ -84,6 +131,13 @@ struct User: Codable, Identifiable {
     
     enum CodingKeys: String, CodingKey {
         case id, email, name, createdAt
+    }
+    
+    init(id: String, email: String, name: String? = nil, createdAt: String? = nil) {
+        self.id = id
+        self.email = email
+        self.name = name
+        self.createdAt = createdAt
     }
 }
 
@@ -153,6 +207,7 @@ struct BatchTableExtractionResponse: Codable {
 // MARK: - User Preferences & Food Preferences
 
 struct UserPreferences: Codable, Identifiable {
+    let id: String
     let userId: String
     let foodPreferences: [FoodPreference]
     let dietaryRestrictions: [String]
@@ -163,7 +218,19 @@ struct UserPreferences: Codable, Identifiable {
     let updatedAt: String?
     
     enum CodingKeys: String, CodingKey {
-        case userId, foodPreferences, dietaryRestrictions, favoriteCuisines, spiceTolerance, budgetPreference, healthConditions, updatedAt
+        case id, userId, foodPreferences, dietaryRestrictions, favoriteCuisines, spiceTolerance, budgetPreference, healthConditions, updatedAt
+    }
+    
+    init(id: String = UUID().uuidString, userId: String, foodPreferences: [FoodPreference], dietaryRestrictions: [String], favoriteCuisines: [String], spiceTolerance: String? = nil, budgetPreference: String? = nil, healthConditions: [String]? = nil, updatedAt: String? = nil) {
+        self.id = id
+        self.userId = userId
+        self.foodPreferences = foodPreferences
+        self.dietaryRestrictions = dietaryRestrictions
+        self.favoriteCuisines = favoriteCuisines
+        self.spiceTolerance = spiceTolerance
+        self.budgetPreference = budgetPreference
+        self.healthConditions = healthConditions
+        self.updatedAt = updatedAt
     }
 }
 
@@ -195,6 +262,42 @@ struct UserProfileUpdateRequest: Codable {
     let spice_tolerance: String?
     let budget_preference: String?
     let health_conditions: [String]?
+}
+
+struct AppProfileDetails: Codable {
+    let user_id: String
+    let full_name: String?
+    let email: String?
+    let contact: String?
+    let phone: String?
+    let country: String?
+    let updated_at: String?
+}
+
+struct AppProfileDetailsRequest: Codable {
+    let full_name: String?
+    let email: String?
+    let contact: String?
+    let phone: String?
+    let country: String?
+}
+
+struct DiscoveryPreferences: Codable {
+    let user_id: String
+    let search_radius_miles: Int
+    let selected_cuisines: [String]
+    let location_label: String?
+    let latitude: Double?
+    let longitude: Double?
+    let updated_at: String?
+}
+
+struct DiscoveryPreferencesRequest: Codable {
+    let search_radius_miles: Int
+    let selected_cuisines: [String]
+    let location_label: String?
+    let latitude: Double?
+    let longitude: Double?
 }
 
 // MARK: - Payment Models
@@ -252,21 +355,6 @@ struct Price: Codable, Identifiable {
     let nickname: String?
     let unit_amount: Int?
     let currency: String
-}
-
-// MARK: - Translation Models
-
-struct TranslationRequest: Codable {
-    let text: String
-    let targetLanguage: String
-    let sourceLanguage: String?
-}
-
-struct TranslationResponse: Codable {
-    let translatedText: String
-    let sourceLanguage: String
-    let targetLanguage: String
-    let confidence: Float?
 }
 
 // MARK: - API Response Models

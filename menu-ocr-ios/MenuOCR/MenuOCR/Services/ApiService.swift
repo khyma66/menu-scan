@@ -1,10 +1,9 @@
 import Foundation
-import Supabase
 
 class ApiService {
-    private let baseURL = "http://localhost:8000" // Configurable for deployment
-    private let session = URLSession.shared
-    private let supabase = SupabaseClient(supabaseURL: "YOUR_SUPABASE_URL", supabaseKey: "YOUR_SUPABASE_ANON_KEY")
+    let baseURL: String = AppConfig.MenuOcrApi.useLocal ? 
+        AppConfig.MenuOcrApi.localBaseURL : AppConfig.MenuOcrApi.baseURL
+    let session = URLSession.shared
     
     // MARK: - OCR Processing
     
@@ -232,7 +231,7 @@ class ApiService {
     
     // MARK: - User Preferences
     
-    func addFoodPreference(request: FoodPreferenceRequest) async throws -> [String: Any] {
+    func addFoodPreference(request: FoodPreferenceRequest) async throws -> FoodPreference {
         let url = URL(string: "\(baseURL)/user/preferences/food-preferences")!
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
@@ -252,7 +251,7 @@ class ApiService {
             throw ApiError.invalidResponse
         }
         
-        return try JSONDecoder().decode([String: Any].self, from: data)
+        return try JSONDecoder().decode(FoodPreference.self, from: data)
     }
     
     func getFoodPreferences() async throws -> [FoodPreference] {
@@ -275,7 +274,7 @@ class ApiService {
         return try JSONDecoder().decode([FoodPreference].self, from: data)
     }
     
-    func updateUserProfile(request: UserProfileUpdateRequest) async throws -> [String: Any] {
+    func updateUserProfile(request: UserProfileUpdateRequest) async throws -> UserPreferences {
         let url = URL(string: "\(baseURL)/user/preferences/profile")!
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "PUT"
@@ -295,7 +294,7 @@ class ApiService {
             throw ApiError.invalidResponse
         }
         
-        return try JSONDecoder().decode([String: Any].self, from: data)
+        return try JSONDecoder().decode(UserPreferences.self, from: data)
     }
     
     func getUserProfile() async throws -> UserPreferences {
@@ -317,11 +316,95 @@ class ApiService {
         
         return try JSONDecoder().decode(UserPreferences.self, from: data)
     }
+
+    // MARK: - App Profile + Discovery
+
+    func getAppProfile() async throws -> AppProfileDetails {
+        let url = URL(string: "\(baseURL)/user/app-profile")!
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "GET"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        if let authToken = await getAuthToken() {
+            urlRequest.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+        }
+
+        let (data, response) = try await session.data(for: urlRequest)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw ApiError.invalidResponse
+        }
+
+        return try JSONDecoder().decode(AppProfileDetails.self, from: data)
+    }
+
+    func updateAppProfile(request: AppProfileDetailsRequest) async throws -> AppProfileDetails {
+        let url = URL(string: "\(baseURL)/user/app-profile")!
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "PUT"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        if let authToken = await getAuthToken() {
+            urlRequest.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+        }
+
+        urlRequest.httpBody = try JSONEncoder().encode(request)
+        let (data, response) = try await session.data(for: urlRequest)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw ApiError.invalidResponse
+        }
+
+        return try JSONDecoder().decode(AppProfileDetails.self, from: data)
+    }
+
+    func getDiscoveryPreferences() async throws -> DiscoveryPreferences {
+        let url = URL(string: "\(baseURL)/user/discovery-preferences")!
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "GET"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        if let authToken = await getAuthToken() {
+            urlRequest.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+        }
+
+        let (data, response) = try await session.data(for: urlRequest)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw ApiError.invalidResponse
+        }
+
+        return try JSONDecoder().decode(DiscoveryPreferences.self, from: data)
+    }
+
+    func updateDiscoveryPreferences(request: DiscoveryPreferencesRequest) async throws -> DiscoveryPreferences {
+        let url = URL(string: "\(baseURL)/user/discovery-preferences")!
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "PUT"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        if let authToken = await getAuthToken() {
+            urlRequest.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+        }
+
+        urlRequest.httpBody = try JSONEncoder().encode(request)
+        let (data, response) = try await session.data(for: urlRequest)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw ApiError.invalidResponse
+        }
+
+        return try JSONDecoder().decode(DiscoveryPreferences.self, from: data)
+    }
     
     // MARK: - Authentication
     
-    private func getAuthToken() async -> String? {
-        // Get auth token from Supabase or local storage
+    func getAuthToken() async -> String? {
+        // Get auth token from local storage
         return UserDefaults.standard.string(forKey: "auth_token")
     }
     

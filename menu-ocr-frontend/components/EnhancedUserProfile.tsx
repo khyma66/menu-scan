@@ -74,7 +74,7 @@ export default function EnhancedUserProfile() {
 
   const loadProfile = async () => {
     try {
-      const token = await supabase.auth.getSession();
+      const token = await supabase!.auth.getSession();
       if (!token.data.session) return;
 
       const response = await fetch("/api/user/profile", {
@@ -94,7 +94,7 @@ export default function EnhancedUserProfile() {
 
   const loadAddresses = async () => {
     try {
-      const token = await supabase.auth.getSession();
+      const token = await supabase!.auth.getSession();
       if (!token.data.session) return;
 
       const response = await fetch("/api/user/addresses", {
@@ -114,7 +114,7 @@ export default function EnhancedUserProfile() {
 
   const loadReferralInfo = async () => {
     try {
-      const token = await supabase.auth.getSession();
+      const token = await supabase!.auth.getSession();
       if (!token.data.session) return;
 
       const response = await fetch("/api/user/referral", {
@@ -135,7 +135,7 @@ export default function EnhancedUserProfile() {
   const handleProfileUpdate = async (formData: any) => {
     try {
       setMessage("");
-      const token = await supabase.auth.getSession();
+      const token = await supabase!.auth.getSession();
       if (!token.data.session) throw new Error("Not authenticated");
 
       const response = await fetch("/api/user/profile", {
@@ -161,7 +161,7 @@ export default function EnhancedUserProfile() {
   const handlePasswordChange = async (currentPassword: string, newPassword: string) => {
     try {
       setMessage("");
-      const token = await supabase.auth.getSession();
+      const token = await supabase!.auth.getSession();
       if (!token.data.session) throw new Error("Not authenticated");
 
       const response = await fetch("/api/user/change-password", {
@@ -190,7 +190,7 @@ export default function EnhancedUserProfile() {
   const handleAddressSubmit = async (addressData: any) => {
     try {
       setMessage("");
-      const token = await supabase.auth.getSession();
+      const token = await supabase!.auth.getSession();
       if (!token.data.session) throw new Error("Not authenticated");
 
       const response = await fetch("/api/user/addresses", {
@@ -275,11 +275,10 @@ export default function EnhancedUserProfile() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === tab.id
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id
                       ? 'border-blue-500 text-blue-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   {tab.label}
                 </button>
@@ -350,7 +349,7 @@ function ProfileTab({ user, onUpdate }: { user: UserProfile; onUpdate: (data: an
           <input
             type="text"
             value={formData.full_name}
-            onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
             className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
@@ -359,7 +358,7 @@ function ProfileTab({ user, onUpdate }: { user: UserProfile; onUpdate: (data: an
           <input
             type="tel"
             value={formData.phone}
-            onChange={(e) => setFormData({...formData, phone: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
@@ -373,7 +372,7 @@ function ProfileTab({ user, onUpdate }: { user: UserProfile; onUpdate: (data: an
             <input
               type="text"
               value={formData.address_street}
-              onChange={(e) => setFormData({...formData, address_street: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, address_street: e.target.value })}
               className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
@@ -382,7 +381,7 @@ function ProfileTab({ user, onUpdate }: { user: UserProfile; onUpdate: (data: an
             <input
               type="text"
               value={formData.address_city}
-              onChange={(e) => setFormData({...formData, address_city: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, address_city: e.target.value })}
               className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
@@ -391,7 +390,7 @@ function ProfileTab({ user, onUpdate }: { user: UserProfile; onUpdate: (data: an
             <input
               type="text"
               value={formData.address_state}
-              onChange={(e) => setFormData({...formData, address_state: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, address_state: e.target.value })}
               className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
@@ -400,7 +399,7 @@ function ProfileTab({ user, onUpdate }: { user: UserProfile; onUpdate: (data: an
             <input
               type="text"
               value={formData.address_zip}
-              onChange={(e) => setFormData({...formData, address_zip: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, address_zip: e.target.value })}
               className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
@@ -408,7 +407,7 @@ function ProfileTab({ user, onUpdate }: { user: UserProfile; onUpdate: (data: an
             <label className="block text-sm font-medium text-gray-700">Country</label>
             <select
               value={formData.address_country}
-              onChange={(e) => setFormData({...formData, address_country: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, address_country: e.target.value })}
               className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="US">United States</option>
@@ -477,7 +476,7 @@ function AddressesTab({ addresses, onSubmit }: { addresses: Address[]; onSubmit:
               <label className="block text-sm font-medium text-gray-700">Type</label>
               <select
                 value={formData.type}
-                onChange={(e) => setFormData({...formData, type: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                 className="mt-1 block w-full border-gray-300 rounded-md"
               >
                 <option value="home">Home</option>
@@ -490,7 +489,7 @@ function AddressesTab({ addresses, onSubmit }: { addresses: Address[]; onSubmit:
               <input
                 type="checkbox"
                 checked={formData.is_primary}
-                onChange={(e) => setFormData({...formData, is_primary: e.target.checked})}
+                onChange={(e) => setFormData({ ...formData, is_primary: e.target.checked })}
                 className="mt-1"
               />
             </div>
@@ -500,7 +499,7 @@ function AddressesTab({ addresses, onSubmit }: { addresses: Address[]; onSubmit:
                 type="text"
                 required
                 value={formData.street}
-                onChange={(e) => setFormData({...formData, street: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, street: e.target.value })}
                 className="mt-1 block w-full border-gray-300 rounded-md"
               />
             </div>
@@ -509,7 +508,7 @@ function AddressesTab({ addresses, onSubmit }: { addresses: Address[]; onSubmit:
               <input
                 type="text"
                 value={formData.apartment_number}
-                onChange={(e) => setFormData({...formData, apartment_number: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, apartment_number: e.target.value })}
                 className="mt-1 block w-full border-gray-300 rounded-md"
               />
             </div>
@@ -519,7 +518,7 @@ function AddressesTab({ addresses, onSubmit }: { addresses: Address[]; onSubmit:
                 type="text"
                 required
                 value={formData.city}
-                onChange={(e) => setFormData({...formData, city: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 className="mt-1 block w-full border-gray-300 rounded-md"
               />
             </div>
@@ -529,7 +528,7 @@ function AddressesTab({ addresses, onSubmit }: { addresses: Address[]; onSubmit:
                 type="text"
                 required
                 value={formData.state}
-                onChange={(e) => setFormData({...formData, state: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                 className="mt-1 block w-full border-gray-300 rounded-md"
               />
             </div>
@@ -539,7 +538,7 @@ function AddressesTab({ addresses, onSubmit }: { addresses: Address[]; onSubmit:
                 type="text"
                 required
                 value={formData.zip_code}
-                onChange={(e) => setFormData({...formData, zip_code: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
                 className="mt-1 block w-full border-gray-300 rounded-md"
               />
             </div>
@@ -547,7 +546,7 @@ function AddressesTab({ addresses, onSubmit }: { addresses: Address[]; onSubmit:
               <label className="block text-sm font-medium text-gray-700">Country</label>
               <select
                 value={formData.country}
-                onChange={(e) => setFormData({...formData, country: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                 className="mt-1 block w-full border-gray-300 rounded-md"
               >
                 <option value="US">United States</option>
@@ -686,7 +685,7 @@ function ReferralTab({ referralInfo }: { referralInfo: ReferralInfo | null }) {
         <p className="text-blue-700 mb-4">
           Share your referral code and earn rewards! You get 1 month free for each friend who subscribes.
         </p>
-        
+
         <div className="bg-white p-4 rounded border">
           <label className="block text-sm font-medium text-gray-700 mb-2">Your Referral Code</label>
           <div className="flex items-center space-x-2">
@@ -731,11 +730,11 @@ function ReferralTab({ referralInfo }: { referralInfo: ReferralInfo | null }) {
 function getSupabaseClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-  
+
   if (!supabaseUrl || !supabaseKey) {
     console.warn("Supabase credentials not configured");
     return null;
   }
-  
+
   return createClient(supabaseUrl, supabaseKey);
 }

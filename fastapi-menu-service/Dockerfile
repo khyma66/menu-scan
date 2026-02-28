@@ -11,6 +11,14 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     libssl-dev \
     curl \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    tesseract-ocr-fra \
+    tesseract-ocr-deu \
+    tesseract-ocr-spa \
+    tesseract-ocr-ita \
+    libtesseract-dev \
+    libleptonica-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching

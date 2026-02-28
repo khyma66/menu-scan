@@ -110,17 +110,28 @@ class HealthProfileManager:
                 logger.info(f"Health profile already exists for user {user_id}")
                 return existing
 
-            # For now, just return a mock profile since we can't create new tables
-            # In production, this would create a health_profiles record
-            profile_id = f"profile_{user_id}"  # Mock ID
-            logger.info(f"Created mock health profile {profile_id} for user {user_id}")
+            # Preferred: create normalized v2 profile row
+            try:
+                response = self.supabase.client.table("health_profiles").insert({
+                    "user_id": user_id,
+                    "profile_name": validated_name,
+                    "is_active": True,
+                }).execute()
+                if response.data:
+                    row = response.data[0]
+                    return HealthProfile(
+                        id=row["id"],
+                        user_id=user_id,
+                        profile_name=row.get("profile_name"),
+                        is_active=row.get("is_active", True),
+                        conditions=[],
+                    )
+            except Exception as exc:
+                logger.warning(f"Could not create health_profiles row, using compatibility mode: {exc}")
 
-            return HealthProfile(
-                id=profile_id,
-                user_id=user_id,
-                profile_name=validated_name,
-                is_active=True
-            )
+            # Compatibility fallback when v2 table is unavailable
+            profile_id = f"profile_{user_id}"
+            return HealthProfile(id=profile_id, user_id=user_id, profile_name=validated_name, is_active=True)
 
         except Exception as e:
             logger.error(f"Error creating health profile for user {user_id}: {e}")
@@ -129,17 +140,21 @@ class HealthProfileManager:
     async def get_profile(self, user_id: str) -> Optional[HealthProfile]:
         """Get health profile for a user."""
         try:
-            # For now, return a mock profile and get conditions from health_conditions table
-            profile_id = f"profile_{user_id}"
+            profile_row = None
+            try:
+                profiles = self.supabase.client.table("health_profiles").select("*").eq("user_id", user_id).eq("is_active", True).limit(1).execute().data or []
+                if profiles:
+                    profile_row = profiles[0]
+            except Exception:
+                profile_row = None
 
-            # Get associated conditions from the existing health_conditions table
-            conditions = await self._get_profile_conditions(user_id)
+            conditions = await self._get_profile_conditions(user_id, profile_row.get("id") if profile_row else None)
 
             return HealthProfile(
-                id=profile_id,
+                id=profile_row.get("id") if profile_row else f"profile_{user_id}",
                 user_id=user_id,
-                profile_name=None,
-                is_active=True,
+                profile_name=profile_row.get("profile_name") if profile_row else None,
+                is_active=profile_row.get("is_active", True) if profile_row else True,
                 conditions=conditions
             )
 
@@ -147,19 +162,37 @@ class HealthProfileManager:
             logger.error(f"Error getting health profile for user {user_id}: {e}")
             raise HealthServiceError(f"Failed to get health profile: {str(e)}")
 
-    async def _get_profile_conditions(self, user_id: str) -> List[HealthCondition]:
-        """Get all active conditions for a user from the existing health_conditions table."""
+    async def _get_profile_conditions(self, user_id: str, profile_id: Optional[str]) -> List[HealthCondition]:
+        """Get all active conditions for a user from v2 tables with fallback to legacy."""
         try:
-            response = self.supabase.client.table("health_conditions").select("*").eq("user_id", user_id).execute()
-
             conditions = []
+
+            if profile_id:
+                try:
+                    response_v2 = self.supabase.client.table("health_conditions_v2").select("*").eq("profile_id", profile_id).eq("is_active", True).execute()
+                    for cond_dict in response_v2.data or []:
+                        conditions.append(HealthCondition(
+                            condition_type=cond_dict['condition_type'],
+                            condition_name=cond_dict['condition_name'],
+                            severity=cond_dict.get('severity'),
+                            description=cond_dict.get('description'),
+                            metadata=cond_dict.get('metadata')
+                        ))
+                except Exception:
+                    pass
+
+            if conditions:
+                return conditions
+
+            # Legacy fallback
+            response = self.supabase.client.table("health_conditions").select("*").eq("user_id", user_id).execute()
             for cond_dict in response.data or []:
                 conditions.append(HealthCondition(
                     condition_type=cond_dict['condition_type'],
                     condition_name=cond_dict['condition_name'],
                     severity=cond_dict.get('severity'),
                     description=cond_dict.get('description'),
-                    metadata=None  # Existing table doesn't have metadata
+                    metadata=None
                 ))
 
             return conditions
@@ -182,24 +215,42 @@ class HealthConditionManager:
             # Validate condition
             HealthValidator.validate_condition(condition)
 
-            # Check for duplicates in existing health_conditions table
+            # Check for duplicates in v2/legacy tables
             await self._check_duplicate_condition(user_id, condition)
 
-            # Add condition to existing health_conditions table
-            condition_data = {
-                "user_id": user_id,
-                "condition_type": condition.condition_type,
-                "condition_name": condition.condition_name,
-                "severity": condition.severity,
-                "description": condition.description
-            }
+            condition_id = None
 
-            response = self.supabase.client.table("health_conditions").insert(condition_data).execute()
+            # Preferred: v2 insert
+            try:
+                profile = await self.profile_manager.create_profile(user_id)
+                if profile and not str(profile.id).startswith("profile_"):
+                    response_v2 = self.supabase.client.table("health_conditions_v2").insert({
+                        "profile_id": profile.id,
+                        "condition_type": condition.condition_type,
+                        "condition_name": condition.condition_name,
+                        "severity": condition.severity,
+                        "description": condition.description,
+                        "metadata": condition.metadata,
+                        "is_active": True,
+                    }).execute()
+                    if response_v2.data:
+                        condition_id = response_v2.data[0]['id']
+            except Exception as exc:
+                logger.warning(f"Failed to write condition to v2 table: {exc}")
 
-            if not response.data:
-                raise HealthServiceError("Failed to add health condition")
-
-            condition_id = response.data[0]['id']
+            # Legacy fallback
+            if not condition_id:
+                condition_data = {
+                    "user_id": user_id,
+                    "condition_type": condition.condition_type,
+                    "condition_name": condition.condition_name,
+                    "severity": condition.severity,
+                    "description": condition.description
+                }
+                response = self.supabase.client.table("health_conditions").insert(condition_data).execute()
+                if not response.data:
+                    raise HealthServiceError("Failed to add health condition")
+                condition_id = response.data[0]['id']
             logger.info(f"Added health condition {condition.condition_name} for user {user_id}")
 
             # Track analytics
@@ -216,10 +267,21 @@ class HealthConditionManager:
     async def remove_condition(self, user_id: str, condition_name: str) -> bool:
         """Remove a health condition from user's profile."""
         try:
-            # Delete condition from existing health_conditions table
-            response = self.supabase.client.table("health_conditions").delete().eq("user_id", user_id).eq("condition_name", condition_name).execute()
+            success = False
 
-            success = len(response.data or []) > 0
+            # Preferred: soft-delete v2 rows
+            try:
+                profiles = self.supabase.client.table("health_profiles").select("id").eq("user_id", user_id).eq("is_active", True).limit(1).execute().data or []
+                if profiles:
+                    response_v2 = self.supabase.client.table("health_conditions_v2").update({"is_active": False}).eq("profile_id", profiles[0]["id"]).eq("condition_name", condition_name).eq("is_active", True).execute()
+                    success = len(response_v2.data or []) > 0
+            except Exception:
+                success = False
+
+            # Legacy fallback
+            if not success:
+                response = self.supabase.client.table("health_conditions").delete().eq("user_id", user_id).eq("condition_name", condition_name).execute()
+                success = len(response.data or []) > 0
 
             if success:
                 logger.info(f"Removed health condition {condition_name} for user {user_id}")
@@ -237,8 +299,20 @@ class HealthConditionManager:
 
     async def _check_duplicate_condition(self, user_id: str, condition: HealthCondition) -> None:
         """Check if condition already exists for user."""
-        response = self.supabase.client.table("health_conditions").select("*").eq("user_id", user_id).eq("condition_name", condition.condition_name).execute()
+        # Check v2 first
+        try:
+            profiles = self.supabase.client.table("health_profiles").select("id").eq("user_id", user_id).eq("is_active", True).limit(1).execute().data or []
+            if profiles:
+                response_v2 = self.supabase.client.table("health_conditions_v2").select("id").eq("profile_id", profiles[0]["id"]).eq("condition_name", condition.condition_name).eq("is_active", True).execute()
+                if response_v2.data:
+                    raise HealthValidationError(f"Condition '{condition.condition_name}' already exists")
+        except HealthValidationError:
+            raise
+        except Exception:
+            pass
 
+        # Legacy fallback
+        response = self.supabase.client.table("health_conditions").select("id").eq("user_id", user_id).eq("condition_name", condition.condition_name).execute()
         if response.data:
             raise HealthValidationError(f"Condition '{condition.condition_name}' already exists")
 

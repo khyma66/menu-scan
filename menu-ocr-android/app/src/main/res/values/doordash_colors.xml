@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Gray Colors -->
-    <color name="gray_50">#F9FAFB</color>
-    <color name="gray_100">#F3F4F6</color>
-    <color name="gray_200">#E5E7EB</color>
-    <color name="gray_300">#D1D5DB</color>
+    <color name="gray_50">#FFFFFF</color>
+    <color name="gray_100">#F3F3F5</color>
+    <color name="gray_200">#ECECF0</color>
+    <color name="gray_300">#DADDE3</color>
     <color name="gray_400">#9CA3AF</color>
-    <color name="gray_500">#6B7280</color>
+    <color name="gray_500">#717182</color>
     <color name="gray_600">#4B5563</color>
     <color name="gray_700">#374151</color>
     <color name="gray_800">#1F2937</color>
-    <color name="gray_900">#111827</color>
+    <color name="gray_900">#030213</color>
     
-    <!-- Orange Colors -->
-    <color name="orange_100">#FED7AA</color>
-    <color name="orange_200">#FDBA74</color>
-    <color name="orange_300">#FB923C</color>
-    <color name="orange_400">#F97316</color>
-    <color name="orange_500">#FF6B35</color>
-    <color name="orange_600">#EA580C</color>
-    <color name="orange_700">#C2410C</color>
-    <color name="orange_800">#9A3412</color>
-    <color name="orange_900">#7C2D12</color>
+    <!-- Legacy orange tokens remapped to light non-orange tones -->
+    <color name="orange_100">#F3F4F6</color>
+    <color name="orange_200">#E0F2FE</color>
+    <color name="orange_300">#E0E7FF</color>
+    <color name="orange_400">#EDE9FE</color>
+    <color name="orange_500">#D1FAE5</color>
+    <color name="orange_600">#BFDBFE</color>
+    <color name="orange_700">#C7D2FE</color>
+    <color name="orange_800">#DDD6FE</color>
+    <color name="orange_900">#BAE6FD</color>
     
     <!-- Green Colors -->
     <color name="green_100">#DCFCE7</color>
@@ -105,8 +105,24 @@
     <color name="black">#000000</color>
     <color name="transparent">#00000000</color>
     
-    <!-- DoorDash Brand Colors -->
-    <color name="doordash_primary">#FF3008</color>
-    <color name="doordash_secondary">#FF6B35</color>
-    <color name="doordash_accent">#F7931E</color>
+    <!-- App palette -->
+    <color name="doordash_primary">#030213</color>
+    <color name="doordash_secondary">#ECECF0</color>
+    <color name="doordash_accent">#E9EBEF</color>
+    <color name="doordash_red">#D4183D</color>
+    <color name="doordash_dark_red">#030213</color>
+    
+    <!-- Additional UI Colors -->
+    <color name="background_light">#FFFFFF</color>
+    <color name="background_dark">#1a1a1a</color>
+    <color name="text_primary">#030213</color>
+    <color name="text_secondary">#717182</color>
+    <color name="gray_text">#999999</color>
+    <color name="text_light">#FFFFFF</color>
+    <color name="divider">#0000001A</color>
+    <color name="ripple">#1F000000</color>
+    <color name="error">#D32F2F</color>
+    <color name="success">#4CAF50</color>
+    <color name="card_background">#FFFFFF</color>
+    <color name="card_shadow">#1A000000</color>
 </resources>

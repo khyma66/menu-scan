@@ -1,9 +1,44 @@
 {
   "mcpServers": {
-    "render": {
-      "url": "https://mcp.render.com/mcp",
-      "headers": {
-        "Authorization": "Bearer <rnd_7YOAuj8CSc9XjDg0oRqaDPLZVIJZ>"
+    "android-menu-ocr": {
+      "command": "python3",
+      "args": [
+        "scripts/android_mcp_server.py"
+      ],
+      "env": {
+        "MENU_OCR_API_BASE": "http://127.0.0.1:8787",
+        "PYTHONPATH": "."
+      }
+    },
+    "gemini-ocr": {
+      "command": "python3",
+      "args": [
+        "scripts/gemini_mcp_server.py"
+      ],
+      "env": {
+        "GEMINI_API_KEY": "AIzaSyDGBqxAtqdE1byHViWvIyoQ26K0Zt9DqdA",
+        "PYTHONPATH": "."
+      },
+      "note": "Gemini API for OCR processing - uses Gemini Vision models"
+    },
+    "openrouter": {
+      "command": "python3",
+      "args": [
+        "scripts/openrouter_mcp_server.py"
+      ],
+      "env": {
+        "OPENROUTER_API_KEY": "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",
+        "PYTHONPATH": "."
+      },
+      "note": "OpenRouter API for fallback OCR with Qwen models"
+    },
+    "restaurant-discovery": {
+      "command": "python3",
+      "args": [
+        "scripts/restaurant_mcp_server.py"
+      ],
+      "env": {
+        "PYTHONPATH": "."
       }
     },
     "apify": {
@@ -12,24 +47,26 @@
         "Authorization": "Bearer <apify_api_fN0eoFyxQqYNBYWI96VQrmlVNc7JuA2Ra4OL>"
       }
     },
-    "openrouter": {
-      "command": "python",
-      "args": [
-        "openrouter_mcp_server.py"
-      ],
-      "env": {
-        "OPENROUTER_API_KEY": "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",
-        "PYTHONPATH": "."
-      }
-    },
     "notegpt": {
-      "command": "python",
+      "command": "python3",
       "args": [
         "video-transcript-pipeline/notegpt_mcp_server.py"
       ],
       "env": {
         "PYTHONPATH": "."
       }
+    },
+    "figma": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "figma-developer-mcp",
+        "--stdio"
+      ],
+      "env": {
+        "FIGMA_API_KEY": "figd_WCdmYUB71nAQSaqDmzA1Tc5r6t6eceDBrDPy3tnl"
+      },
+      "note": "Framelink Figma MCP server"
     }
   }
 }

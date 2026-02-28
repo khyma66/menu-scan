@@ -50,43 +50,40 @@ export default function HealthConditionForm({ onSubmit, onCancel }: HealthCondit
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     e.stopPropagation(); // CRITICAL: Prevent event from bubbling to parent forms
-    
+
     // Also stop immediate propagation if available
     if (e.nativeEvent && typeof e.nativeEvent.stopImmediatePropagation === 'function') {
       e.nativeEvent.stopImmediatePropagation();
     }
-    
+
     console.log("🔵🔵🔵 HealthConditionForm: handleSubmit called");
     console.log("🔵🔵🔵 Event type:", e.type);
     console.log("🔵🔵🔵 Conditions array:", JSON.stringify(conditions, null, 2));
     console.log("🔵🔵🔵 Conditions length:", conditions.length);
     console.log("🔵🔵🔵 onSubmit function exists:", typeof onSubmit === 'function');
-    
+
     if (conditions.length === 0) {
       console.warn("⚠️ No conditions to submit");
       alert("Please add at least one health condition before saving.");
       return;
     }
-    
+
     console.log("✅ Calling onSubmit with", conditions.length, "conditions");
     try {
-      // Make sure onSubmit is called and awaited
-      const result = onSubmit(conditions);
-      if (result && typeof result.then === 'function') {
-        await result;
-      }
+      // Make sure onSubmit is called
+      onSubmit(conditions);
       console.log("✅ onSubmit completed successfully");
     } catch (error) {
       console.error("❌ Error in onSubmit:", error);
       alert(`Error: ${error instanceof Error ? error.message : String(error)}`);
     }
-    
+
     // Prevent default form submission behavior
     return false;
   };
 
   return (
-    <form 
+    <form
       onSubmit={handleSubmit}
       onClick={(e) => {
         e.stopPropagation(); // Prevent clicks from bubbling
@@ -111,33 +108,30 @@ export default function HealthConditionForm({ onSubmit, onCancel }: HealthCondit
           <button
             type="button"
             onClick={() => setConditionType("allergy")}
-            className={`px-4 py-2 rounded-lg transition ${
-              conditionType === "allergy"
+            className={`px-4 py-2 rounded-lg transition ${conditionType === "allergy"
                 ? "bg-blue-600 text-white"
                 : "bg-gray-100 text-gray-700"
-            }`}
+              }`}
           >
             Allergy
           </button>
           <button
             type="button"
             onClick={() => setConditionType("illness")}
-            className={`px-4 py-2 rounded-lg transition ${
-              conditionType === "illness"
+            className={`px-4 py-2 rounded-lg transition ${conditionType === "illness"
                 ? "bg-red-600 text-white"
                 : "bg-gray-100 text-gray-700"
-            }`}
+              }`}
           >
             Illness
           </button>
           <button
             type="button"
             onClick={() => setConditionType("dietary")}
-            className={`px-4 py-2 rounded-lg transition ${
-              conditionType === "dietary"
+            className={`px-4 py-2 rounded-lg transition ${conditionType === "dietary"
                 ? "bg-green-600 text-white"
                 : "bg-gray-100 text-gray-700"
-            }`}
+              }`}
           >
             Dietary
           </button>

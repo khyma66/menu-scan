@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import UIKit
 
 class PaymentViewModel: ObservableObject {
     @Published var paymentState: PaymentState = .idle
@@ -65,7 +66,7 @@ class PaymentViewModel: ObservableObject {
                 switch result {
                 case .completed:
                     self.paymentState = .paymentCompleted
-                case .canceled:
+                case .cancelled:
                     self.paymentState = .paymentCanceled
                 case .failed(let error):
                     self.paymentState = .error(error.localizedDescription)

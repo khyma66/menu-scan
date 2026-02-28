@@ -32,8 +32,8 @@
             android:layout_height="wrap_content"
             android:layout_margin="12dp"
             android:src="@android:drawable/ic_input_add"
-            android:backgroundTint="@color/doordash_primary"
-            app:tint="@color/white"
+            android:backgroundTint="@color/white"
+            app:tint="@color/gray_900"
             app:fabSize="mini"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />

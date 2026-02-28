@@ -13,6 +13,7 @@
 
         <!-- Google Drive Header -->
         <androidx.cardview.widget.CardView
+            android:id="@+id/status_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
@@ -74,7 +75,7 @@
                     android:drawableStart="@drawable/ic_refresh"
                     android:drawablePadding="4dp"
                     android:text="Refresh"
-                    android:textColor="@color/blue_500"
+                    android:textColor="@color/gray_900"
                     android:textSize="12sp" />
 
             </LinearLayout>
@@ -124,11 +125,11 @@
                     android:id="@+id/btn_sign_in_drive"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/button_google"
+                    android:background="@drawable/button_primary"
                     android:drawableStart="@drawable/ic_google"
                     android:drawablePadding="8dp"
                     android:text="Sign in with Google"
-                    android:textColor="@android:color/white"
+                    android:textColor="@color/gray_900"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
@@ -170,7 +171,7 @@
                     android:textStyle="bold" />
 
                 <LinearLayout
-                    android:id="@+id/file_list_container"
+                    android:id="@+id/files_container"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
@@ -180,7 +181,7 @@
                 </LinearLayout>
 
                 <LinearLayout
-                    android:id="@+id/empty_files_view"
+                    android:id="@+id/empty_state"
                     android:layout_width="match_parent"
                     android:layout_height="150dp"
                     android:gravity="center"
@@ -261,7 +262,7 @@
                     android:layout_height="wrap_content"
                     android:background="@drawable/button_primary"
                     android:text="📤 Upload to Google Drive"
-                    android:textColor="@android:color/white"
+                    android:textColor="@color/gray_900"
                     android:textSize="14sp" />
 
             </LinearLayout>
@@ -270,6 +271,7 @@
 
         <!-- Quick Actions -->
         <LinearLayout
+            android:id="@+id/action_buttons_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
@@ -283,7 +285,7 @@
                 android:layout_weight="1"
                 android:background="@drawable/button_secondary"
                 android:text="🔄 Sync"
-                android:textColor="@color/green_500"
+                android:textColor="@color/gray_900"
                 android:textSize="12sp" />
 
             <Button
@@ -294,7 +296,7 @@
                 android:layout_weight="1"
                 android:background="@drawable/button_secondary"
                 android:text="⚙️ Settings"
-                android:textColor="@color/gray_500"
+                android:textColor="@color/gray_900"
                 android:textSize="12sp" />
 
         </LinearLayout>

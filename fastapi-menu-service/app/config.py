@@ -41,14 +41,46 @@ class Settings(BaseSettings):
     openrouter_api_key: Optional[str] = Field(default=None, env="OPENROUTER_API_KEY")
     openai_api_key: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
     anthropic_api_key: Optional[str] = Field(default=None, env="ANTHROPIC_API_KEY")
+    groq_api_key: Optional[str] = Field(default=None, env="GROQ_API_KEY")
+    gemini_api_key: Optional[str] = Field(default=None, env="GEMINI_API_KEY")
     apify_api_token: Optional[str] = Field(default=None, env="APIFY_API_TOKEN")
     render_api_token: Optional[str] = Field(default=None, env="RENDER_API_TOKEN")
+
+    # Gemini OCR + Groq enhancement pipeline
+    gemini_model: str = Field(default="gemini-2.0-flash", env="GEMINI_MODEL")
+    gemini_api_base: str = Field(default="https://generativelanguage.googleapis.com/v1beta", env="GEMINI_API_BASE")
+    gemini_timeout: float = Field(default=60.0, env="GEMINI_TIMEOUT")
+
+    groq_model: str = Field(default="qwen/qwen3-32b", env="GROQ_MODEL")
+    groq_api_base: str = Field(default="https://api.groq.com/openai/v1", env="GROQ_API_BASE")
+    groq_timeout: float = Field(default=60.0, env="GROQ_TIMEOUT")
+    
+    # ==========================================
+    # LLM PROVIDER CONFIGURATION
+    # ==========================================
+    # Options: "kilocode", "ollama", "openrouter", "openai", "anthropic"
+    llm_provider: str = Field(default="kilocode", env="LLM_PROVIDER")
+    
+    # ==========================================
+    # KILOCODE CONFIGURATION (Cloud LLM)
+    # ==========================================
+    kilocode_api_key: Optional[str] = Field(default=None, env="KILOCODE_API_KEY")
+    kilocode_model: str = Field(default="qwen3-235b-a22b", env="KILOCODE_MODEL")
+    kilocode_api_url: str = Field(default="https://api.kilocode.ai/v1", env="KILOCODE_API_URL")
     
     # ==========================================
     # OLLAMA CONFIGURATION (Local LLM)
     # ==========================================
     ollama_url: str = Field(default="http://localhost:11434", env="OLLAMA_URL")
-    ollama_model: str = Field(default="qwen3:8b", env="OLLAMA_MODEL")
+    ollama_ngrok_url: str = Field(
+        default="https://logiest-soo-unlimed.ngrok-free.dev", env="OLLAMA_NGROK_URL"
+    )
+    ollama_use_ngrok: bool = Field(default=False, env="OLLAMA_USE_NGROK")
+    ollama_model: str = Field(default="qwen-coder-32b:latest", env="OLLAMA_MODEL")
+
+    def get_ollama_base_url(self) -> str:
+        """Return Ollama base URL: ngrok when enabled, otherwise local."""
+        return self.ollama_ngrok_url if self.ollama_use_ngrok else self.ollama_url
 
     # ==========================================
     # PAYMENT PROCESSING

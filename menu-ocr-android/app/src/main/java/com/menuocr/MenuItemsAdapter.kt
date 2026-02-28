@@ -8,9 +8,9 @@ import androidx.recyclerview.widget.RecyclerView
 
 class MenuItemsAdapter : RecyclerView.Adapter<MenuItemsAdapter.MenuItemViewHolder>() {
 
-    private var menuItems: List<MenuItem> = emptyList()
+    private var menuItems: List<PersonalizedDish> = emptyList()
 
-    fun updateItems(items: List<MenuItem>) {
+    fun updateItems(items: List<PersonalizedDish>) {
         menuItems = items
         notifyDataSetChanged()
     }
@@ -35,9 +35,13 @@ class MenuItemsAdapter : RecyclerView.Adapter<MenuItemsAdapter.MenuItemViewHolde
         private val itemDescription: TextView = itemView.findViewById(R.id.item_description)
         private val itemCategory: TextView = itemView.findViewById(R.id.item_category)
 
-        fun bind(menuItem: MenuItem, number: Int) {
+        private val itemRecommendation: TextView = itemView.findViewById(R.id.item_recommendation)
+        private val itemRiskSummary: TextView = itemView.findViewById(R.id.item_risk_summary)
+        private val itemHealthScore: TextView = itemView.findViewById(R.id.item_health_score)
+
+        fun bind(menuItem: PersonalizedDish, number: Int) {
             itemNumber.text = number.toString()
-            itemName.text = menuItem.name ?: "Unknown Item"
+            itemName.text = menuItem.dish_name
 
             if (menuItem.price != null) {
                 itemPrice.text = "$${menuItem.price}"
@@ -46,18 +50,38 @@ class MenuItemsAdapter : RecyclerView.Adapter<MenuItemsAdapter.MenuItemViewHolde
                 itemPrice.visibility = View.GONE
             }
 
-            if (!menuItem.description.isNullOrEmpty()) {
-                itemDescription.text = menuItem.description
+            val ingredients = menuItem.ingredients
+            if (!ingredients.isNullOrEmpty()) {
+                itemDescription.text = ingredients
                 itemDescription.visibility = View.VISIBLE
             } else {
                 itemDescription.visibility = View.GONE
             }
 
-            if (!menuItem.category.isNullOrEmpty() && menuItem.category != "unknown") {
-                itemCategory.text = menuItem.category
-                itemCategory.visibility = View.VISIBLE
+            itemCategory.visibility = View.GONE
+
+            val level = menuItem.recommendation_level
+            if (!level.isNullOrEmpty()) {
+                itemRecommendation.text = "Recommendation: $level"
+                itemRecommendation.visibility = View.VISIBLE
             } else {
-                itemCategory.visibility = View.GONE
+                itemRecommendation.visibility = View.GONE
+            }
+
+            val summary = menuItem.risk_summary
+            if (!summary.isNullOrEmpty()) {
+                itemRiskSummary.text = summary
+                itemRiskSummary.visibility = View.VISIBLE
+            } else {
+                itemRiskSummary.visibility = View.GONE
+            }
+
+            val score = menuItem.health_score
+            if (score != null) {
+                itemHealthScore.text = "Health score: $score"
+                itemHealthScore.visibility = View.VISIBLE
+            } else {
+                itemHealthScore.visibility = View.GONE
             }
         }
     }

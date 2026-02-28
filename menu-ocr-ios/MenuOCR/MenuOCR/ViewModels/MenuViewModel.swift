@@ -11,8 +11,8 @@ import Combine
 class MenuViewModel: ObservableObject {
     @Published var menuState: MenuState = .idle
 
-    private let ocrService = OcrService()
     private let apiService = ApiService()
+    private lazy var ocrService = OcrService(apiService: apiService)
 
     func processImage(_ image: UIImage) {
         menuState = .loading
@@ -20,7 +20,7 @@ class MenuViewModel: ObservableObject {
         Task {
             do {
                 // First, try local OCR
-                let extractedText = try await ocrService.processImage(image)
+                let extractedText = try await ocrService.processImageLocally(image)
 
                 // Then send to backend for menu processing
                 let base64Image = imageToBase64(image)
@@ -30,7 +30,7 @@ class MenuViewModel: ObservableObject {
                     let menuResponse = try await apiService.processOcr(request: ocrRequest)
 
                     // Extract dishes from the processed text
-                    let dishRequest = DishRequest(text: menuResponse.text)
+                    let dishRequest = DishRequest(text: menuResponse.raw_text)
                     let dishResponse = try await apiService.extractDishes(request: dishRequest)
 
                     let menu = Menu(dishes: dishResponse.dishes)

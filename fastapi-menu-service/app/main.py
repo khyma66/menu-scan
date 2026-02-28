@@ -4,6 +4,7 @@ FastAPI application with security headers and best practices
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.responses import JSONResponse
@@ -11,9 +12,10 @@ import time
 import logging
 import collections
 from typing import Callable
+import uuid
 
 from app.config import settings
-from app.routers import ocr, auth, user_preferences, table_extraction, new_health_router, dishes, user_management, menu_enrichment, enhanced_ocr_router
+from app.routers import ocr, auth, user_preferences, table_extraction, new_health_router, dishes, user_management, menu_enrichment, enhanced_ocr_router, llm_provider, health_profile_compat
 
 # Configure logging
 logging.basicConfig(
@@ -63,17 +65,22 @@ app.add_middleware(
     max_age=86400  # 24 hours
 )
 
+# Response compression (helps edge/network latency and payload transfer)
+app.add_middleware(GZipMiddleware, minimum_size=1024)
+
 # Custom Security Headers Middleware
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next: Callable) -> Response:
     """Add security headers to all responses"""
     start_time = time.time()
+    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
 
     response = await call_next(request)
 
     # Calculate request processing time
     process_time = time.time() - start_time
     response.headers["X-Process-Time"] = str(process_time)
+    response.headers["X-Request-ID"] = request_id
 
     # Security Headers
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -97,6 +104,19 @@ async def add_security_headers(request: Request, call_next: Callable) -> Respons
     # HSTS (HTTP Strict Transport Security) - only in production with HTTPS
     if settings.is_production and request.url.scheme == "https":
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
+    # Cache-control policy tuned for Cloudflare edge
+    if request.method == "GET":
+        path = request.url.path
+        auth_header = request.headers.get("Authorization")
+        is_authenticated = bool(auth_header)
+
+        if path in {"/health", "/"}:
+            response.headers["Cache-Control"] = "public, max-age=30, s-maxage=120, stale-while-revalidate=120"
+        elif is_authenticated:
+            response.headers["Cache-Control"] = "private, no-store"
+        else:
+            response.headers["Cache-Control"] = "public, max-age=60, s-maxage=300, stale-while-revalidate=300"
 
     return response
 
@@ -212,11 +232,13 @@ app.include_router(table_extraction.router)
 # app.include_router(payments.router)  # Temporarily disabled - Stripe dependency
 app.include_router(user_preferences.router)
 app.include_router(new_health_router.router)
+app.include_router(health_profile_compat.router)
 app.include_router(dishes.router)
 app.include_router(user_management.router)
 # app.include_router(pricing.router)  # Temporarily disabled - Stripe dependency
 app.include_router(menu_enrichment.router)
 app.include_router(enhanced_ocr_router.router)
+app.include_router(llm_provider.router)
 
 # Root endpoint
 @app.get("/")

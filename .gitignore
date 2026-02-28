@@ -61,3 +61,14 @@ logs/
 *.pem
 secrets/
 
+# iOS
+menu-ocr-ios/MenuOCR/DerivedData/
+menu-ocr-ios/.build/
+*.xcuserstate
+*.xcworkspace
+
+# Android
+menu-ocr-android/app/build/
+menu-ocr-android/.gradle/
+menu-ocr-android/build/
+

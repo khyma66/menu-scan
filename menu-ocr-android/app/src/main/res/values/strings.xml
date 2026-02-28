@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DoorDash Menu Scanner</string>
+    <string name="app_name">Foodit</string>
     
     <!-- Navigation -->
     <string name="nav_home">Home</string>
@@ -38,4 +38,14 @@
     <string name="retry">Try Again</string>
     <string name="cancel">Cancel</string>
     <string name="confirm">Confirm</string>
+    
+    <!-- Profile -->
+    <string name="profile_title">Profile</string>
+    <string name="profile_name">Name</string>
+    <string name="profile_email">Email</string>
+    <string name="profile_phone">Phone Number</string>
+    <string name="profile_address">Address</string>
+    <string name="profile_password_reset">Reset Password</string>
+    <string name="profile_logout">Logout</string>
+    <string name="profile_save">Save Changes</string>
 </resources>

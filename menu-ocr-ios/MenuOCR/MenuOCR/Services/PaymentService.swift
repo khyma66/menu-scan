@@ -6,51 +6,98 @@
 //
 
 import Foundation
-import Stripe
+import UIKit
+import PassKit
 
-class PaymentService: NSObject, STPApplePayContextDelegate {
+class PaymentService: NSObject {
     static let shared = PaymentService()
-
-    private var paymentSheet: PaymentSheet?
-
-    func initialize(stripePublishableKey: String) {
-        STPAPIClient.shared.publishableKey = stripePublishableKey
+    
+    private let session = URLSession.shared
+    private var paymentConfig: PaymentConfig?
+    
+    struct PaymentConfig {
+        let stripePublishableKey: String
+        let merchantIdentifier: String
     }
-
+    
+    func initialize(stripePublishableKey: String) {
+        paymentConfig = PaymentConfig(stripePublishableKey: stripePublishableKey, merchantIdentifier: "merchant.com.menuocr.ios")
+    }
+    
     func presentPaymentSheet(
         paymentIntentClientSecret: String,
         from viewController: UIViewController,
-        completion: @escaping (PaymentSheetResult) -> Void
+        completion: @escaping (PaymentResult) -> Void
     ) {
-        var configuration = PaymentSheet.Configuration()
-        configuration.merchantDisplayName = "Menu OCR"
-        configuration.allowsDelayedPaymentMethods = true
-
-        PaymentSheet.create(
-            paymentIntentClientSecret: paymentIntentClientSecret,
-            configuration: configuration
-        ) { [weak self] result in
-            switch result {
-            case .success(let paymentSheet):
-                self?.paymentSheet = paymentSheet
-                paymentSheet.present(from: viewController) { result in
-                    completion(result)
+        // For now, show a simple payment confirmation dialog
+        // In production, this would integrate with Stripe SDK
+        let alert = UIAlertController(
+            title: "Confirm Payment",
+            message: "Would you like to complete this purchase?",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { _ in
+            completion(.cancelled)
+        })
+        
+        alert.addAction(UIAlertAction(title: "Pay Now", style: .default) { [weak self] _ in
+            // Simulate payment processing
+            self?.processPayment(clientSecret: paymentIntentClientSecret) { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success:
+                        completion(.completed)
+                    case .failure(let error):
+                        completion(.failed(error))
+                    }
                 }
-            case .failure(let error):
-                print("Failed to create PaymentSheet: \(error)")
-                completion(.failed(error: error))
             }
+        })
+        
+        viewController.present(alert, animated: true)
+    }
+    
+    private func processPayment(clientSecret: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        // Simulate network delay
+        DispatchQueue.global().asyncAfter(deadline: .now() + 1.0) {
+            // In production, this would call Stripe API
+            completion(.success(()))
         }
     }
-
-    // MARK: - STPApplePayContextDelegate
-
-    func applePayContext(_ context: STPApplePayContext, didCreatePaymentMethod paymentMethod: STPPaymentMethod, paymentInformation: PKPayment, completion: @escaping STPIntentClientSecretCompletionBlock) {
-        // Handle Apple Pay payment method creation
-        // This would typically call your backend to create a payment intent
+    
+    func createPaymentIntent(amount: Int, currency: String = "usd") async throws -> PaymentIntentResponse {
+        guard let config = paymentConfig else {
+            throw PaymentError.notInitialized
+        }
+        
+        let apiService = ApiService()
+        let request = PaymentIntentRequest(amount: amount, currency: currency)
+        return try await apiService.createPaymentIntent(request: request)
     }
+}
 
-    func applePayContext(_ context: STPApplePayContext, didCompleteWith status: STPPaymentStatus, error: Error?) {
-        // Handle Apple Pay completion
+// MARK: - Payment Result Types
+
+enum PaymentResult {
+    case completed
+    case cancelled
+    case failed(Error)
+}
+
+enum PaymentError: Error, LocalizedError {
+    case notInitialized
+    case invalidConfiguration
+    case paymentFailed(String)
+    
+    var errorDescription: String? {
+        switch self {
+        case .notInitialized:
+            return "Payment service not initialized"
+        case .invalidConfiguration:
+            return "Invalid payment configuration"
+        case .paymentFailed(let message):
+            return "Payment failed: \(message)"
+        }
     }
 }

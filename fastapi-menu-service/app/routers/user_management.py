@@ -8,6 +8,7 @@ from datetime import datetime
 
 from app.routers.auth import get_current_user
 from app.services.auth_service import AuthService
+from app.services.supabase_client import get_supabase_client
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/user", tags=["User Management"])
@@ -94,12 +95,162 @@ class UserProfileUpdate(BaseModel):
     address_zip: Optional[str] = None
     address_country: Optional[str] = None
 
+
+class AppProfileDetailsRequest(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[str] = None
+    contact: Optional[str] = None
+    phone: Optional[str] = None
+    country: Optional[str] = None
+
+
+class AppProfileDetailsResponse(BaseModel):
+    user_id: str
+    full_name: Optional[str] = None
+    email: Optional[str] = None
+    contact: Optional[str] = None
+    phone: Optional[str] = None
+    country: Optional[str] = None
+    updated_at: Optional[str] = None
+
+
+class DiscoveryPreferencesRequest(BaseModel):
+    search_radius_miles: Optional[int] = Field(default=10, ge=1, le=50)
+    selected_cuisines: Optional[List[str]] = Field(default_factory=list)
+    location_label: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+
+class DiscoveryPreferencesResponse(BaseModel):
+    user_id: str
+    search_radius_miles: int = 10
+    selected_cuisines: List[str] = Field(default_factory=list)
+    location_label: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    updated_at: Optional[str] = None
+
+
+@router.get("/app-profile", response_model=AppProfileDetailsResponse)
+async def get_app_profile(current_user: dict = Depends(get_current_user)):
+    """Get app profile details used by mobile profile tabs."""
+    try:
+        supabase = get_supabase_client()
+        user_id = current_user.get("id")
+
+        profile_response = supabase.table("user_profile_details").select("*").eq("user_id", user_id).limit(1).execute()
+        profile = (profile_response.data or [{}])[0]
+
+        return AppProfileDetailsResponse(
+            user_id=user_id,
+            full_name=profile.get("full_name"),
+            email=profile.get("email") or current_user.get("email"),
+            contact=profile.get("contact"),
+            phone=profile.get("phone"),
+            country=profile.get("country"),
+            updated_at=profile.get("updated_at"),
+        )
+    except Exception as e:
+        logger.error(f"Error getting app profile: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/app-profile", response_model=AppProfileDetailsResponse)
+async def update_app_profile(
+    profile: AppProfileDetailsRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """Upsert app profile details used by mobile profile tabs."""
+    try:
+        supabase = get_supabase_client()
+        user_id = current_user.get("id")
+
+        payload = {
+            "user_id": user_id,
+            "full_name": profile.full_name,
+            "email": profile.email,
+            "contact": profile.contact,
+            "phone": profile.phone,
+            "country": profile.country,
+            "updated_at": datetime.utcnow().isoformat(),
+        }
+
+        supabase.table("user_profile_details").upsert(payload, {"on_conflict": "user_id"}).execute()
+
+        # Keep users table in sync for common fields if available
+        users_update = {}
+        if profile.full_name is not None:
+            users_update["full_name"] = profile.full_name
+        if profile.phone is not None:
+            users_update["phone"] = profile.phone
+        if profile.email is not None:
+            users_update["email"] = profile.email
+        if users_update:
+            users_update["updated_at"] = datetime.utcnow().isoformat()
+            supabase.table("users").upsert({"id": user_id, **users_update}, {"on_conflict": "id"}).execute()
+
+        return await get_app_profile(current_user)
+    except Exception as e:
+        logger.error(f"Error updating app profile: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/discovery-preferences", response_model=DiscoveryPreferencesResponse)
+async def get_discovery_preferences(current_user: dict = Depends(get_current_user)):
+    """Get persisted discovery tab preferences."""
+    try:
+        supabase = get_supabase_client()
+        user_id = current_user.get("id")
+
+        response = supabase.table("user_discovery_preferences").select("*").eq("user_id", user_id).limit(1).execute()
+        row = (response.data or [{}])[0]
+
+        return DiscoveryPreferencesResponse(
+            user_id=user_id,
+            search_radius_miles=row.get("search_radius_miles", 10),
+            selected_cuisines=row.get("selected_cuisines") or [],
+            location_label=row.get("location_label"),
+            latitude=row.get("latitude"),
+            longitude=row.get("longitude"),
+            updated_at=row.get("updated_at"),
+        )
+    except Exception as e:
+        logger.error(f"Error getting discovery preferences: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/discovery-preferences", response_model=DiscoveryPreferencesResponse)
+async def update_discovery_preferences(
+    preferences: DiscoveryPreferencesRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """Persist discovery tab preferences."""
+    try:
+        supabase = get_supabase_client()
+        user_id = current_user.get("id")
+
+        payload = {
+            "user_id": user_id,
+            "search_radius_miles": preferences.search_radius_miles or 10,
+            "selected_cuisines": preferences.selected_cuisines or [],
+            "location_label": preferences.location_label,
+            "latitude": preferences.latitude,
+            "longitude": preferences.longitude,
+            "updated_at": datetime.utcnow().isoformat(),
+        }
+
+        supabase.table("user_discovery_preferences").upsert(payload, {"on_conflict": "user_id"}).execute()
+
+        return await get_discovery_preferences(current_user)
+    except Exception as e:
+        logger.error(f"Error updating discovery preferences: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/profile")
 async def get_user_profile(current_user: dict = Depends(get_current_user)):
     """Get current user's full profile including addresses and subscription."""
     try:
-        from app.services.supabase_client import get_supabase_client
-        
         supabase = get_supabase_client()
         user_id = current_user.get("id")
         
@@ -152,8 +303,6 @@ async def update_user_profile(
 async def get_user_addresses(current_user: dict = Depends(get_current_user)):
     """Get user's addresses."""
     try:
-        from app.services.supabase_client import get_supabase_client
-        
         supabase = get_supabase_client()
         user_id = current_user.get("id")
         
@@ -171,8 +320,6 @@ async def create_address(
 ):
     """Create a new address."""
     try:
-        from app.services.supabase_client import get_supabase_client
-        
         supabase = get_supabase_client()
         user_id = current_user.get("id")
         
@@ -210,8 +357,6 @@ async def update_address(
 ):
     """Update an existing address."""
     try:
-        from app.services.supabase_client import get_supabase_client
-        
         supabase = get_supabase_client()
         user_id = current_user.get("id")
         
@@ -239,8 +384,6 @@ async def delete_address(
 ):
     """Delete an address."""
     try:
-        from app.services.supabase_client import get_supabase_client
-        
         supabase = get_supabase_client()
         user_id = current_user.get("id")
         
@@ -261,8 +404,6 @@ async def change_password(
 ):
     """Change user password."""
     try:
-        from app.services.supabase_client import get_supabase_client
-        
         supabase = get_supabase_client()
         user_id = current_user.get("id")
         
@@ -295,8 +436,6 @@ async def change_password(
 async def get_subscription_info(current_user: dict = Depends(get_current_user)):
     """Get user's subscription information."""
     try:
-        from app.services.supabase_client import get_supabase_client
-        
         supabase = get_supabase_client()
         user_id = current_user.get("id")
         
@@ -334,8 +473,6 @@ async def get_subscription_info(current_user: dict = Depends(get_current_user)):
 async def get_referral_info(current_user: dict = Depends(get_current_user)):
     """Get user's referral information."""
     try:
-        from app.services.supabase_client import get_supabase_client
-        
         supabase = get_supabase_client()
         user_id = current_user.get("id")
         
@@ -369,8 +506,6 @@ async def join_with_referral(
 ):
     """Join using a referral code."""
     try:
-        from app.services.supabase_client import get_supabase_client
-        
         supabase = get_supabase_client()
         user_id = current_user.get("id")
         

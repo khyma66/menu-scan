@@ -4,6 +4,13 @@
       "command": "npx",
       "args": ["-y", "@supabase/mcp-server-supabase@0.5.5", "--access-token", "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"],
       "alwaysAllow": ["search_docs"]
+    },
+    "figma": {
+      "command": "npx",
+      "args": ["-y", "figma-developer-mcp", "--stdio"],
+      "env": {
+        "FIGMA_API_KEY": "figd_WCdmYUB71nAQSaqDmzA1Tc5r6t6eceDBrDPy3tnl"
+      }
     }
   },
   "retry": {

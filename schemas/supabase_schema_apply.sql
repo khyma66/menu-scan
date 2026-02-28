@@ -1,4 +1,7 @@
--- Execute this SQL in your Supabase SQL Editor to apply the enhanced schema
+-- Execute this SQL in your Supabase SQL Editor to apply the enhanced schema.
+-- Then run schemas/supabase_profile_payment_scan_subscription.sql to apply tab-specific fields
+-- for Discover, Health, Scan, Profile, Payment, and Subscription.
+-- Finally run schemas/supabase_latency_indexes.sql for lower query latency on Cloudflare+Supabase paths.
 
 -- Enhanced dishes table with AI analysis
 ALTER TABLE public.dishes ADD COLUMN IF NOT EXISTS is_vegetarian BOOLEAN DEFAULT FALSE;

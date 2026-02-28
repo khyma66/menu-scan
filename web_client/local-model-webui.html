@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Model Web UI - Ollama</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            color: #666;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+        
+        .status-badge.online {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-badge.offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+        
+        .panel {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .panel h2 {
+            color: #667eea;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-group textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            background: #5568d3;
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .response-area {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .response-area.loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+        }
+        
+        .response-area.loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 3px solid #667eea;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .model-info {
+            background: #e3f2fd;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .model-info h3 {
+            color: #1976d2;
+            margin-bottom: 0.5rem;
+        }
+        
+        .model-info p {
+            color: #666;
+            margin: 0.25rem 0;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .stat {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 0.875rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            border-left: 4px solid #28a745;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Local Model Web UI</h1>
+            <p>Test your local Ollama model (qwen3:32b) through the FastAPI service</p>
+            <div id="status-badge" class="status-badge offline">Checking status...</div>
+        </div>
+        
+        <div class="main-content">
+            <div class="panel">
+                <h2>📝 Test Model</h2>
+                
+                <div class="model-info">
+                    <h3>Current Model: qwen3:32b</h3>
+                    <p><strong>Type:</strong> Local LLM (Ollama)</p>
+                    <p><strong>Privacy:</strong> 100% - All data stays on your machine</p>
+                    <p><strong>Endpoint:</strong> http://localhost:11434</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="prompt">Prompt</label>
+                    <textarea id="prompt" placeholder="Enter your prompt here...">Say hello and introduce yourself</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="temperature">Temperature: <span id="temp-value">0.7</span></label>
+                    <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.7">
+                </div>
+                
+                <div class="form-group">
+                    <label for="max-tokens">Max Tokens</label>
+                    <input type="number" id="max-tokens" value="500" min="1" max="4000">
+                </div>
+                
+                <button id="test-btn" class="btn" onclick="testModel()">Test Model</button>
+                
+                <div id="message"></div>
+            </div>
+            
+            <div class="panel">
+                <h2>💬 Response</h2>
+                <div id="response" class="response-area">
+                    Response will appear here...
+                </div>
+                
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value" id="response-time">-</div>
+                        <div class="stat-label">Response Time (s)</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="tokens-used">-</div>
+                        <div class="stat-label">Tokens Used</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        
+        // Check Ollama status on page load
+        async function checkStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/llm/status`);
+                const data = await response.json();
+                
+                const statusBadge = document.getElementById('status-badge');
+                if (data.configured) {
+                    statusBadge.textContent = `✅ ${data.provider} (${data.model}) - Online`;
+                    statusBadge.className = 'status-badge online';
+                } else {
+                    statusBadge.textContent = `❌ ${data.provider} - Not configured`;
+                    statusBadge.className = 'status-badge offline';
+                }
+            } catch (error) {
+                const statusBadge = document.getElementById('status-badge');
+                statusBadge.textContent = '❌ API not accessible';
+                statusBadge.className = 'status-badge offline';
+            }
+        }
+        
+        // Test the model
+        async function testModel() {
+            const prompt = document.getElementById('prompt').value;
+            const temperature = parseFloat(document.getElementById('temperature').value);
+            const maxTokens = parseInt(document.getElementById('max-tokens').value);
+            
+            const responseArea = document.getElementById('response');
+            const testBtn = document.getElementById('test-btn');
+            const messageDiv = document.getElementById('message');
+            
+            // Clear previous messages
+            messageDiv.innerHTML = '';
+            
+            // Show loading state
+            responseArea.className = 'response-area loading';
+            responseArea.textContent = 'Generating response...';
+            testBtn.disabled = true;
+            
+            const startTime = Date.now();
+            
+            try {
+                const response = await fetch(`${API_BASE}/llm/test`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        messages: [
+                            { role: 'user', content: prompt }
+                        ],
+                        temperature: temperature,
+                        max_tokens: maxTokens
+                    })
+                });
+                
+                const data = await response.json();
+                const endTime = Date.now();
+                const responseTime = ((endTime - startTime) / 1000).toFixed(2);
+                
+                if (data.success) {
+                    responseArea.className = 'response-area';
+                    responseArea.textContent = data.response;
+                    
+                    document.getElementById('response-time').textContent = responseTime;
+                    document.getElementById('tokens-used').textContent = '-';
+                    
+                    messageDiv.innerHTML = `<div class="success">✅ Model test successful!</div>`;
+                } else {
+                    responseArea.className = 'response-area';
+                    responseArea.textContent = `Error: ${data.error}`;
+                    
+                    messageDiv.innerHTML = `<div class="error">❌ ${data.message}</div>`;
+                }
+            } catch (error) {
+                responseArea.className = 'response-area';
+                responseArea.textContent = `Error: ${error.message}`;
+                
+                messageDiv.innerHTML = `<div class="error">❌ Failed to connect to API</div>`;
+            } finally {
+                testBtn.disabled = false;
+            }
+        }
+        
+        // Update temperature display
+        document.getElementById('temperature').addEventListener('input', function() {
+            document.getElementById('temp-value').textContent = this.value;
+        });
+        
+        // Check status on page load
+        checkStatus();
+    </script>
+</body>
+</html>

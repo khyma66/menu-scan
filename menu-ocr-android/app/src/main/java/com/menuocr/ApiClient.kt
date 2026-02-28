@@ -1,5 +1,6 @@
 package com.menuocr
 
+import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -14,14 +15,16 @@ object ApiClient {
     
     private var apiService: ApiService? = null
     private var paymentService: PaymentService? = null
+    private var cachedToken: String? = null
+    private var tokenCachedAtMs: Long = 0L
+    private const val TOKEN_CACHE_TTL_MS = 60_000L
     
     /**
      * Create OkHttp client with retry, logging, and authentication
      */
     private fun createOkHttpClient(): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
-            // Always use BODY level for debugging, change to NONE for production
-            level = HttpLoggingInterceptor.Level.BODY
+            level = HttpLoggingInterceptor.Level.NONE
         }
         
         val authInterceptor = Interceptor { chain ->
@@ -57,8 +60,13 @@ object ApiClient {
      * Create Retrofit instance
      */
     private fun createRetrofit(): Retrofit {
+        val baseUrl = if (AppConfig.FastApi.USE_LOCAL) {
+            AppConfig.FastApi.LOCAL_BASE_URL
+        } else {
+            AppConfig.FastApi.BASE_URL
+        }
         return Retrofit.Builder()
-            .baseUrl(AppConfig.Render.BASE_URL)
+            .baseUrl(baseUrl)
             .client(createOkHttpClient())
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -89,10 +97,17 @@ object ApiClient {
      * This should be called from a coroutine context
      */
     private fun getAuthToken(): String? {
-        // This is a synchronous call, so we return null here
-        // The actual token should be cached or retrieved differently
-        // For now, return null and handle auth in the calling code
-        return null
+        val now = System.currentTimeMillis()
+        if (cachedToken != null && now - tokenCachedAtMs < TOKEN_CACHE_TTL_MS) {
+            return cachedToken
+        }
+
+        return runBlocking {
+            val token = SupabaseClient.getAccessToken()
+            cachedToken = token
+            tokenCachedAtMs = System.currentTimeMillis()
+            token
+        }
     }
     
     /**
@@ -101,5 +116,7 @@ object ApiClient {
     fun reset() {
         apiService = null
         paymentService = null
+        cachedToken = null
+        tokenCachedAtMs = 0L
     }
 }

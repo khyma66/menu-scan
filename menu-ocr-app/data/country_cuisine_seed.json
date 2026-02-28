@@ -1,0 +1,10 @@
+{
+  "IN": [
+    {"name": "Masala Dosa", "description": "Crispy fermented crepe with spiced potato filling."},
+    {"name": "Paneer Butter Masala", "description": "Paneer in a rich tomato butter sauce."}
+  ],
+  "IT": [
+    {"name": "Margherita Pizza", "description": "Tomato, mozzarella, basil."},
+    {"name": "Risotto", "description": "Creamy rice cooked with stock."}
+  ]
+}

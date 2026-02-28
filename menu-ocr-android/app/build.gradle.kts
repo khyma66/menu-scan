@@ -7,25 +7,42 @@ plugins {
 
 android {
     namespace = "com.menuocr"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.menuocr"
         minSdk = 24
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        targetSdk = 35
+        versionCode = 2
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+    }
+
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86_64")
+            isUniversalApk = false
+        }
+    }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/*.kotlin_module"
         }
     }
 
@@ -56,13 +73,11 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
 
-    // ML Kit
-    implementation("com.google.mlkit:text-recognition:16.0.0")
-
-    // Camera
-    implementation("androidx.camera:camera-camera2:1.3.1")
-    implementation("androidx.camera:camera-lifecycle:1.3.1")
-    implementation("androidx.camera:camera-view:1.3.1")
+    // Google Play Services Location
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+    
+    // Google Play Services Auth (for Google Sign-In)
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
 
     // Image picker
     implementation("com.github.dhaval2404:imagepicker:2.1")
@@ -101,6 +116,10 @@ dependencies {
 
     // Work Manager for background tasks
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+    
+    // MapLibre GL for OpenStreetMap display
+    implementation("org.maplibre.gl:android-sdk:11.5.0")
+    implementation("org.slf4j:slf4j-nop:1.7.36")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

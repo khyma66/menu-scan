@@ -115,9 +115,9 @@
                         android:layout_height="40dp"
                         android:layout_weight="1"
                         android:layout_marginEnd="8dp"
-                        android:background="@color/doordash_secondary"
+                        android:background="@drawable/button_primary"
                         android:text="@string/capture_image"
-                        android:textColor="@color/white"
+                        android:textColor="@color/gray_900"
                         android:textSize="12sp"
                         android:textStyle="bold"
                         style="@style/Widget.AppCompat.Button.Borderless" />
@@ -128,9 +128,9 @@
                         android:layout_height="40dp"
                         android:layout_weight="1"
                         android:layout_marginStart="8dp"
-                        android:background="@color/gray_200"
+                        android:background="@drawable/button_secondary"
                         android:text="@string/select_image"
-                        android:textColor="@color/gray_700"
+                        android:textColor="@color/gray_900"
                         android:textSize="12sp"
                         style="@style/Widget.AppCompat.Button.Borderless" />
 

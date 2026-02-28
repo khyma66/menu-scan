@@ -32,7 +32,8 @@ class MainViewController: UIViewController, UIImagePickerControllerDelegate, UIN
 
     private let apiStatusLabel: UILabel = {
         let label = UILabel()
-        label.text = "FastAPI Backend: http://localhost:8000\nStatus: Testing Connection..."
+        let baseURL = AppConfig.MenuOcrApi.useLocal ? AppConfig.MenuOcrApi.localBaseURL : AppConfig.MenuOcrApi.baseURL
+        label.text = "FastAPI Backend: \(baseURL)\nStatus: Testing Connection..."
         label.font = .systemFont(ofSize: 14)
         label.textAlignment = .center
         label.numberOfLines = 0
@@ -157,7 +158,7 @@ class MainViewController: UIViewController, UIImagePickerControllerDelegate, UIN
         let textView = UITextView()
         textView.isEditable = false
         textView.isScrollEnabled = true
-        textView.font = .monospacedSystemFont(ofSize: 12)
+        textView.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
         textView.backgroundColor = .systemGray6
         textView.layer.cornerRadius = 8
         textView.isHidden = true
@@ -355,7 +356,8 @@ class MainViewController: UIViewController, UIImagePickerControllerDelegate, UIN
 
     // MARK: - API Testing
     @objc private func testApiConnection() {
-        apiStatusLabel.text = "FastAPI Backend: http://localhost:8000\nStatus: Testing Connection..."
+        let baseURL = AppConfig.MenuOcrApi.useLocal ? AppConfig.MenuOcrApi.localBaseURL : AppConfig.MenuOcrApi.baseURL
+        apiStatusLabel.text = "FastAPI Backend: \(baseURL)\nStatus: Testing Connection..."
         statusLabel.text = "🧪 Testing API connection..."
 
         Task {
@@ -363,17 +365,17 @@ class MainViewController: UIViewController, UIImagePickerControllerDelegate, UIN
                 let isConnected = await apiService.testApiConnection()
                 await MainActor.run {
                     if isConnected {
-                        apiStatusLabel.text = "✅ FastAPI Backend: http://localhost:8000\nStatus: Connected Successfully"
+                        apiStatusLabel.text = "✅ FastAPI Backend: \(baseURL)\nStatus: Connected Successfully"
                         statusLabel.text = "✅ API connection successful!\n✅ Backend services available\n✅ iOS app integration ready!"
                         showAdvancedButtons()
                     } else {
-                        apiStatusLabel.text = "❌ FastAPI Backend: http://localhost:8000\nStatus: Connection Failed"
+                        apiStatusLabel.text = "❌ FastAPI Backend: \(baseURL)\nStatus: Connection Failed"
                         statusLabel.text = "❌ API connection failed\n❌ Backend may be offline"
                     }
                 }
             } catch {
                 await MainActor.run {
-                    apiStatusLabel.text = "❌ FastAPI Backend: http://localhost:8000\nStatus: Error"
+                    apiStatusLabel.text = "❌ FastAPI Backend: \(baseURL)\nStatus: Error"
                     statusLabel.text = "❌ API test failed: \(error.localizedDescription)"
                 }
             }
@@ -436,7 +438,7 @@ class MainViewController: UIViewController, UIImagePickerControllerDelegate, UIN
                 // Then try backend processing
                 let menuResponse = try await ocrService.processImageViaAPI(image)
                 await MainActor.run {
-                    self.statusLabel.text = "✅ Full processing completed!\n🌍 Language: \(menuResponse.language)\n📝 Ready for dish extraction"
+                    self.statusLabel.text = "✅ Full processing completed!\n📝 Ready for dish extraction"
                 }
 
             } catch {

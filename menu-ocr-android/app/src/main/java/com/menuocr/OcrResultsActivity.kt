@@ -38,13 +38,13 @@ class OcrResultsActivity : AppCompatActivity() {
         recyclerView.adapter = adapter
 
         // Get data from intent
-        val menuItems = intent.getSerializableExtra("menu_items") as? ArrayList<MenuItem> ?: arrayListOf()
+        val personalizedItems = intent.getSerializableExtra("personalized_items") as? ArrayList<PersonalizedDish> ?: arrayListOf()
         val rawText = intent.getStringExtra("raw_text") ?: ""
         val method = intent.getStringExtra("method") ?: "Unknown"
         val timeMs = intent.getIntExtra("processing_time", 0)
 
         // Display data
-        adapter.updateItems(menuItems)
+        adapter.updateItems(personalizedItems)
         processingMethod.text = "Processing Method: $method"
         processingTime.text = "Processing Time: ${timeMs}ms"
 

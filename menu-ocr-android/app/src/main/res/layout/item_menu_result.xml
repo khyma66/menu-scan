@@ -1,81 +1,131 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:padding="12dp"
-    android:background="?android:attr/selectableItemBackground">
+    android:layout_marginBottom="10dp"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="2dp"
+    app:cardUseCompatPadding="true">
 
-    <!-- Item Number -->
-    <TextView
-        android:id="@+id/item_number"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="0.5"
-        android:text="1"
-        android:textSize="14sp"
-        android:textColor="@color/gray_600"
-        android:gravity="center"
-        android:textStyle="bold" />
-
-    <!-- Item Name -->
-    <TextView
-        android:id="@+id/item_name"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="3"
-        android:text="Margherita Pizza"
-        android:textSize="16sp"
-        android:textColor="@color/gray_900"
-        android:textStyle="bold"
-        android:layout_marginStart="8dp" />
-
-    <!-- Item Price -->
-    <TextView
-        android:id="@+id/item_price"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1.5"
-        android:text="$12.99"
-        android:textSize="16sp"
-        android:textColor="@color/green_600"
-        android:textStyle="bold"
-        android:gravity="end"
-        android:layout_marginEnd="8dp" />
-
-</LinearLayout>
-
-<!-- Additional details (description and category) shown below if available -->
-<LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="12dp"
-    android:paddingTop="0dp"
-    android:visibility="gone"
-    android:id="@+id/item_details">
-
-    <!-- Description -->
-    <TextView
-        android:id="@+id/item_description"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Fresh mozzarella, tomato sauce, basil"
-        android:textSize="14sp"
-        android:textColor="@color/gray_600"
-        android:layout_marginBottom="4dp"
-        android:visibility="gone" />
+        android:orientation="vertical"
+        android:padding="2dp">
 
-    <!-- Category -->
-    <TextView
-        android:id="@+id/item_category"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Pizza"
-        android:textSize="12sp"
-        android:textColor="@color/orange_600"
-        android:background="@drawable/tag_background_orange"
-        android:padding="4dp"
-        android:visibility="gone" />
+        android:orientation="horizontal"
+        android:background="?android:attr/selectableItemBackground"
+        android:padding="12dp">
 
-</LinearLayout>
+        <!-- Item Number -->
+        <TextView
+            android:id="@+id/item_number"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.5"
+            android:text="1"
+            android:textSize="14sp"
+            android:textColor="@color/gray_600"
+            android:gravity="center"
+            android:background="@drawable/tag_background_gray"
+            android:padding="4dp"
+            android:textStyle="bold" />
+
+        <!-- Item Name -->
+        <TextView
+            android:id="@+id/item_name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="3"
+            android:text="Margherita Pizza"
+            android:textSize="16sp"
+            android:textColor="@color/gray_900"
+            android:textStyle="bold"
+            android:layout_marginStart="8dp" />
+
+        <!-- Item Price -->
+        <TextView
+            android:id="@+id/item_price"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.5"
+            android:text="$12.99"
+            android:textSize="16sp"
+            android:textColor="@color/green_600"
+            android:textStyle="bold"
+            android:gravity="end"
+            android:layout_marginEnd="8dp" />
+
+    </LinearLayout>
+
+    <!-- Additional details (description and category) shown below if available -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:paddingTop="0dp"
+        android:id="@+id/item_details">
+
+        <!-- Description -->
+        <TextView
+            android:id="@+id/item_description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Fresh mozzarella, tomato sauce, basil"
+            android:textSize="14sp"
+            android:textColor="@color/gray_600"
+            android:layout_marginBottom="4dp"
+            android:visibility="gone" />
+
+        <!-- Category -->
+        <TextView
+            android:id="@+id/item_category"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pizza"
+            android:textSize="12sp"
+            android:textColor="@color/orange_600"
+            android:background="@drawable/tag_background_orange"
+            android:padding="4dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/item_recommendation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Recommendation: safe"
+            android:textSize="12sp"
+            android:textColor="@color/blue_500"
+            android:layout_marginTop="6dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/item_risk_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Risk summary"
+            android:textSize="12sp"
+            android:textColor="@color/gray_600"
+            android:layout_marginTop="4dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/item_health_score"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Health score: 0.75"
+            android:textSize="12sp"
+            android:textColor="@color/green_600"
+            android:layout_marginTop="4dp"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

@@ -8,12 +8,14 @@ interface ImageUploadProps {
   onOCRComplete: (items: MenuItem[], time: number, metadata?: any) => void;
   onError: (error: string) => void;
   onLoading: (loading: boolean) => void;
+  onBeforeUpload?: () => boolean;
 }
 
 export default function ImageUpload({
   onOCRComplete,
   onError,
   onLoading,
+  onBeforeUpload,
 }: ImageUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export default function ImageUpload({
   const handleUpload = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     // CRITICAL: Check if event came from health form
     const target = e.target as HTMLElement;
     const healthForm = target.closest('#health-condition-form');
@@ -63,18 +65,21 @@ export default function ImageUpload({
       }
       return;
     }
-    
+
     // Additional check: ensure this form was actually submitted (has selected file)
     // This prevents accidental submissions
     if (!selectedFile) {
       console.log("🟢 Blocked: No file selected, preventing submission");
       return;
     }
-    
+
     console.log("🟢🟢🟢 ImageUpload: handleUpload called");
-    console.log("🟢🟢🟢 Event type:", e.type);
-    console.log("🟢🟢🟢 Event target:", target);
-    console.log("🟢🟢🟢 Selected file:", selectedFile?.name);
+
+    // Check scan limit before processing
+    if (onBeforeUpload && !onBeforeUpload()) {
+      console.log("🟢 Blocked: Scan limit reached");
+      return;
+    }
 
     if (!selectedFile) {
       onError("Please select an image file");
@@ -119,8 +124,8 @@ export default function ImageUpload({
   return (
     <div className="space-y-4">
       {/* File Upload */}
-      <form 
-        onSubmit={handleUpload} 
+      <form
+        onSubmit={handleUpload}
         className="space-y-4"
         id="image-upload-form"
         onClick={(e) => {

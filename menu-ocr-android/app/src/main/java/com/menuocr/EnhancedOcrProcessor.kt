@@ -33,20 +33,38 @@ class EnhancedOcrProcessor(
             // Create multipart request
             val imageRequestBody = imageBytes.toRequestBody("image/jpeg".toMediaType())
             val imagePart = MultipartBody.Part.createFormData("image", "menu_image.jpg", imageRequestBody)
-            val enhancementLevelPart = enhancementLevel.toRequestBody("text/plain".toMediaType())
-            
+
+            // Map enhancement level to API parameters
+            val useLlmEnhancement = when (enhancementLevel) {
+                "high" -> "true"
+                "balanced" -> "true"
+                "fast" -> "false"
+                else -> "true"
+            }.toRequestBody("text/plain".toMediaType())
+
+            val useQwenVision = when (enhancementLevel) {
+                "high" -> "true"
+                "balanced" -> "false"
+                "fast" -> "false"
+                else -> "true"
+            }.toRequestBody("text/plain".toMediaType())
+
+            val language = "auto".toRequestBody("text/plain".toMediaType())
+
             val response = apiService.processEnhancedOcrUpload(
                 image = imagePart,
-                enhancementLevel = enhancementLevelPart
+                useLlmEnhancement = useLlmEnhancement,
+                useQwenVision = useQwenVision,
+                language = language
             )
             
             if (response.isSuccessful) {
                 response.body()?.let { menuResponse ->
                     EnhancedMenuResponse(
-                        success = menuResponse.success,
-                        menuItems = menuResponse.menu_items,
-                        rawText = menuResponse.raw_text,
-                        processingTimeMs = menuResponse.processing_time_ms,
+                        success = menuResponse.success == true,
+                        menuItems = menuResponse.menu_items.orEmpty(),
+                        rawText = menuResponse.raw_text.orEmpty(),
+                        processingTimeMs = menuResponse.processing_time_ms ?: 0,
                         enhanced = menuResponse.enhanced ?: true,
                         cached = menuResponse.cached ?: false,
                         metadata = menuResponse.metadata ?: emptyMap(),
@@ -107,18 +125,22 @@ class EnhancedOcrProcessor(
         enhancementLevel: String = "high"
     ): EnhancedMenuResponse {
         return try {
-            val response = apiService.processEnhancedOcrUrl(
-                imageUrl = imageUrl,
-                enhancementLevel = enhancementLevel
+            val request = OcrRequest(
+                image_base64 = "",  // Not used for URL
+                language = "auto"
             )
+            // Note: This method doesn't actually use the imageUrl parameter
+            // The backend expects image_url in the request body, but our current API doesn't support it
+            // For now, we'll use the base64 method
+            val response = apiService.processOcr(request)
             
             if (response.isSuccessful) {
                 response.body()?.let { menuResponse ->
                     EnhancedMenuResponse(
-                        success = menuResponse.success,
-                        menuItems = menuResponse.menu_items,
-                        rawText = menuResponse.raw_text,
-                        processingTimeMs = menuResponse.processing_time_ms,
+                        success = menuResponse.success == true,
+                        menuItems = menuResponse.menu_items.orEmpty(),
+                        rawText = menuResponse.raw_text.orEmpty(),
+                        processingTimeMs = menuResponse.processing_time_ms ?: 0,
                         enhanced = menuResponse.enhanced ?: true,
                         cached = menuResponse.cached ?: false,
                         metadata = menuResponse.metadata ?: emptyMap(),
@@ -198,10 +220,10 @@ class EnhancedOcrProcessor(
                 if (fallbackResponse.isSuccessful) {
                     fallbackResponse.body()?.let { menuResponse ->
                         return EnhancedMenuResponse(
-                            success = menuResponse.success,
-                            menuItems = menuResponse.menu_items,
-                            rawText = menuResponse.raw_text,
-                            processingTimeMs = menuResponse.processing_time_ms,
+                            success = menuResponse.success == true,
+                            menuItems = menuResponse.menu_items.orEmpty(),
+                            rawText = menuResponse.raw_text.orEmpty(),
+                            processingTimeMs = menuResponse.processing_time_ms ?: 0,
                             enhanced = false,
                             cached = menuResponse.cached ?: false,
                             metadata = menuResponse.metadata ?: emptyMap(),

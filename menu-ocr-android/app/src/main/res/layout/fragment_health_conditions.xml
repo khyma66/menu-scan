@@ -1,0 +1,393 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/gray_50"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/screen_padding">
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="3dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_header_health"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Health+"
+                    android:textColor="@color/white"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Set preferences once and get safer dish recommendations instantly"
+                    android:textColor="#DDFBF1"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Your health data stays on your device. We use it to filter menu suggestions in real time."
+                    android:textColor="#EDFFF8"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/tag_background_green"
+                    android:paddingLeft="10dp"
+                    android:paddingTop="4dp"
+                    android:paddingRight="10dp"
+                    android:paddingBottom="4dp"
+                    android:text="Preferences Set"
+                    android:textColor="@color/green_700"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Status Message -->
+        <TextView
+            android:id="@+id/status_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/status_background"
+            android:padding="12dp"
+            android:text="Loading your profile..."
+            android:textColor="@color/gray_600"
+            android:textSize="12sp"
+            android:visibility="visible" />
+
+        <!-- Health Inputs Card -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/inputs_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:elevation="4dp"
+            app:cardCornerRadius="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Health Conditions Input -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="4dp"
+                    android:text="Health Conditions"
+                    android:textColor="@color/gray_900"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="e.g., diabetes, hypertension, heart disease"
+                    android:textColor="@color/gray_500"
+                    android:textSize="12sp" />
+
+                <EditText
+                    android:id="@+id/input_health_conditions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/status_background"
+                    android:hint="Enter health conditions (comma-separated)"
+                    android:inputType="textMultiLine"
+                    android:minHeight="44dp"
+                    android:padding="12dp"
+                    android:textColor="@color/gray_900"
+                    android:textColorHint="@color/gray_500"
+                    android:textSize="14sp" />
+
+                <!-- Allergies Input -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="4dp"
+                    android:text="Allergies"
+                    android:textColor="@color/gray_900"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="e.g., peanuts, shellfish, dairy, gluten"
+                    android:textColor="@color/gray_500"
+                    android:textSize="12sp" />
+
+                <EditText
+                    android:id="@+id/input_allergies"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/status_background"
+                    android:hint="Enter allergies (comma-separated)"
+                    android:inputType="textMultiLine"
+                    android:minHeight="44dp"
+                    android:padding="12dp"
+                    android:textColor="@color/gray_900"
+                    android:textColorHint="@color/gray_500"
+                    android:textSize="14sp" />
+
+                <!-- Dietary Preferences Input -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="4dp"
+                    android:text="Dietary Preferences"
+                    android:textColor="@color/gray_900"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="e.g., vegetarian, vegan, keto, low-sodium"
+                    android:textColor="@color/gray_500"
+                    android:textSize="12sp" />
+
+                <EditText
+                    android:id="@+id/input_dietary_preferences"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/status_background"
+                    android:hint="Enter dietary preferences (comma-separated)"
+                    android:inputType="textMultiLine"
+                    android:minHeight="44dp"
+                    android:padding="12dp"
+                    android:textColor="@color/gray_900"
+                    android:textColorHint="@color/gray_500"
+                    android:textSize="14sp" />
+
+                <!-- Taste Preference Input -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="4dp"
+                    android:text="Taste Preference"
+                    android:textColor="@color/gray_900"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="e.g., spicy, mild, sweet, tangy, savory"
+                    android:textColor="@color/gray_500"
+                    android:textSize="12sp" />
+
+                <EditText
+                    android:id="@+id/input_taste_preference"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/status_background"
+                    android:hint="Enter taste preferences (comma-separated)"
+                    android:inputType="textMultiLine"
+                    android:minHeight="44dp"
+                    android:padding="12dp"
+                    android:textColor="@color/gray_900"
+                    android:textColorHint="@color/gray_500"
+                    android:textSize="14sp" />
+
+                <!-- Medical Notes Input -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="4dp"
+                    android:text="Medical Notes"
+                    android:textColor="@color/gray_900"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="Any additional medical information or restrictions"
+                    android:textColor="@color/gray_500"
+                    android:textSize="12sp" />
+
+                <EditText
+                    android:id="@+id/input_medical_notes"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/status_background"
+                    android:hint="Enter additional medical notes"
+                    android:inputType="textMultiLine"
+                    android:minHeight="56dp"
+                    android:padding="12dp"
+                    android:textColor="@color/gray_900"
+                    android:textColorHint="@color/gray_500"
+                    android:textSize="14sp" />
+
+                <!-- Save Button -->
+                <Button
+                    android:id="@+id/btn_save_profile"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/button_primary"
+                    android:backgroundTint="@null"
+                    app:backgroundTint="@null"
+                    android:text="Save Health Profile"
+                    android:textColor="@color/gray_900"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:minHeight="48dp"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Loading Progress -->
+        <LinearLayout
+            android:id="@+id/loading_progress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/loading_background"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:visibility="gone">
+
+            <ProgressBar
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Saving your health profile..."
+                android:textColor="@color/gray_600"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+
+        <!-- Current Conditions Card -->
+        <LinearLayout
+            android:id="@+id/current_conditions_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="How this helps you"
+                android:textColor="@color/gray_900"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:elevation="2dp"
+                app:cardCornerRadius="8dp"
+                app:cardBackgroundColor="@color/blue_50">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:text="Personalized Recommendations"
+                        android:textColor="@color/blue_700"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:text="When you scan a menu, we'll highlight dishes that are safe for your health conditions and warn you about items to avoid."
+                        android:textColor="@color/gray_700"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:text="Risk Assessment"
+                        android:textColor="@color/blue_700"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:text="Each dish will show a risk level (Low, Medium, High) based on your specific health conditions."
+                        android:textColor="@color/gray_700"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:text="Privacy First"
+                        android:textColor="@color/blue_700"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Your health data is stored securely and only used to provide personalized menu recommendations."
+                        android:textColor="@color/gray_700"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

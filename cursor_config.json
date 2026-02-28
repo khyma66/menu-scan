@@ -1,0 +1,84 @@
+{
+    "models": [
+        {
+            "title": "Qwen 2.5 Coder (32B)",
+            "provider": "ollama",
+            "apiBase": "http://localhost:11434/",
+            "model": "qwen2.5-coder:32b",
+            "systemMessage": "You are an expert software developer. You give helpful and concise responses."
+        },
+        {
+            "title": "Qwen Coder 32B (Latest)",
+            "provider": "ollama",
+            "apiBase": "http://localhost:11434/",
+            "model": "qwen-coder-32b:latest",
+            "systemMessage": "You are an expert software developer. You give helpful and concise responses."
+        },
+        {
+            "title": "Qwen 2.5 (3B)",
+            "provider": "ollama",
+            "apiBase": "http://localhost:11434/",
+            "model": "qwen2.5:3b",
+            "systemMessage": "You are a helpful AI assistant."
+        }
+    ],
+    "tabAutocompleteModel": {
+        "title": "Tab Autocomplete (Qwen 32B)",
+        "apiBase": "http://localhost:11434/",
+        "provider": "ollama",
+        "model": "qwen2.5-coder:32b",
+        "systemMessage": "You are an expert software developer. You give helpful and concise responses."
+    },
+    "contextProviders": [
+        {
+            "name": "code",
+            "params": {}
+        },
+        {
+            "name": "docs",
+            "params": {}
+        },
+        {
+            "name": "diff",
+            "params": {}
+        },
+        {
+            "name": "terminal",
+            "params": {}
+        },
+        {
+            "name": "problems",
+            "params": {}
+        },
+        {
+            "name": "folder",
+            "params": {}
+        },
+        {
+            "name": "codebase",
+            "params": {}
+        }
+    ],
+    "slashCommands": [
+        {
+            "name": "share",
+            "description": "Export the current chat session to markdown"
+        },
+        {
+            "name": "cmd",
+            "description": "Generate a shell command"
+        },
+        {
+            "name": "commit",
+            "description": "Generate a git commit message"
+        }
+    ],
+    "embeddingsProvider": {
+        "provider": "ollama",
+        "model": "nomic-embed-text:latest",
+        "apiBase": "http://localhost:11434/"
+    },
+    "reranker": {
+        "name": "free-trial"
+    }
+}

@@ -19,7 +19,8 @@
             android:padding="16dp"
             android:background="@drawable/header_gradient"
             android:elevation="4dp"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="16dp"
+            android:gravity="center_vertical">
 
             <ImageView
                 android:layout_width="32dp"
@@ -39,10 +40,10 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="OCR Results"
+                    android:text="Scan Results"
                     android:textSize="20sp"
                     android:textStyle="bold"
-                    android:textColor="@android:color/white" />
+                    android:textColor="@color/gray_900" />
 
                 <TextView
                     android:id="@+id/processing_method"
@@ -50,7 +51,7 @@
                     android:layout_height="wrap_content"
                     android:text="Processing Method: Enhanced OCR with Qwen"
                     android:textSize="12sp"
-                    android:textColor="@android:color/white" />
+                    android:textColor="@color/gray_700" />
 
                 <TextView
                     android:id="@+id/processing_time"
@@ -58,7 +59,7 @@
                     android:layout_height="wrap_content"
                     android:text="Processing Time: 1500ms"
                     android:textSize="12sp"
-                    android:textColor="@android:color/white" />
+                    android:textColor="@color/gray_700" />
 
             </LinearLayout>
 
@@ -70,10 +71,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="@android:color/white"
+            android:background="@color/white"
             android:elevation="2dp"
             android:layout_marginBottom="16dp"
-            android:padding="16dp">
+            android:padding="16dp"
+            android:foregroundGravity="center">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -91,7 +93,7 @@
                 android:text="Sample raw text extracted from the image..."
                 android:textSize="14sp"
                 android:textColor="@color/gray_700"
-                android:background="@drawable/tag_background_gray"
+                android:background="@drawable/status_background"
                 android:padding="12dp" />
 
         </LinearLayout>
@@ -101,7 +103,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="@android:color/white"
+            android:background="@color/white"
             android:elevation="2dp"
             android:layout_marginBottom="16dp">
 
@@ -119,7 +121,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:background="@color/orange_100"
+                android:background="@color/gray_100"
                 android:padding="12dp">
 
                 <TextView
@@ -129,7 +131,7 @@
                     android:text="#"
                     android:textSize="14sp"
                     android:textStyle="bold"
-                    android:textColor="@color/orange_800" />
+                    android:textColor="@color/gray_700" />
 
                 <TextView
                     android:layout_width="0dp"
@@ -138,7 +140,7 @@
                     android:text="Item Name"
                     android:textSize="14sp"
                     android:textStyle="bold"
-                    android:textColor="@color/orange_800" />
+                    android:textColor="@color/gray_700" />
 
                 <TextView
                     android:layout_width="0dp"
@@ -147,7 +149,7 @@
                     android:text="Price"
                     android:textSize="14sp"
                     android:textStyle="bold"
-                    android:textColor="@color/orange_800" />
+                    android:textColor="@color/gray_700" />
 
             </LinearLayout>
 
@@ -176,8 +178,8 @@
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
                 android:text="Back"
-                android:backgroundTint="@color/gray_500"
-                android:textColor="@android:color/white" />
+                android:background="@drawable/button_secondary"
+                android:textColor="@color/gray_900" />
 
             <Button
                 android:id="@+id/btn_add_another"
@@ -186,8 +188,8 @@
                 android:layout_weight="1"
                 android:layout_marginStart="8dp"
                 android:text="Add Another Image"
-                android:backgroundTint="@color/orange_500"
-                android:textColor="@android:color/white" />
+                android:background="@drawable/button_primary"
+                android:textColor="@color/gray_900" />
 
         </LinearLayout>
 

@@ -20,6 +20,38 @@ interface ApiService {
     @GET("/health")
     suspend fun checkHealth(): Response<Map<String, Any>>
 
+    @GET("/test-db")
+    suspend fun testDb(): Response<Map<String, Any>>
+
+    @Multipart
+    @POST("/v1/menus:scan")
+    suspend fun scanMenu(
+        @Part pages: List<MultipartBody.Part>,
+        @Part("target_lang") targetLang: RequestBody,
+        @Part("user_country") userCountry: RequestBody,
+        @Part("restaurant_name") restaurantName: RequestBody,
+        @Part("region") region: RequestBody,
+        @Part("cuisine_type") cuisineType: RequestBody
+    ): Response<ScanMenuResponse>
+
+    @GET("/v1/jobs/{jobId}")
+    suspend fun getJobStatus(@Path("jobId") jobId: String): Response<JobStatusResponse>
+
+    @GET("/v1/menus/{menuId}/personalized")
+    suspend fun getPersonalizedMenu(@Path("menuId") menuId: String): Response<PersonalizedMenuResponse>
+
+    @GET("/v1/user/health-profile")
+    suspend fun getHealthProfile(): Response<HealthProfileResponse>
+
+    @GET("/v1/user/menus")
+    suspend fun getUserMenus(): Response<UserMenusResponse>
+
+    @PUT("/v1/user/health-profile")
+    suspend fun updateHealthProfile(@Body request: HealthProfileRequest): Response<HealthProfileResponse>
+
+    @DELETE("/v1/user/account")
+    suspend fun deleteUserAccount(): Response<Map<String, Any>>
+
     @POST("/ocr/process")
     suspend fun processOcr(@Body request: OcrRequest): Response<MenuResponse>
 
@@ -32,18 +64,24 @@ interface ApiService {
         @Part("language") language: RequestBody = RequestBody.create("text/plain".toMediaType(), "auto")
     ): Response<MenuResponse>
 
-    // New enhanced OCR endpoints
-    @POST("/enhanced-ocr/process-upload")
+    // Enhanced OCR using existing endpoints
+    @Multipart
+    @POST("/ocr/process-upload")
     suspend fun processEnhancedOcrUpload(
-        
+
         @Part image: MultipartBody.Part,
-        @Part("enhancement_level") enhancementLevel: RequestBody = RequestBody.create("text/plain".toMediaType(), "high")
+        @Part("use_llm_enhancement") useLlmEnhancement: RequestBody = RequestBody.create("text/plain".toMediaType(), "true"),
+        @Part("use_qwen_vision") useQwenVision: RequestBody = RequestBody.create("text/plain".toMediaType(), "true"),
+        @Part("language") language: RequestBody = RequestBody.create("text/plain".toMediaType(), "auto"),
+        @Part("output_language") outputLanguage: RequestBody = RequestBody.create("text/plain".toMediaType(), "en")
     ): Response<MenuResponse>
 
-    @POST("/enhanced-ocr/process-url")
+    @POST("/ocr/translate-menu-items")
+    suspend fun translateMenuItems(@Body request: MenuItemsTranslationRequest): Response<MenuItemsTranslationResponse>
+
+    @POST("/ocr/process")
     suspend fun processEnhancedOcrUrl(
-        @retrofit2.http.Field("image_url") imageUrl: String,
-        @retrofit2.http.Field("enhancement_level") enhancementLevel: String = "high"
+        @Body request: OcrRequest
     ): Response<MenuResponse>
 
     @POST("/dishes/extract")
@@ -69,28 +107,136 @@ interface ApiService {
 
     @GET("/user/preferences/profile")
     suspend fun getUserProfile(): Response<UserPreferences>
+
+    @POST("/auth/reset-password")
+    suspend fun requestPasswordReset(@Body request: Map<String, String>): Response<Map<String, Any>>
+
+    @GET("/user/app-profile")
+    suspend fun getAppProfile(): Response<AppProfileDetails>
+
+    @PUT("/user/app-profile")
+    suspend fun updateAppProfile(@Body request: AppProfileDetailsRequest): Response<AppProfileDetails>
+
+    @GET("/user/discovery-preferences")
+    suspend fun getDiscoveryPreferences(): Response<DiscoveryPreferences>
+
+    @PUT("/user/discovery-preferences")
+    suspend fun updateDiscoveryPreferences(@Body request: DiscoveryPreferencesRequest): Response<DiscoveryPreferences>
 }
+
+data class ScanMenuResponse(
+    val job_id: String,
+    val status: String,
+    val is_cached: Boolean,
+    val cache_hit_from: String?,
+    val menu_id: String?
+)
+
+data class JobStatusResponse(
+    val job_id: String?,
+    val status: String,
+    val error: String?,
+    val menu: MenuResult?
+)
+
+data class MenuResult(
+    val id: String,
+    val restaurant_name: String?,
+    val region: String?,
+    val cuisine_type: String?,
+    val ocr_raw: String?,
+    val personalized: List<PersonalizedDish>?
+)
+
+data class PersonalizedMenuResponse(
+    val menu_id: String,
+    val personalized: List<PersonalizedDish>
+)
+
+data class PersonalizedDish(
+    val dish_id: String,
+    val dish_name: String,
+    val price: Double?,
+    val ingredients: String?,
+    val calories: Int?,
+    val recommendation_level: String?,
+    val risk_summary: String?,
+    val trigger_ingredients: Any?,
+    val alternative_suggestion: String?,
+    val health_score: Double?
+) : java.io.Serializable
+
+data class HealthProfileRequest(
+    val health_conditions: List<String>?,
+    val allergies: List<String>?,
+    val dietary_preferences: List<String>?,
+    val medical_notes: String?
+)
+
+data class HealthProfileResponse(
+    val health_profile: HealthProfile?
+)
+
+data class UserMenusResponse(
+    val menus: List<UserMenu>
+)
+
+data class UserMenu(
+    val id: String,
+    val restaurant_name: String?,
+    val region: String?,
+    val cuisine_type: String?,
+    val created_at: String?
+)
+
+data class HealthProfile(
+    val health_conditions: List<String>?,
+    val allergies: List<String>?,
+    val dietary_preferences: List<String>?,
+    val medical_notes: String?
+) : java.io.Serializable
 
 data class OcrRequest(
     val image_base64: String,
-    val language: String = "en"
+    val language: String = "en",
+    val prompt: String? = null
 )
 
 data class MenuResponse(
-    val success: Boolean,
-    val menu_items: List<MenuItem>,
-    val raw_text: String,
-    val processing_time_ms: Int,
+    val success: Boolean? = null,
+    val menu_items: List<MenuItem>? = null,
+    val gemini_menu_items: List<MenuItem>? = null,
+    val qwen_menu_items: List<MenuItem>? = null,
+    val raw_text: String? = null,
+    val processing_time_ms: Int? = null,
     val enhanced: Boolean? = null,
     val cached: Boolean? = null,
     val metadata: Map<String, Any>? = null
 )
 
 data class MenuItem(
-    val name: String,
+    val name: String?,
     val price: String?,
     val description: String?,
-    val category: String?
+    val category: String?,
+    val ingredients: List<String>? = null,
+    val taste: String? = null,
+    val similarDish1: String? = null,
+    val similarDish2: String? = null,
+    val recommendation: String? = null,
+    val recommendation_reason: String? = null,
+    val allergens: List<String>? = null,
+    val spiciness_level: String? = null,
+    val preparation_method: String? = null
+)
+
+data class MenuItemsTranslationRequest(
+    val menu_items: List<MenuItem>,
+    val target_language: String
+)
+
+data class MenuItemsTranslationResponse(
+    val menu_items: List<MenuItem>
 )
 
 data class DishRequest(
@@ -99,11 +245,11 @@ data class DishRequest(
 )
 
 data class DishResponse(
-    val dishes: List<Dish>
+    val dishes: List<Dish>? = null
 )
 
 data class Dish(
-    val name: String,
+    val name: String?,
     val price: Double?,
     val description: String?
 )
@@ -189,4 +335,40 @@ data class UserProfileUpdateRequest(
     val favorite_cuisines: List<String>?,
     val spice_tolerance: String?,
     val budget_preference: String?
+)
+
+data class AppProfileDetailsRequest(
+    val full_name: String? = null,
+    val email: String? = null,
+    val contact: String? = null,
+    val phone: String? = null,
+    val country: String? = null
+)
+
+data class AppProfileDetails(
+    val user_id: String,
+    val full_name: String? = null,
+    val email: String? = null,
+    val contact: String? = null,
+    val phone: String? = null,
+    val country: String? = null,
+    val updated_at: String? = null
+)
+
+data class DiscoveryPreferencesRequest(
+    val search_radius_miles: Int = 10,
+    val selected_cuisines: List<String> = emptyList(),
+    val location_label: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null
+)
+
+data class DiscoveryPreferences(
+    val user_id: String,
+    val search_radius_miles: Int = 10,
+    val selected_cuisines: List<String> = emptyList(),
+    val location_label: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val updated_at: String? = null
 )

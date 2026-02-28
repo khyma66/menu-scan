@@ -11,6 +11,7 @@ import Combine
 class ProfileViewController: UIViewController {
 
     private let authViewModel = AuthViewModel()
+    private let apiService = ApiService()
     private var cancellables = Set<AnyCancellable>()
 
     private let nameLabel: UILabel = {
@@ -135,14 +136,32 @@ class ProfileViewController: UIViewController {
         let dateFormatter = DateFormatter()
         dateFormatter.dateStyle = .medium
 
-        createdAtLabel.text = "Member since: \(dateFormatter.string(from: Date()))" // Placeholder
-
-        if let lastSignIn = user.lastSignInAt {
-            dateFormatter.dateStyle = .short
-            dateFormatter.timeStyle = .short
-            lastSignInLabel.text = "Last sign in: \(dateFormatter.string(from: lastSignIn))"
+        if let createdAt = user.createdAt {
+            createdAtLabel.text = "Member since: \(createdAt)"
         } else {
-            lastSignInLabel.text = "Last sign in: Never"
+            createdAtLabel.text = "Member since: Recently"
+        }
+
+        lastSignInLabel.text = "Last sign in: Recently"
+
+        Task {
+            // Keep backend profile details in sync for cross-device profile consistency
+            _ = try? await apiService.updateAppProfile(
+                request: AppProfileDetailsRequest(
+                    full_name: user.name,
+                    email: user.email,
+                    contact: nil,
+                    phone: nil,
+                    country: nil
+                )
+            )
+
+            if let appProfile = try? await apiService.getAppProfile() {
+                await MainActor.run {
+                    nameLabel.text = appProfile.full_name ?? user.name ?? "User"
+                    emailLabel.text = appProfile.email ?? user.email
+                }
+            }
         }
     }
 

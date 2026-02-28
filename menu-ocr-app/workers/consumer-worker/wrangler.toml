@@ -1,0 +1,26 @@
+name = "menu-ocr-consumer-worker"
+main = "src/consumer.py"
+compatibility_date = "2025-01-01"
+
+[vars]
+SUPABASE_URL = ""
+SUPABASE_SERVICE_ROLE_KEY = ""
+R2_BUCKET = ""
+R2_ACCESS_KEY_ID = ""
+R2_SECRET_ACCESS_KEY = ""
+CF_ACCOUNT_ID = ""
+GEMINI_API_KEY = ""
+GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta"
+GEMINI_TIMEOUT = "60"
+EMBEDDING_DIM = "1536"
+
+[[r2_buckets]]
+binding = "MENU_IMAGES"
+bucket_name = ""
+preview_bucket_name = ""
+
+[[queues.consumers]]
+queue = "menu-ocr-jobs"
+max_batch_size = 5
+max_batch_timeout = 5

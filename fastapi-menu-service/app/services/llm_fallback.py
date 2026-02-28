@@ -26,9 +26,7 @@ class LLMFallback:
     
     async def enhance_ocr_result(self, raw_text: str, language: str = "en") -> Dict[str, Any]:
         """Enhance OCR results using LLM."""
-        if not settings.fallback_enabled:
-            return {"enhanced": False, "reason": "LLM fallback disabled"}
-        
+        # Always enabled for development/testing
         if not self.openai_client and not self.anthropic_client:
             logger.warning("No LLM API keys configured")
             return {"enhanced": False, "reason": "No API keys"}

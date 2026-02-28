@@ -114,9 +114,15 @@ class AuthViewModel: ObservableObject {
         authState = .loading
 
         Task {
-            // Note: Password reset would need to be implemented in SupabaseService
-            await MainActor.run {
-                authState = .passwordResetSent
+            do {
+                try await supabaseService.resetPassword(email: email)
+                await MainActor.run {
+                    authState = .passwordResetSent
+                }
+            } catch {
+                await MainActor.run {
+                    authState = .error(error.localizedDescription)
+                }
             }
         }
     }

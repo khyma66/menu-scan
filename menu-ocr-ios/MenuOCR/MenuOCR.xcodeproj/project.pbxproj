@@ -7,91 +7,212 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1F1A1A1A1A1A1A1A1A1A1A1A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F1A1A1A1A1A1A1A1A1A1A /* AppDelegate.swift */; };
-		1F1A1A1A1A1A1A1A1A1A1A1B /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F1A1A1A1A1A1A1A1A1A1B /* SceneDelegate.swift */; };
-		1F1A1A1A1A1A1A1A1A1A1A1C /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F1A1A1A1A1A1A1A1A1A1C /* ViewController.swift */; };
-		1F1A1A1A1A1A1A1A1A1A1A1D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 1F1A1A1A1A1A1A1A1A1A1D /* Main.storyboard */; };
-		1F1A1A1A1A1A1A1A1A1A1A1E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1F1A1A1A1A1A1A1A1A1A1E /* Assets.xcassets */; };
-		1F1A1A1A1A1A1A1A1A1A1A1F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 1F1A1A1A1A1A1A1A1A1A1F /* LaunchScreen.storyboard */; };
+		111111111111111111111111 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222222 /* AppDelegate.swift */; };
+		111111111111111111111113 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222224 /* SceneDelegate.swift */; };
+		111111111111111111111115 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222226 /* ViewController.swift */; };
+		111111111111111111111117 /* MenuModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222228 /* MenuModels.swift */; };
+		111111111111111111111119 /* ApiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22222222222222222222222A /* ApiService.swift */; };
+		11111111111111111111111B /* OcrService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22222222222222222222222C /* OcrService.swift */; };
+		11111111111111111111111D /* PaymentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22222222222222222222222E /* PaymentService.swift */; };
+		11111111111111111111111F /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222230 /* SupabaseService.swift */; };
+		111111111111111111111121 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222232 /* AppConfig.swift */; };
+		111111111111111111111123 /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222234 /* LocationService.swift */; };
+		111111111111111111111125 /* OverpassApiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222236 /* OverpassApiService.swift */; };
+		111111111111111111111127 /* RetryHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222238 /* RetryHelper.swift */; };
+		111111111111111111111129 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22222222222222222222223A /* AuthViewModel.swift */; };
+		11111111111111111111112B /* MenuViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22222222222222222222223C /* MenuViewModel.swift */; };
+		11111111111111111111112D /* PaymentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22222222222222222222223E /* PaymentViewModel.swift */; };
+		11111111111111111111112F /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222240 /* MainViewController.swift */; };
+		111111111111111111111131 /* MenuOCRViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222242 /* MenuOCRViewController.swift */; };
+		111111111111111111111133 /* RestaurantDiscoveryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222244 /* RestaurantDiscoveryViewController.swift */; };
+		111111111111111111111135 /* HealthConditionsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222246 /* HealthConditionsViewController.swift */; };
+		111111111111111111111137 /* DoorDashTabBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222248 /* DoorDashTabBarController.swift */; };
+		111111111111111111111139 /* LoginViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22222222222222222222224A /* LoginViewController.swift */; };
+		11111111111111111111113B /* ProfileViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22222222222222222222224C /* ProfileViewController.swift */; };
+		11111111111111111111113D /* GoogleDriveViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22222222222222222222224E /* GoogleDriveViewController.swift */; };
+		11111111111111111111113F /* DishTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222250 /* DishTableViewCell.swift */; };
+		131313131313131313131310 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 131313131313131313131311 /* Supabase */; };
+		131313131313131313131312 /* Stripe in Frameworks */ = {isa = PBXBuildFile; productRef = 131313131313131313131313 /* Stripe */; };
+		131313131313131313131314 /* StripePaymentSheet in Frameworks */ = {isa = PBXBuildFile; productRef = 131313131313131313131315 /* StripePaymentSheet */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		1F1A1A1A1A1A1A1A1A1A1A1A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		1F1A1A1A1A1A1A1A1A1A1A1B /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-		1F1A1A1A1A1A1A1A1A1A1A1C /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
-		1F1A1A1A1A1A1A1A1A1A1A1D /* Main.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = Main.storyboard; sourceTree = "<group>"; };
-		1F1A1A1A1A1A1A1A1A1A1A1E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		1F1A1A1A1A1A1A1A1A1A1A1F /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
-		1F1A1A1A1A1A1A1A1A1A1A1G /* MenuOCR.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MenuOCR.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		222222222222222222222222 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		222222222222222222222224 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		222222222222222222222226 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		222222222222222222222228 /* MenuModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuModels.swift; sourceTree = "<group>"; };
+		22222222222222222222222A /* ApiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApiService.swift; sourceTree = "<group>"; };
+		22222222222222222222222C /* OcrService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OcrService.swift; sourceTree = "<group>"; };
+		22222222222222222222222E /* PaymentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentService.swift; sourceTree = "<group>"; };
+		222222222222222222222230 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
+		222222222222222222222232 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+		222222222222222222222234 /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationService.swift; sourceTree = "<group>"; };
+		222222222222222222222236 /* OverpassApiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverpassApiService.swift; sourceTree = "<group>"; };
+		222222222222222222222238 /* RetryHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetryHelper.swift; sourceTree = "<group>"; };
+		22222222222222222222223A /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
+		22222222222222222222223C /* MenuViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuViewModel.swift; sourceTree = "<group>"; };
+		22222222222222222222223E /* PaymentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentViewModel.swift; sourceTree = "<group>"; };
+		222222222222222222222240 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
+		222222222222222222222242 /* MenuOCRViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuOCRViewController.swift; sourceTree = "<group>"; };
+		222222222222222222222244 /* RestaurantDiscoveryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestaurantDiscoveryViewController.swift; sourceTree = "<group>"; };
+		222222222222222222222246 /* HealthConditionsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthConditionsViewController.swift; sourceTree = "<group>"; };
+		222222222222222222222248 /* DoorDashTabBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoorDashTabBarController.swift; sourceTree = "<group>"; };
+		22222222222222222222224A /* LoginViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewController.swift; sourceTree = "<group>"; };
+		22222222222222222222224C /* ProfileViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewController.swift; sourceTree = "<group>"; };
+		22222222222222222222224E /* GoogleDriveViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveViewController.swift; sourceTree = "<group>"; };
+		222222222222222222222250 /* DishTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DishTableViewCell.swift; sourceTree = "<group>"; };
+		333333333333333333333333 /* MenuOCR.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MenuOCR.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		1F1A1A1A1A1A1A1A1A1A1A1H /* Frameworks */ = {
+		444444444444444444444444 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				131313131313131313131310 /* Supabase in Frameworks */,
+				131313131313131313131312 /* Stripe in Frameworks */,
+				131313131313131313131314 /* StripePaymentSheet in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		1F1A1A1A1A1A1A1A1A1A1A1I /* MenuOCR */ = {
+		555555555555555555555555 /* MenuOCR */ = {
 			isa = PBXGroup;
 			children = (
-				1F1A1A1A1A1A1A1A1A1A1A1A /* AppDelegate.swift */,
-				1F1A1A1A1A1A1A1A1A1A1A1B /* SceneDelegate.swift */,
-				1F1A1A1A1A1A1A1A1A1A1A1C /* ViewController.swift */,
-				1F1A1A1A1A1A1A1A1A1A1A1D /* Main.storyboard */,
-				1F1A1A1A1A1A1A1A1A1A1A1E /* Assets.xcassets */,
-				1F1A1A1A1A1A1A1A1A1A1A1F /* LaunchScreen.storyboard */,
+				222222222222222222222222 /* AppDelegate.swift */,
+				222222222222222222222224 /* SceneDelegate.swift */,
+				222222222222222222222226 /* ViewController.swift */,
+				666666666666666666666661 /* Config */,
+				666666666666666666666662 /* Models */,
+				666666666666666666666663 /* Services */,
+				666666666666666666666664 /* Utils */,
+				666666666666666666666665 /* ViewModels */,
+				666666666666666666666666 /* Views */,
 			);
 			path = MenuOCR;
 			sourceTree = "<group>";
 		};
-		1F1A1A1A1A1A1A1A1A1A1A1J /* Products */ = {
+		666666666666666666666661 /* Config */ = {
 			isa = PBXGroup;
 			children = (
-				1F1A1A1A1A1A1A1A1A1A1A1G /* MenuOCR.app */,
+				222222222222222222222232 /* AppConfig.swift */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+		666666666666666666666662 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				222222222222222222222228 /* MenuModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		666666666666666666666663 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				22222222222222222222222A /* ApiService.swift */,
+				22222222222222222222222C /* OcrService.swift */,
+				22222222222222222222222E /* PaymentService.swift */,
+				222222222222222222222230 /* SupabaseService.swift */,
+				222222222222222222222234 /* LocationService.swift */,
+				222222222222222222222236 /* OverpassApiService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		666666666666666666666664 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				222222222222222222222238 /* RetryHelper.swift */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
+		666666666666666666666665 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				22222222222222222222223A /* AuthViewModel.swift */,
+				22222222222222222222223C /* MenuViewModel.swift */,
+				22222222222222222222223E /* PaymentViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		666666666666666666666666 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				222222222222222222222240 /* MainViewController.swift */,
+				222222222222222222222242 /* MenuOCRViewController.swift */,
+				222222222222222222222244 /* RestaurantDiscoveryViewController.swift */,
+				222222222222222222222246 /* HealthConditionsViewController.swift */,
+				222222222222222222222248 /* DoorDashTabBarController.swift */,
+				22222222222222222222224A /* LoginViewController.swift */,
+				22222222222222222222224C /* ProfileViewController.swift */,
+				22222222222222222222224E /* GoogleDriveViewController.swift */,
+				222222222222222222222250 /* DishTableViewCell.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		777777777777777777777777 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				333333333333333333333333 /* MenuOCR.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		888888888888888888888888 /* Main Group */ = {
+			isa = PBXGroup;
+			children = (
+				555555555555555555555555 /* MenuOCR */,
+				777777777777777777777777 /* Products */,
+			);
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		1F1A1A1A1A1A1A1A1A1A1A1K /* MenuOCR */ = {
+		999999999999999999999999 /* MenuOCR */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 1F1A1A1A1A1A1A1A1A1A1A1L /* Build configuration list for PBXNativeTarget "MenuOCR" */;
+			buildConfigurationList = AAAAAAAAAAAAAAAAAAAAAAA1 /* Build configuration list for PBXNativeTarget "MenuOCR" */;
 			buildPhases = (
-				1F1A1A1A1A1A1A1A1A1A1A1M /* Sources */,
-				1F1A1A1A1A1A1A1A1A1A1A1H /* Frameworks */,
-				1F1A1A1A1A1A1A1A1A1A1A1N /* Resources */,
+				BBBBBBBBBBBBBBBBBBBBBBBB /* Sources */,
+				444444444444444444444444 /* Frameworks */,
+				CCCCCCCCCCCCCCCCCCCCCCCC /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			name = MenuOCR;
+			packageProductDependencies = (
+				131313131313131313131311 /* Supabase */,
+				131313131313131313131313 /* Stripe */,
+				131313131313131313131315 /* StripePaymentSheet */,
+			);
 			productName = MenuOCR;
-			productReference = 1F1A1A1A1A1A1A1A1A1A1G /* MenuOCR.app */;
+			productReference = 333333333333333333333333 /* MenuOCR.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		1F1A1A1A1A1A1A1A1A1A1A1O /* Project object */ = {
+		DDDDDDDDDDDDDDDDDDDDDDDD /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 1500;
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
-					1F1A1A1A1A1A1A1A1A1A1A1K = {
+					999999999999999999999999 = {
 						CreatedOnToolsVersion = 15.0;
 					};
 				};
 			};
-			buildConfigurationList = 1F1A1A1A1A1A1A1A1A1A1P /* Build configuration list for PBXProject "MenuOCR" */;
+			buildConfigurationList = AAAAAAAAAAAAAAAAAAAAAAA0 /* Build configuration list for PBXProject "MenuOCR" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -99,44 +220,66 @@
 				en,
 				Base,
 			);
-			mainGroup = 1F1A1A1A1A1A1A1A1A1A1A1Q;
-			productRefGroup = 1F1A1A1A1A1A1A1A1A1A1J /* Products */;
+			mainGroup = 888888888888888888888888 /* Main Group */;
+			packageReferences = (
+				121212121212121212121211 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				121212121212121212121212 /* XCRemoteSwiftPackageReference "stripe-ios" */,
+			);
+			productRefGroup = 777777777777777777777777 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				1F1A1A1A1A1A1A1A1A1A1A1K /* MenuOCR */,
+				999999999999999999999999 /* MenuOCR */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		1F1A1A1A1A1A1A1A1A1A1A1N /* Resources */ = {
+		CCCCCCCCCCCCCCCCCCCCCCCC /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1F1A1A1A1A1A1A1A1A1A1A1D /* Main.storyboard in Resources */,
-				1F1A1A1A1A1A1A1A1A1A1A1E /* Assets.xcassets in Resources */,
-				1F1A1A1A1A1A1A1A1A1A1A1F /* LaunchScreen.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		1F1A1A1A1A1A1A1A1A1A1A1M /* Sources */ = {
+		BBBBBBBBBBBBBBBBBBBBBBBB /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1F1A1A1A1A1A1A1A1A1A1A1A /* AppDelegate.swift in Sources */,
-				1F1A1A1A1A1A1A1A1A1A1A1B /* SceneDelegate.swift in Sources */,
-				1F1A1A1A1A1A1A1A1A1A1A1C /* ViewController.swift in Sources */,
+				111111111111111111111111 /* AppDelegate.swift in Sources */,
+				111111111111111111111113 /* SceneDelegate.swift in Sources */,
+				111111111111111111111115 /* ViewController.swift in Sources */,
+				111111111111111111111117 /* MenuModels.swift in Sources */,
+				111111111111111111111119 /* ApiService.swift in Sources */,
+				11111111111111111111111B /* OcrService.swift in Sources */,
+				11111111111111111111111D /* PaymentService.swift in Sources */,
+				11111111111111111111111F /* SupabaseService.swift in Sources */,
+				111111111111111111111121 /* AppConfig.swift in Sources */,
+				111111111111111111111123 /* LocationService.swift in Sources */,
+				111111111111111111111125 /* OverpassApiService.swift in Sources */,
+				111111111111111111111127 /* RetryHelper.swift in Sources */,
+				111111111111111111111129 /* AuthViewModel.swift in Sources */,
+				11111111111111111111112B /* MenuViewModel.swift in Sources */,
+				11111111111111111111112D /* PaymentViewModel.swift in Sources */,
+				11111111111111111111112F /* MainViewController.swift in Sources */,
+				111111111111111111111131 /* MenuOCRViewController.swift in Sources */,
+				111111111111111111111133 /* RestaurantDiscoveryViewController.swift in Sources */,
+				111111111111111111111135 /* HealthConditionsViewController.swift in Sources */,
+				111111111111111111111137 /* DoorDashTabBarController.swift in Sources */,
+				111111111111111111111139 /* LoginViewController.swift in Sources */,
+				11111111111111111111113B /* ProfileViewController.swift in Sources */,
+				11111111111111111111113D /* GoogleDriveViewController.swift in Sources */,
+				11111111111111111111113F /* DishTableViewCell.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		1F1A1A1A1A1A1A1A1A1A1A1R /* Debug */ = {
+		EEEEEEEEEEEEEEEEEEEEEEEE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -171,7 +314,6 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -198,7 +340,7 @@
 			};
 			name = Debug;
 		};
-		1F1A1A1A1A1A1A1A1A1A1A1S /* Release */ = {
+		EEEEEEEEEEEEEEEEEEEEEEF1 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -223,6 +365,7 @@
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES;
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
@@ -232,7 +375,6 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -242,7 +384,6 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
@@ -254,23 +395,19 @@
 			};
 			name = Release;
 		};
-		1F1A1A1A1A1A1A1A1A1A1A1T /* Debug */ = {
+		FFFFFFFFFFFFFFFFFFFFF001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"MenuOCR/Preview Content\"";
-				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = MenuOCR;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_CFBundleDisplayName = Foodit;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is required to capture menu images for OCR processing.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Photo library access is required to select menu images for OCR processing.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location access is required to find nearby restaurants.";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Location access is required to find nearby restaurants.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
@@ -279,7 +416,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.menuocr.ios;
+				PRODUCT_BUNDLE_IDENTIFIER = com.foodit.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -287,23 +424,19 @@
 			};
 			name = Debug;
 		};
-		1F1A1A1A1A1A1A1A1A1A1A1U /* Release */ = {
+		FFFFFFFFFFFFFFFFFFFFF002 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"MenuOCR/Preview Content\"";
-				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = MenuOCR;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_CFBundleDisplayName = Foodit;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is required to capture menu images for OCR processing.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Photo library access is required to select menu images for OCR processing.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location access is required to find nearby restaurants.";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Location access is required to find nearby restaurants.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
@@ -312,7 +445,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.menuocr.ios;
+				PRODUCT_BUNDLE_IDENTIFIER = com.foodit.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -323,25 +456,62 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		1F1A1A1A1A1A1A1A1A1A1A1L /* Build configuration list for PBXNativeTarget "MenuOCR" */ = {
+		AAAAAAAAAAAAAAAAAAAAAAA0 /* Build configuration list for PBXProject "MenuOCR" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				1F1A1A1A1A1A1A1A1A1A1A1T /* Debug */,
-				1F1A1A1A1A1A1A1A1A1A1A1U /* Release */,
+				EEEEEEEEEEEEEEEEEEEEEEEE /* Debug */,
+				EEEEEEEEEEEEEEEEEEEEEEF1 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		1F1A1A1A1A1A1A1A1A1A1A1P /* Build configuration list for PBXProject "MenuOCR" */ = {
+		AAAAAAAAAAAAAAAAAAAAAAA1 /* Build configuration list for PBXNativeTarget "MenuOCR" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				1F1A1A1A1A1A1A1A1A1A1A1R /* Debug */,
-				1F1A1A1A1A1A1A1A1A1A1A1S /* Release */,
+				FFFFFFFFFFFFFFFFFFFFF001 /* Debug */,
+				FFFFFFFFFFFFFFFFFFFFF002 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		121212121212121212121211 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase-community/supabase-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+		121212121212121212121212 /* XCRemoteSwiftPackageReference "stripe-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stripe/stripe-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 23.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		131313131313131313131311 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 121212121212121212121211 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+		131313131313131313131313 /* Stripe */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 121212121212121212121212 /* XCRemoteSwiftPackageReference "stripe-ios" */;
+			productName = Stripe;
+		};
+		131313131313131313131315 /* StripePaymentSheet */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 121212121212121212121212 /* XCRemoteSwiftPackageReference "stripe-ios" */;
+			productName = StripePaymentSheet;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
-	rootObject = 1F1A1A1A1A1A1A1A1A1A1A1O /* Project object */;
+	rootObject = DDDDDDDDDDDDDDDDDDDDDDDD /* Project object */;
 }

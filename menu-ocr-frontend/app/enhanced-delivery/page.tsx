@@ -5,6 +5,8 @@ import DeliveryAppHome from "@/components/DeliveryAppHome";
 import ImageUpload from "@/components/ImageUpload";
 import MenuDisplay from "@/components/MenuDisplay";
 import StatusDisplay from "@/components/StatusDisplay";
+import UpgradeModal from "@/components/UpgradeModal";
+import { useScanLimit } from "@/lib/useScanLimit";
 import { useState, useEffect } from "react";
 import { ocrApi } from "@/lib/api";
 import type { MenuItem } from "@/types/menu";
@@ -19,8 +21,22 @@ export default function EnhancedFoodDeliveryApp() {
   const [connectionStatus, setConnectionStatus] = useState<"checking" | "connected" | "disconnected">("checking");
   const [showTranslation, setShowTranslation] = useState(false);
   const [rawText, setRawText] = useState<string>("");
+  const [translating, setTranslating] = useState(false);
 
-  // Check backend connection on mount for menu OCR tab
+  const {
+    scanCount,
+    userTier,
+    canScan,
+    incrementScan,
+    getRemainingScans,
+    upgradeTier,
+    showUpgradeModal,
+    setShowUpgradeModal,
+    promptUpgrade,
+    FREE_SCAN_LIMIT,
+  } = useScanLimit();
+
+  // Check backend connection
   useEffect(() => {
     const checkConnection = async () => {
       try {
@@ -41,21 +57,10 @@ export default function EnhancedFoodDeliveryApp() {
     setMenuItems(items);
     setProcessingTime(time);
     setError(null);
-    
-    // Store raw text for translation
+    incrementScan();
+
     if (metadata?.raw_text) {
-      console.log("Setting rawText:", metadata.raw_text.substring(0, 100));
       setRawText(metadata.raw_text);
-    } else {
-      console.log("No raw_text in metadata");
-    }
-    
-    // Log translation info if available
-    if (metadata?.translated) {
-      console.log("Translation info:", {
-        language: metadata.detected_language,
-        translation_count: metadata.translation_count
-      });
     }
   };
 
@@ -68,9 +73,30 @@ export default function EnhancedFoodDeliveryApp() {
     setLoading(isLoading);
   };
 
+  const handleBeforeUpload = (): boolean => {
+    if (!canScan()) {
+      promptUpgrade();
+      return false;
+    }
+    return true;
+  };
+
+  const handleTranslateAll = async () => {
+    if (!rawText || translating) return;
+    setTranslating(true);
+    try {
+      const result = await ocrApi.translateOCR(rawText, "auto");
+      setTranslatedItems(result.menu_items);
+      setShowTranslation(true);
+    } catch (error: any) {
+      console.error("Translation failed:", error);
+    } finally {
+      setTranslating(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Enhanced Header */}
       <AttractiveHeader />
 
       {/* Tab Navigation */}
@@ -79,11 +105,10 @@ export default function EnhancedFoodDeliveryApp() {
           <div className="flex space-x-8">
             <button
               onClick={() => setActiveTab("delivery")}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition relative ${
-                activeTab === "delivery"
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition relative ${activeTab === "delivery"
                   ? "border-orange-500 text-orange-600"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
+                }`}
             >
               🍽️ Restaurant Discovery
               {activeTab === "delivery" && (
@@ -92,11 +117,10 @@ export default function EnhancedFoodDeliveryApp() {
             </button>
             <button
               onClick={() => setActiveTab("menu-ocr")}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition relative ${
-                activeTab === "menu-ocr"
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition relative ${activeTab === "menu-ocr"
                   ? "border-orange-500 text-orange-600"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
+                }`}
             >
               📱 Menu OCR
               {activeTab === "menu-ocr" && (
@@ -111,10 +135,9 @@ export default function EnhancedFoodDeliveryApp() {
       <div className="max-w-7xl mx-auto">
         {activeTab === "delivery" ? (
           <div className="p-6 space-y-6">
-            {/* Delivery App Content */}
             <DeliveryAppHome />
-            
-            {/* Popular Categories Quick Access */}
+
+            {/* Popular Categories */}
             <div className="bg-white rounded-2xl p-6 shadow-sm">
               <h2 className="text-xl font-bold text-gray-900 mb-4">🔥 Popular This Week</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -141,7 +164,7 @@ export default function EnhancedFoodDeliveryApp() {
               </div>
             </div>
 
-            {/* Trending Restaurants */}
+            {/* Trending */}
             <div className="bg-white rounded-2xl p-6 shadow-sm">
               <h2 className="text-xl font-bold text-gray-900 mb-4">🔥 Trending Now</h2>
               <div className="space-y-4">
@@ -150,7 +173,7 @@ export default function EnhancedFoodDeliveryApp() {
                     <span className="text-white text-xl">🍕</span>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">Tony's Pizzeria</h3>
+                    <h3 className="font-semibold text-gray-900">Tony&apos;s Pizzeria</h3>
                     <p className="text-sm text-gray-600">Italian • 0.8 miles • 4.8★</p>
                     <div className="flex items-center space-x-2 mt-1">
                       <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Free delivery</span>
@@ -162,7 +185,6 @@ export default function EnhancedFoodDeliveryApp() {
                     <p className="text-sm font-medium text-green-600">$2.99 delivery</p>
                   </div>
                 </div>
-                
                 <div className="flex items-center space-x-4 p-3 hover:bg-gray-50 rounded-lg transition cursor-pointer">
                   <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-teal-500 rounded-xl flex items-center justify-center">
                     <span className="text-white text-xl">🌮</span>
@@ -186,15 +208,41 @@ export default function EnhancedFoodDeliveryApp() {
         ) : (
           <div className="p-6">
             <div className="text-center mb-8">
-              <h1 className="text-5xl font-bold text-gray-900 mb-4">
-                Menu OCR
-              </h1>
+              <h1 className="text-5xl font-bold text-gray-900 mb-4">Menu OCR</h1>
               <p className="text-xl text-gray-600">
                 Extract menu items from images using AI-powered OCR
               </p>
-              <div className="mt-4 inline-flex items-center space-x-2 bg-gradient-to-r from-orange-100 to-red-100 px-4 py-2 rounded-full">
-                <span className="text-orange-600">🤖</span>
-                <span className="text-sm font-medium text-orange-700">Powered by AI & Ollama</span>
+              <div className="mt-4 flex items-center justify-center gap-3 flex-wrap">
+                <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-orange-100 to-red-100 px-4 py-2 rounded-full">
+                  <span className="text-orange-600">🤖</span>
+                  <span className="text-sm font-medium text-orange-700">Powered by AI & Ollama</span>
+                </div>
+                {/* Tier Badge */}
+                <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full ${userTier === "max"
+                    ? "bg-gradient-to-r from-purple-100 to-indigo-100"
+                    : userTier === "pro"
+                      ? "bg-gradient-to-r from-blue-100 to-cyan-100"
+                      : "bg-gray-100"
+                  }`}>
+                  <span>{userTier === "max" ? "👑" : userTier === "pro" ? "⚡" : "🆓"}</span>
+                  <span className={`text-sm font-medium ${userTier === "max"
+                      ? "text-purple-700"
+                      : userTier === "pro"
+                        ? "text-blue-700"
+                        : "text-gray-700"
+                    }`}>
+                    {userTier.toUpperCase()} Plan
+                    {userTier === "free" && ` • ${getRemainingScans()} scans left`}
+                  </span>
+                </div>
+                {userTier === "free" && (
+                  <button
+                    onClick={promptUpgrade}
+                    className="text-sm font-medium text-purple-600 hover:text-purple-800 underline transition"
+                  >
+                    Upgrade
+                  </button>
+                )}
               </div>
             </div>
 
@@ -205,12 +253,9 @@ export default function EnhancedFoodDeliveryApp() {
                   <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
                     <span className="text-white">📸</span>
                   </div>
-                  <h2 className="text-2xl font-semibold text-gray-800">
-                    Upload Menu Image
-                  </h2>
+                  <h2 className="text-2xl font-semibold text-gray-800">Upload Menu Image</h2>
                 </div>
-                
-                {/* Connection Status */}
+
                 {connectionStatus === "checking" && (
                   <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <p className="text-sm text-yellow-800 flex items-center">
@@ -240,6 +285,7 @@ export default function EnhancedFoodDeliveryApp() {
                   onOCRComplete={handleOCRComplete}
                   onError={handleError}
                   onLoading={handleLoading}
+                  onBeforeUpload={handleBeforeUpload}
                 />
                 <StatusDisplay
                   loading={loading}
@@ -254,11 +300,9 @@ export default function EnhancedFoodDeliveryApp() {
                   <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl flex items-center justify-center">
                     <span className="text-white">📋</span>
                   </div>
-                  <h2 className="text-2xl font-semibold text-gray-800">
-                    Extracted Menu Items
-                  </h2>
+                  <h2 className="text-2xl font-semibold text-gray-800">Extracted Menu Items</h2>
                 </div>
-                
+
                 {showTranslation ? (
                   <>
                     <div className="mb-4">
@@ -272,34 +316,26 @@ export default function EnhancedFoodDeliveryApp() {
                       <h3 className="text-xl font-semibold text-gray-800 mb-2">Translated Menu Items</h3>
                       <div className="inline-flex items-center space-x-2 bg-green-100 px-3 py-1 rounded-full">
                         <span className="text-green-600">🌍</span>
-                        <span className="text-sm font-medium text-green-700">Auto-translated to English</span>
+                        <span className="text-sm font-medium text-green-700">Auto-translated to English (all fields)</span>
                       </div>
                     </div>
-                    <MenuDisplay items={translatedItems} />
+                    <MenuDisplay items={translatedItems} userTier={userTier} />
                   </>
                 ) : (
                   <>
                     {menuItems.length > 0 && rawText && (
                       <div className="mb-4">
                         <button
-                          onClick={async () => {
-                            try {
-                              const result = await ocrApi.translateOCR(rawText, "auto");
-                              setTranslatedItems(result.menu_items);
-                              setShowTranslation(true);
-                            } catch (error: any) {
-                              console.error("Translation failed:", error);
-                            }
-                          }}
-                          disabled={loading}
+                          onClick={handleTranslateAll}
+                          disabled={translating}
                           className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition mb-4 mr-2 flex items-center space-x-2"
                         >
                           <span>🌍</span>
-                          <span>{loading ? "Translating..." : "Translate to English"}</span>
+                          <span>{translating ? "Translating all fields..." : "Translate All"}</span>
                         </button>
                       </div>
                     )}
-                    <MenuDisplay items={menuItems} />
+                    <MenuDisplay items={menuItems} userTier={userTier} />
                   </>
                 )}
               </div>
@@ -317,6 +353,15 @@ export default function EnhancedFoodDeliveryApp() {
           </div>
         )}
       </div>
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        onUpgrade={upgradeTier}
+        scanCount={scanCount}
+        freeLimit={FREE_SCAN_LIMIT}
+      />
     </div>
   );
 }

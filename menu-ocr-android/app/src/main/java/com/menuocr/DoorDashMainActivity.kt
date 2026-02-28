@@ -1,54 +1,70 @@
 package com.menuocr
 
 import android.os.Bundle
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
-import androidx.fragment.app.FragmentPagerAdapter
-import androidx.viewpager.widget.ViewPager
-import com.google.android.material.tabs.TabLayout
+import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class DoorDashMainActivity : AppCompatActivity() {
 
-    private lateinit var viewPager: ViewPager
-    private lateinit var tabLayout: TabLayout
+    private lateinit var bottomNavigation: BottomNavigationView
+    private lateinit var titleText: TextView
+    private var selectedTabId: Int = R.id.nav_discover
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_doordash_main)
 
         // Initialize views
-        viewPager = findViewById(R.id.view_pager)
-        tabLayout = findViewById(R.id.tab_layout)
+        bottomNavigation = findViewById(R.id.bottom_navigation)
+        titleText = findViewById(R.id.title_text)
 
-        // Setup ViewPager with adapter
-        val adapter = ViewPagerAdapter(supportFragmentManager)
-        viewPager.adapter = adapter
-
-        // Connect TabLayout with ViewPager
-        tabLayout.setupWithViewPager(viewPager)
-    }
-
-    private inner class ViewPagerAdapter(fm: FragmentManager) : FragmentPagerAdapter(fm, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT) {
-
-        override fun getCount(): Int = 3
-
-        override fun getItem(position: Int): Fragment {
-            return when (position) {
-                0 -> RestaurantDiscoveryFragment()
-                1 -> MenuOcrFragment()
-                2 -> GoogleDriveFragment()
-                else -> RestaurantDiscoveryFragment()
-            }
+        setupBottomNavigation()
+        if (savedInstanceState == null) {
+            openFragment(RestaurantDiscoveryFragment())
+            bottomNavigation.selectedItemId = R.id.nav_discover
+            titleText.text = "Discover"
         }
 
-        override fun getPageTitle(position: Int): CharSequence? {
-            return when (position) {
-                0 -> "🍽️ Restaurant Discovery"
-                1 -> "📱 Menu OCR"
-                2 -> "☁️ Google Drive"
-                else -> ""
+    }
+
+    private fun setupBottomNavigation() {
+        bottomNavigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_discover -> {
+                    selectedTabId = item.itemId
+                    openFragment(RestaurantDiscoveryFragment())
+                    titleText.text = "Discover"
+                    true
+                }
+                R.id.nav_health -> {
+                    selectedTabId = item.itemId
+                    openFragment(HealthConditionsFragment())
+                    titleText.text = "Health+"
+                    true
+                }
+                R.id.nav_scan -> {
+                    selectedTabId = item.itemId
+                    openFragment(MenuOcrFragment())
+                    titleText.text = "Scan"
+                    true
+                }
+                R.id.nav_profile -> {
+                    selectedTabId = item.itemId
+                    titleText.text = "Profile"
+                    openFragment(ProfileFragment())
+                    true
+                }
+                else -> false
             }
         }
     }
+
+    private fun openFragment(fragment: Fragment) {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.content_container, fragment)
+            .commit()
+    }
+
 }
