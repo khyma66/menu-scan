@@ -30,19 +30,24 @@ class SplashViewController: UIViewController {
     /// App icon container
     private let iconContainer: UIView = {
         let view = UIView()
-        view.backgroundColor = UIColor.white.withAlphaComponent(0.15)
+        view.backgroundColor = .clear
         view.layer.cornerRadius = 40
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }()
 
-    /// App icon (fork.knife SF symbol)
+    /// App logo image
     private let iconImageView: UIImageView = {
-        let config = UIImage.SymbolConfiguration(pointSize: 44, weight: .medium)
-        let image = UIImage(systemName: "fork.knife.circle.fill", withConfiguration: config)
-        let imageView = UIImageView(image: image)
-        imageView.tintColor = .white
+        let imageView = UIImageView()
+        if let logoImage = UIImage(named: "fooder_logo") {
+            imageView.image = logoImage
+        } else if let path = Bundle.main.path(forResource: "fooder_logo", ofType: "jpg"),
+                  let img = UIImage(contentsOfFile: path) {
+            imageView.image = img
+        }
         imageView.contentMode = .scaleAspectFit
+        imageView.clipsToBounds = true
+        imageView.layer.cornerRadius = 20
         imageView.translatesAutoresizingMaskIntoConstraints = false
         return imageView
     }()
@@ -50,7 +55,7 @@ class SplashViewController: UIViewController {
     /// App name label
     private let appNameLabel: UILabel = {
         let label = UILabel()
-        label.text = "Foodit"
+        label.text = "Fooder"
         label.font = .systemFont(ofSize: 36, weight: .bold)
         label.textColor = .white
         label.textAlignment = .center
@@ -107,14 +112,14 @@ class SplashViewController: UIViewController {
             // Icon container
             iconContainer.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             iconContainer.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -60),
-            iconContainer.widthAnchor.constraint(equalToConstant: 80),
-            iconContainer.heightAnchor.constraint(equalToConstant: 80),
+            iconContainer.widthAnchor.constraint(equalToConstant: 120),
+            iconContainer.heightAnchor.constraint(equalToConstant: 120),
 
             // Icon inside container
             iconImageView.centerXAnchor.constraint(equalTo: iconContainer.centerXAnchor),
             iconImageView.centerYAnchor.constraint(equalTo: iconContainer.centerYAnchor),
-            iconImageView.widthAnchor.constraint(equalToConstant: 50),
-            iconImageView.heightAnchor.constraint(equalToConstant: 50),
+            iconImageView.widthAnchor.constraint(equalToConstant: 100),
+            iconImageView.heightAnchor.constraint(equalToConstant: 100),
 
             // App name
             appNameLabel.topAnchor.constraint(equalTo: iconContainer.bottomAnchor, constant: 24),

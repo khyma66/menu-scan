@@ -91,7 +91,7 @@ class MenuOCRViewController: UIViewController {
         
         // Status bar background to match header
         let statusBarBg = UIView()
-        statusBarBg.backgroundColor = UIColor(red: 0.98, green: 0.24, blue: 0.18, alpha: 1.0)
+        statusBarBg.backgroundColor = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 1.0) // Scan #7C3AED
         statusBarBg.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(statusBarBg)
         NSLayoutConstraint.activate([
@@ -134,7 +134,7 @@ class MenuOCRViewController: UIViewController {
     }
     
     private func setupHeader() {
-        headerView.backgroundColor = UIColor(red: 0.98, green: 0.24, blue: 0.18, alpha: 1.0)
+        headerView.backgroundColor = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 1.0) // Scan #7C3AED
         headerView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(headerView)
         

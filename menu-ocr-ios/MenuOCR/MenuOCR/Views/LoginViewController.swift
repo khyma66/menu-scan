@@ -27,7 +27,7 @@ class LoginViewController: UIViewController {
     
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.text = "Welcome Back"
+        label.text = "Welcome to Fooder"
         label.font = .systemFont(ofSize: 24, weight: .bold)
         label.textAlignment = .center
         label.textColor = UIColor(red: 0.15, green: 0.15, blue: 0.15, alpha: 1.0) // Off-black per UX playbook

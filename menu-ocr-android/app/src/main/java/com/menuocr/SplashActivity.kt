@@ -46,15 +46,15 @@ class SplashActivity : AppCompatActivity() {
             )
         }
 
-        // Fork/knife icon
+        // App logo image
         val iconView = ImageView(this).apply {
-            setImageResource(R.drawable.ic_splash_fork)
-            val size = (80 * resources.displayMetrics.density).toInt()
+            setImageResource(R.drawable.ic_splash_logo)
+            val size = (120 * resources.displayMetrics.density).toInt()
             layoutParams = LinearLayout.LayoutParams(size, size).apply {
                 gravity = Gravity.CENTER_HORIZONTAL
                 bottomMargin = (16 * resources.displayMetrics.density).toInt()
             }
-            setColorFilter(android.graphics.Color.WHITE)
+            scaleType = ImageView.ScaleType.FIT_CENTER
             scaleX = 0f
             scaleY = 0f
             alpha = 0f
@@ -62,7 +62,7 @@ class SplashActivity : AppCompatActivity() {
 
         // App name
         val nameText = TextView(this).apply {
-            text = "Foodit"
+            text = "Fooder"
             setTextColor(android.graphics.Color.WHITE)
             textSize = 36f
             typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.BOLD)

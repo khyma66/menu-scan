@@ -101,7 +101,7 @@ class HealthConditionsViewController: UIViewController {
         
         // Status bar background to match header
         let statusBarBg = UIView()
-        statusBarBg.backgroundColor = UIColor(red: 0.98, green: 0.24, blue: 0.18, alpha: 1.0)
+        statusBarBg.backgroundColor = UIColor(red: 0.020, green: 0.588, blue: 0.412, alpha: 1.0) // Health #059669
         statusBarBg.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(statusBarBg)
         NSLayoutConstraint.activate([
@@ -136,7 +136,7 @@ class HealthConditionsViewController: UIViewController {
     }
     
     private func setupHeader() {
-        headerView.backgroundColor = UIColor(red: 0.98, green: 0.24, blue: 0.18, alpha: 1.0)
+        headerView.backgroundColor = UIColor(red: 0.020, green: 0.588, blue: 0.412, alpha: 1.0) // Health #059669
         headerView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(headerView)
         

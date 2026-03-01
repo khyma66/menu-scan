@@ -54,7 +54,7 @@
                         android:paddingBottom="4dp"
                         android:text="💎 Premium"
                         android:textColor="@color/orange_700"
-                        android:textSize="11sp"
+                        android:textSize="12sp"
                         android:textStyle="bold"
                         android:visibility="gone" />
                 </LinearLayout>
@@ -103,7 +103,7 @@
                     android:layout_height="wrap_content"
                     android:text="Scans"
                     android:textColor="@color/gray_500"
-                    android:textSize="11sp" />
+                    android:textSize="12sp" />
             </LinearLayout>
 
             <LinearLayout
@@ -127,7 +127,7 @@
                     android:layout_height="wrap_content"
                     android:text="Plan"
                     android:textColor="@color/gray_500"
-                    android:textSize="11sp" />
+                    android:textSize="12sp" />
             </LinearLayout>
 
             <LinearLayout
@@ -151,7 +151,7 @@
                     android:layout_height="wrap_content"
                     android:text="Status"
                     android:textColor="@color/gray_500"
-                    android:textSize="11sp" />
+                    android:textSize="12sp" />
             </LinearLayout>
         </LinearLayout>
 
@@ -269,8 +269,18 @@
                     android:layout_height="wrap_content"
                     android:text="Profile"
                     android:textColor="@color/gray_900"
-                    android:textSize="18sp"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="Your personal information"
+                    android:textColor="@color/gray_600"
+                    android:textSize="14sp"
+                    android:lineSpacingMultiplier="1.5" />
 
                 <EditText
                     android:id="@+id/input_name"
@@ -362,7 +372,7 @@
                     android:layout_height="wrap_content"
                     android:text="Payment"
                     android:textColor="@color/gray_900"
-                    android:textSize="18sp"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -371,7 +381,8 @@
                     android:layout_marginTop="4dp"
                     android:text="Store only masked card details and use secure payment provider tokens for transactions."
                     android:textColor="@color/gray_600"
-                    android:textSize="12sp" />
+                    android:textSize="13sp"
+                    android:lineSpacingMultiplier="1.4" />
 
                 <EditText
                     android:id="@+id/input_card_holder"
@@ -476,8 +487,17 @@
                     android:layout_height="wrap_content"
                     android:text="Recent Scans"
                     android:textColor="@color/gray_900"
-                    android:textSize="18sp"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Your scan history and usage"
+                    android:textColor="@color/gray_600"
+                    android:textSize="14sp"
+                    android:lineSpacingMultiplier="1.5" />
 
                 <TextView
                     android:id="@+id/scans_summary"
@@ -513,60 +533,212 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="20dp">
 
                 <TextView
                     android:id="@+id/subscription_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Current: FREE"
+                    android:text="Your Plan"
                     android:textColor="@color/gray_900"
-                    android:textSize="18sp"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Choose a plan"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="16dp"
+                    android:text="Select a plan that fits your needs"
                     android:textColor="@color/gray_600"
-                    android:textSize="12sp" />
+                    android:textSize="14sp"
+                    android:lineSpacingMultiplier="1.5" />
 
-                <Button
-                    android:id="@+id/btn_plan_free"
+                <!-- Free Plan Card -->
+                <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:background="@drawable/button_secondary"
-                    android:backgroundTint="@null"
-                    app:backgroundTint="@null"
-                    android:text="Free • $0/mo • 3 scans + translation"
-                    android:textAllCaps="false"
-                    android:textColor="@color/gray_900" />
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="1dp">
 
-                <Button
-                    android:id="@+id/btn_plan_pro"
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp"
+                        android:background="@color/gray_50">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Free"
+                                android:textColor="@color/gray_900"
+                                android:textSize="18sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="$0/mo"
+                                android:textColor="@color/gray_700"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="• 3 menu scans per day\n• Basic dish translation\n• Restaurant discovery"
+                            android:textColor="@color/gray_600"
+                            android:textSize="14sp"
+                            android:lineSpacingMultiplier="1.5" />
+
+                        <Button
+                            android:id="@+id/btn_plan_free"
+                            android:layout_width="match_parent"
+                            android:layout_height="44dp"
+                            android:layout_marginTop="12dp"
+                            android:background="@drawable/button_secondary"
+                            android:backgroundTint="@null"
+                            app:backgroundTint="@null"
+                            android:text="Current Plan"
+                            android:textAllCaps="false"
+                            android:textColor="@color/gray_700"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Pro Plan Card -->
+                <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:background="@drawable/bg_scan_primary_btn"
-                    android:backgroundTint="@null"
-                    app:backgroundTint="@null"
-                    android:text="Pro • $6.99/mo • Unlimited + similar dishes + ingredients"
-                    android:textAllCaps="false"
-                    android:textColor="@color/white" />
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp">
 
-                <Button
-                    android:id="@+id/btn_plan_max"
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="⭐ Pro"
+                                android:textColor="@color/gray_900"
+                                android:textSize="18sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="$6.99/mo"
+                                android:textColor="#3B5BDB"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="• Unlimited menu scans\n• Full ingredient details\n• Similar dish suggestions\n• Allergen warnings"
+                            android:textColor="@color/gray_600"
+                            android:textSize="14sp"
+                            android:lineSpacingMultiplier="1.5" />
+
+                        <Button
+                            android:id="@+id/btn_plan_pro"
+                            android:layout_width="match_parent"
+                            android:layout_height="44dp"
+                            android:layout_marginTop="12dp"
+                            android:background="@drawable/bg_scan_primary_btn"
+                            android:backgroundTint="@null"
+                            app:backgroundTint="@null"
+                            android:text="Upgrade to Pro"
+                            android:textAllCaps="false"
+                            android:textColor="@color/white"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Max Plan Card -->
+                <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:background="@drawable/bg_scan_primary_btn"
-                    android:backgroundTint="@null"
-                    app:backgroundTint="@null"
-                    android:text="Max • $9.99/mo • Pro + personalized recommendations"
-                    android:textAllCaps="false"
-                    android:textColor="@color/white" />
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="💎 Max"
+                                android:textColor="@color/gray_900"
+                                android:textSize="18sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="$9.99/mo"
+                                android:textColor="#7C3AED"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="• Everything in Pro\n• Personalized recommendations\n• Priority support\n• Advanced health analysis"
+                            android:textColor="@color/gray_600"
+                            android:textSize="14sp"
+                            android:lineSpacingMultiplier="1.5" />
+
+                        <Button
+                            android:id="@+id/btn_plan_max"
+                            android:layout_width="match_parent"
+                            android:layout_height="44dp"
+                            android:layout_marginTop="12dp"
+                            android:background="@drawable/bg_scan_primary_btn"
+                            android:backgroundTint="@null"
+                            app:backgroundTint="@null"
+                            android:text="Upgrade to Max"
+                            android:textAllCaps="false"
+                            android:textColor="@color/white"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
@@ -591,30 +763,46 @@
                     android:layout_height="wrap_content"
                     android:text="Notifications"
                     android:textColor="@color/gray_900"
-                    android:textSize="18sp"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="12dp"
+                    android:text="Manage how you receive updates"
+                    android:textColor="@color/gray_600"
+                    android:textSize="14sp"
+                    android:lineSpacingMultiplier="1.5" />
 
                 <CheckBox
                     android:id="@+id/check_notifications_enabled"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="4dp"
+                    android:minHeight="48dp"
                     android:text="Enable notifications"
-                    android:textColor="@color/gray_900" />
+                    android:textColor="@color/gray_900"
+                    android:textSize="16sp" />
 
                 <CheckBox
                     android:id="@+id/check_notifications_push"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:minHeight="48dp"
                     android:text="Push notifications"
-                    android:textColor="@color/gray_900" />
+                    android:textColor="@color/gray_900"
+                    android:textSize="16sp" />
 
                 <CheckBox
                     android:id="@+id/check_notifications_email"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:minHeight="48dp"
                     android:text="Email notifications"
-                    android:textColor="@color/gray_900" />
+                    android:textColor="@color/gray_900"
+                    android:textSize="16sp" />
 
                 <Button
                     android:id="@+id/btn_save_notifications"
@@ -652,29 +840,51 @@
                     android:layout_height="wrap_content"
                     android:text="Privacy &amp; Security"
                     android:textColor="@color/gray_900"
-                    android:textSize="18sp"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="12dp"
+                    android:text="Control your data and visibility"
+                    android:textColor="@color/gray_600"
+                    android:textSize="14sp"
+                    android:lineSpacingMultiplier="1.5" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Profile Visibility"
+                    android:textColor="@color/gray_700"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
 
                 <Spinner
                     android:id="@+id/spinner_profile_visibility"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp" />
+                    android:layout_height="48dp"
+                    android:layout_marginTop="6dp" />
 
                 <CheckBox
                     android:id="@+id/check_analytics_opt_in"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="12dp"
+                    android:minHeight="48dp"
                     android:text="Allow analytics"
-                    android:textColor="@color/gray_900" />
+                    android:textColor="@color/gray_900"
+                    android:textSize="16sp" />
 
                 <CheckBox
                     android:id="@+id/check_marketing_opt_in"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:minHeight="48dp"
                     android:text="Allow product updates and offers"
-                    android:textColor="@color/gray_900" />
+                    android:textColor="@color/gray_900"
+                    android:textSize="16sp" />
 
                 <Button
                     android:id="@+id/btn_save_privacy"
