@@ -19,7 +19,7 @@ object AppConfig {
     // Menu OCR API Configuration (using local backend for development)
     object MenuOcrApi {
         const val BASE_URL = "https://menu-ocr-f4mr.onrender.com"
-        const val LOCAL_BASE_URL = "http://10.0.2.2:8787"
+        const val LOCAL_BASE_URL = "http://10.0.2.2:8000"
         const val USE_LOCAL = true
     }
 

@@ -44,17 +44,40 @@ struct MenuItem: Codable, Identifiable {
     let price: String?
     let description: String?
     let category: String?
+    let ingredients: [String]?
+    let taste: String?
+    let similarDish1: String?
+    let similarDish2: String?
+    let recommendation: String?
+    let recommendation_reason: String?
+    let allergens: [String]?
+    let spiciness_level: String?
+    let preparation_method: String?
 
-    init(name: String, price: String? = nil, description: String? = nil, category: String? = nil) {
+    init(name: String, price: String? = nil, description: String? = nil, category: String? = nil,
+         ingredients: [String]? = nil, taste: String? = nil, similarDish1: String? = nil,
+         similarDish2: String? = nil, recommendation: String? = nil, recommendation_reason: String? = nil,
+         allergens: [String]? = nil, spiciness_level: String? = nil, preparation_method: String? = nil) {
         self.id = UUID().uuidString
         self.name = name
         self.price = price
         self.description = description
         self.category = category
+        self.ingredients = ingredients
+        self.taste = taste
+        self.similarDish1 = similarDish1
+        self.similarDish2 = similarDish2
+        self.recommendation = recommendation
+        self.recommendation_reason = recommendation_reason
+        self.allergens = allergens
+        self.spiciness_level = spiciness_level
+        self.preparation_method = preparation_method
     }
     
     enum CodingKeys: String, CodingKey {
-        case id, name, price, description, category
+        case id, name, price, description, category, ingredients, taste
+        case similarDish1, similarDish2, recommendation, recommendation_reason
+        case allergens, spiciness_level, preparation_method
     }
     
     init(from decoder: Decoder) throws {
@@ -63,6 +86,15 @@ struct MenuItem: Codable, Identifiable {
         name = try container.decode(String.self, forKey: .name)
         description = try container.decodeIfPresent(String.self, forKey: .description)
         category = try container.decodeIfPresent(String.self, forKey: .category)
+        ingredients = try container.decodeIfPresent([String].self, forKey: .ingredients)
+        taste = try container.decodeIfPresent(String.self, forKey: .taste)
+        similarDish1 = try container.decodeIfPresent(String.self, forKey: .similarDish1)
+        similarDish2 = try container.decodeIfPresent(String.self, forKey: .similarDish2)
+        recommendation = try container.decodeIfPresent(String.self, forKey: .recommendation)
+        recommendation_reason = try container.decodeIfPresent(String.self, forKey: .recommendation_reason)
+        allergens = try container.decodeIfPresent([String].self, forKey: .allergens)
+        spiciness_level = try container.decodeIfPresent(String.self, forKey: .spiciness_level)
+        preparation_method = try container.decodeIfPresent(String.self, forKey: .preparation_method)
         
         // Handle price that could be String, Int, or Double
         if let priceString = try? container.decode(String.self, forKey: .price) {
@@ -83,17 +115,73 @@ struct MenuItem: Codable, Identifiable {
         try container.encodeIfPresent(price, forKey: .price)
         try container.encodeIfPresent(description, forKey: .description)
         try container.encodeIfPresent(category, forKey: .category)
+        try container.encodeIfPresent(ingredients, forKey: .ingredients)
+        try container.encodeIfPresent(taste, forKey: .taste)
+        try container.encodeIfPresent(similarDish1, forKey: .similarDish1)
+        try container.encodeIfPresent(similarDish2, forKey: .similarDish2)
+        try container.encodeIfPresent(recommendation, forKey: .recommendation)
+        try container.encodeIfPresent(recommendation_reason, forKey: .recommendation_reason)
+        try container.encodeIfPresent(allergens, forKey: .allergens)
+        try container.encodeIfPresent(spiciness_level, forKey: .spiciness_level)
+        try container.encodeIfPresent(preparation_method, forKey: .preparation_method)
     }
 }
 
 struct MenuResponse: Codable {
     let success: Bool
     let menu_items: [MenuItem]
+    let gemini_menu_items: [MenuItem]?
+    let qwen_menu_items: [MenuItem]?
     let raw_text: String
     let processing_time_ms: Int
     let enhanced: Bool
     let cached: Bool
     let metadata: [String: String]?
+}
+
+struct TranslateMenuItemsRequest: Codable {
+    let menu_items: [[String: AnyCodable]]
+    let target_language: String
+}
+
+struct TranslateMenuItemsResponse: Codable {
+    let menu_items: [[String: AnyCodable]]
+}
+
+/// Type-erased Codable wrapper for heterogeneous dictionaries
+struct AnyCodable: Codable {
+    let value: Any
+
+    init(_ value: Any) {
+        self.value = value
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let s = try? container.decode(String.self) { value = s }
+        else if let i = try? container.decode(Int.self) { value = i }
+        else if let d = try? container.decode(Double.self) { value = d }
+        else if let b = try? container.decode(Bool.self) { value = b }
+        else if let arr = try? container.decode([AnyCodable].self) { value = arr.map { $0.value } }
+        else if let dict = try? container.decode([String: AnyCodable].self) {
+            value = dict.mapValues { $0.value }
+        }
+        else if container.decodeNil() { value = NSNull() }
+        else { throw DecodingError.dataCorruptedError(in: container, debugDescription: "Unsupported type") }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        if let s = value as? String { try container.encode(s) }
+        else if let i = value as? Int { try container.encode(i) }
+        else if let d = value as? Double { try container.encode(d) }
+        else if let b = value as? Bool { try container.encode(b) }
+        else if let arr = value as? [Any] { try container.encode(arr.map { AnyCodable($0) }) }
+        else if let dict = value as? [String: Any] {
+            try container.encode(dict.mapValues { AnyCodable($0) })
+        }
+        else { try container.encodeNil() }
+    }
 }
 
 struct DishRequest: Codable {

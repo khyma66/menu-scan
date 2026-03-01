@@ -5,7 +5,94 @@ class ApiService {
         AppConfig.MenuOcrApi.localBaseURL : AppConfig.MenuOcrApi.baseURL
     let session = URLSession.shared
     
-    // MARK: - OCR Processing
+    // MARK: - OCR Processing (Multipart Upload — primary endpoint)
+    
+    func processOcrUpload(imageData: Data, useLlmEnhancement: Bool = true, language: String = "auto", outputLanguage: String = "en") async throws -> MenuResponse {
+        let url = URL(string: "\(baseURL)/ocr/process-upload")!
+        let boundary = "Boundary-\(UUID().uuidString)"
+        
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        urlRequest.timeoutInterval = 120 // long timeout for Gemini+Groq pipeline
+        
+        if let authToken = await getAuthToken() {
+            urlRequest.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+        }
+        
+        var body = Data()
+        
+        // Image file part
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"image\"; filename=\"menu.jpg\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        body.append(imageData)
+        body.append("\r\n".data(using: .utf8)!)
+        
+        // use_llm_enhancement
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"use_llm_enhancement\"\r\n\r\n".data(using: .utf8)!)
+        body.append("\(useLlmEnhancement)\r\n".data(using: .utf8)!)
+        
+        // language
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"language\"\r\n\r\n".data(using: .utf8)!)
+        body.append("\(language)\r\n".data(using: .utf8)!)
+        
+        // output_language
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"output_language\"\r\n\r\n".data(using: .utf8)!)
+        body.append("\(outputLanguage)\r\n".data(using: .utf8)!)
+        
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        urlRequest.httpBody = body
+        
+        let (data, response) = try await session.data(for: urlRequest)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw ApiError.invalidResponse
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            // Try to parse error detail
+            if let errorDict = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let detail = errorDict["detail"] as? String {
+                throw ApiError.serverError(detail)
+            }
+            throw ApiError.invalidResponse
+        }
+        
+        return try JSONDecoder().decode(MenuResponse.self, from: data)
+    }
+    
+    // MARK: - Translation
+    
+    func translateMenuItems(items: [[String: AnyCodable]], targetLanguage: String) async throws -> [[String: AnyCodable]] {
+        let url = URL(string: "\(baseURL)/ocr/translate-menu-items")!
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.timeoutInterval = 60
+        
+        if let authToken = await getAuthToken() {
+            urlRequest.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+        }
+        
+        let request = TranslateMenuItemsRequest(menu_items: items, target_language: targetLanguage)
+        urlRequest.httpBody = try JSONEncoder().encode(request)
+        
+        let (data, response) = try await session.data(for: urlRequest)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw ApiError.invalidResponse
+        }
+        
+        let result = try JSONDecoder().decode(TranslateMenuItemsResponse.self, from: data)
+        return result.menu_items
+    }
+    
+    // MARK: - OCR Processing (Legacy base64 — kept for compatibility)
     
     func processOcr(request: OcrRequest) async throws -> MenuResponse {
         return try await RetryHelper.retry {

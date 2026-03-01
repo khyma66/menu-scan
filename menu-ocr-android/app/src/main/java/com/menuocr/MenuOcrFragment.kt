@@ -78,6 +78,7 @@ class MenuOcrFragment : Fragment() {
     private val translatedItemsCache: MutableMap<String, List<MenuItem>> = mutableMapOf()
     private var showRecommendationColumn: Boolean = false
     private var qwenEnhancementRunning: Boolean = false
+    private var processingCancelled: Boolean = false
 
     private val languageCodeByLabel = linkedMapOf(
         "Spanish" to "es",
@@ -242,11 +243,14 @@ class MenuOcrFragment : Fragment() {
     private fun showImagesPreview() {
         if (selectedBitmaps.isNotEmpty()) {
             selectedImagesContainer.removeAllViews()
+            val density = resources.displayMetrics.density
+            val thumbSizePx = (100 * density).toInt()
+            val marginPx = (8 * density).toInt()
 
             selectedBitmaps.forEachIndexed { index, bitmap ->
                 val frame = FrameLayout(requireContext()).apply {
-                    layoutParams = LinearLayout.LayoutParams(100, 100).apply {
-                        marginEnd = 8
+                    layoutParams = LinearLayout.LayoutParams(thumbSizePx, thumbSizePx).apply {
+                        marginEnd = marginPx
                     }
                 }
 
@@ -413,6 +417,7 @@ class MenuOcrFragment : Fragment() {
         translatedItemsCache.clear()
         showRecommendationColumn = false
         qwenEnhancementRunning = false
+        processingCancelled = false
         switchTranslate.isChecked = false
         spinnerTranslateLanguage.visibility = View.GONE
 
@@ -420,6 +425,13 @@ class MenuOcrFragment : Fragment() {
         loadingProgress.alpha = 1f
 
         btnProcessOcr.isEnabled = false
+        btnProcessOcr.text = "Cancel"
+        btnProcessOcr.isEnabled = true
+        btnProcessOcr.setOnClickListener {
+            processingCancelled = true
+            btnProcessOcr.isEnabled = false
+            updateLoadingStatus("Cancelling...")
+        }
         resultsCard.visibility = View.GONE
         actionButtons.visibility = View.GONE
 
@@ -428,6 +440,7 @@ class MenuOcrFragment : Fragment() {
                 val imageBytesList = selectedBitmaps.map { bitmapToJpegBytes(it) }
 
                 imageBytesList.forEachIndexed { index, imageBytes ->
+                    if (processingCancelled) return@forEachIndexed
                     updateLoadingStatus("Reading dishes (image ${index + 1}/${imageBytesList.size})...")
                     val imagePart = bytesToMultipart(imageBytes, "menu_${index + 1}.jpg")
                     val useLlmEnhancement = "false".toRequestBody("text/plain".toMediaType())
@@ -491,7 +504,9 @@ class MenuOcrFragment : Fragment() {
             } finally {
                 loadingProgress.visibility = View.GONE
 
+                btnProcessOcr.text = "Start Analysis"
                 btnProcessOcr.isEnabled = true
+                btnProcessOcr.setOnClickListener { processImagesWithMLKitAndAPI() }
                 
                 // Clear selected images after processing to allow adding more
                 selectedBitmaps.clear()
@@ -826,9 +841,8 @@ class MenuOcrFragment : Fragment() {
     private fun refreshResultsDisplay() {
         val resultBuilder = StringBuilder()
         val currentTier = ScanLimitManager.getPlanTier(requireContext())
-        resultBuilder.append("Tap a dish to view additional details\n")
         if (qwenEnhancementRunning) {
-            resultBuilder.append("(Additional details loading in background...)\n")
+            resultBuilder.append("Loading additional details...\n")
         }
         val baseItems = if (accumulatedMenuItems.isNotEmpty()) {
             accumulatedMenuItems.toList()
@@ -836,15 +850,7 @@ class MenuOcrFragment : Fragment() {
             accumulatedGeminiItems.toList()
         }
         val filteredItems = applyHealthAndTasteFilter(baseItems)
-        resultBuilder.append("\n")
-        resultBuilder.append("Dishes count: ${filteredItems.size}\n")
-        resultBuilder.append("Plan: ${currentTier.name}\n")
-        val featureSummary = mutableListOf<String>()
-        if (ScanLimitManager.canUseTranslation(requireContext())) featureSummary.add("Translation")
-        if (ScanLimitManager.canUseIngredients(requireContext())) featureSummary.add("Ingredients")
-        if (ScanLimitManager.canUseSimilarDishes(requireContext())) featureSummary.add("Similar dishes")
-        if (ScanLimitManager.canUseRecommendations(requireContext())) featureSummary.add("Recommendations")
-        resultBuilder.append("Features: ${if (featureSummary.isEmpty()) "Basic" else featureSummary.joinToString(", ")}\n")
+        resultBuilder.append("${filteredItems.size} dishes found")
 
         geminiDishLinksContainer.removeAllViews()
         qwenDetailCard.visibility = View.GONE
@@ -854,35 +860,127 @@ class MenuOcrFragment : Fragment() {
             val emptyView = TextView(requireContext()).apply {
                 text = "No dishes matched your Health + Taste preferences."
                 setTextColor(ContextCompat.getColor(requireContext(), R.color.gray_600))
-                setPadding(4, 8, 4, 8)
-                textSize = 14f
+                setPadding(16, 16, 16, 16)
+                textSize = 15f
+                setLineSpacing(0f, 1.4f)
             }
             geminiDishLinksContainer.addView(emptyView)
         }
 
+        val density = resources.displayMetrics.density
         filteredItems.withIndex().groupBy { it.value.category?.takeIf { c -> c.isNotBlank() } ?: "Other Dishes" }
             .forEach { (section, indexedItemsInSection) ->
                 val sectionView = TextView(requireContext()).apply {
-                    text = section
+                    text = section.uppercase()
                     setTextColor(ContextCompat.getColor(requireContext(), R.color.gray_900))
-                    textSize = 15f
+                    textSize = 13f
                     setTypeface(typeface, android.graphics.Typeface.BOLD)
-                    setPadding(4, 14, 4, 8)
+                    letterSpacing = 0.08f
+                    setPadding(16, (20 * density).toInt(), 16, (8 * density).toInt())
                 }
                 geminiDishLinksContainer.addView(sectionView)
 
                 indexedItemsInSection.forEach { indexedItem ->
                     val item = indexedItem.value
-                    val compactDescription = pickText(item.description, "Description unavailable") ?: "Description unavailable"
-                    val linkView = TextView(requireContext()).apply {
-                        text = "• ${pickText(item.name, "Unknown dish") ?: "Unknown dish"} | $compactDescription | ${pickText(item.price, "-") ?: "-"}"
-                        setTextColor(ContextCompat.getColor(requireContext(), R.color.gray_800))
-                        setPadding(20, 4, 4, 6)
-                        textSize = 14f
-                        gravity = Gravity.START
+                    val dishName = pickText(item.name, "Unknown dish") ?: "Unknown dish"
+                    val dishPrice = pickText(item.price, "") ?: ""
+                    val dishDesc = pickText(item.description, "") ?: ""
+
+                    // Card-like container for each dish
+                    val dishCard = LinearLayout(requireContext()).apply {
+                        orientation = LinearLayout.VERTICAL
+                        val params = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        )
+                        params.setMargins(
+                            (8 * density).toInt(),
+                            (4 * density).toInt(),
+                            (8 * density).toInt(),
+                            (4 * density).toInt()
+                        )
+                        layoutParams = params
+                        setPadding(
+                            (16 * density).toInt(),
+                            (12 * density).toInt(),
+                            (16 * density).toInt(),
+                            (12 * density).toInt()
+                        )
+                        background = ContextCompat.getDrawable(requireContext(), R.drawable.bg_card)
+                        isClickable = true
+                        isFocusable = true
                         setOnClickListener { showQwenDishDetails(resolveDetailIndex(item), item) }
                     }
-                    geminiDishLinksContainer.addView(linkView)
+
+                    // Top row: name + price
+                    val topRow = LinearLayout(requireContext()).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        gravity = Gravity.CENTER_VERTICAL
+                    }
+                    val nameView = TextView(requireContext()).apply {
+                        text = dishName
+                        setTextColor(ContextCompat.getColor(requireContext(), R.color.gray_900))
+                        textSize = 16f
+                        setTypeface(typeface, android.graphics.Typeface.BOLD)
+                        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                    }
+                    topRow.addView(nameView)
+                    if (dishPrice.isNotBlank()) {
+                        val priceView = TextView(requireContext()).apply {
+                            text = dishPrice
+                            setTextColor(ContextCompat.getColor(requireContext(), R.color.brand_primary))
+                            textSize = 15f
+                            setTypeface(typeface, android.graphics.Typeface.BOLD)
+                        }
+                        topRow.addView(priceView)
+                    }
+                    dishCard.addView(topRow)
+
+                    // Description (truncated)
+                    if (dishDesc.isNotBlank()) {
+                        val descView = TextView(requireContext()).apply {
+                            text = dishDesc
+                            setTextColor(ContextCompat.getColor(requireContext(), R.color.gray_600))
+                            textSize = 14f
+                            maxLines = 2
+                            ellipsize = android.text.TextUtils.TruncateAt.END
+                            setLineSpacing(0f, 1.3f)
+                            setPadding(0, (4 * density).toInt(), 0, 0)
+                        }
+                        dishCard.addView(descView)
+                    }
+
+                    // Enhancement badge (ingredients/taste preview)
+                    val hasEnhancement = !item.ingredients.isNullOrEmpty() || !item.taste.isNullOrBlank()
+                    if (hasEnhancement) {
+                        val badgeRow = LinearLayout(requireContext()).apply {
+                            orientation = LinearLayout.HORIZONTAL
+                            setPadding(0, (6 * density).toInt(), 0, 0)
+                            gravity = Gravity.CENTER_VERTICAL
+                        }
+                        if (!item.taste.isNullOrBlank() && item.taste !in emptyLikeTokens) {
+                            val tasteChip = TextView(requireContext()).apply {
+                                text = "\uD83D\uDE0B ${item.taste}"
+                                textSize = 12f
+                                setTextColor(ContextCompat.getColor(requireContext(), R.color.gray_700))
+                                setPadding((8 * density).toInt(), (2 * density).toInt(), (8 * density).toInt(), (2 * density).toInt())
+                            }
+                            badgeRow.addView(tasteChip)
+                        }
+                        val tapHint = TextView(requireContext()).apply {
+                            text = "Tap for details →"
+                            textSize = 12f
+                            setTextColor(ContextCompat.getColor(requireContext(), R.color.gray_500))
+                            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                                gravity = Gravity.END
+                            }
+                            gravity = Gravity.END
+                        }
+                        badgeRow.addView(tapHint)
+                        dishCard.addView(badgeRow)
+                    }
+
+                    geminiDishLinksContainer.addView(dishCard)
                 }
             }
 
@@ -914,44 +1012,44 @@ class MenuOcrFragment : Fragment() {
         val detailItem = buildDisplayDetails(geminiItem, qwenItem)
 
         detailDishName.text = detailItem.name ?: "Unknown dish"
-        detailPrice.text = "Price: ${detailItem.price ?: "-"}"
-        detailDescription.text = "Description: ${detailItem.description ?: "Description unavailable"}"
+        detailPrice.text = detailItem.price ?: "-"
+        detailDescription.text = detailItem.description ?: "Description unavailable"
 
         val canUseIngredients = ScanLimitManager.canUseIngredients(requireContext())
         val canUseSimilar = ScanLimitManager.canUseSimilarDishes(requireContext())
         val canUseRecommendations = ScanLimitManager.canUseRecommendations(requireContext())
 
         val ingredientsText = if (!cleanList(detailItem.ingredients).isNullOrEmpty()) {
-            cleanList(detailItem.ingredients).joinToString("\n") { "• $it" }
+            cleanList(detailItem.ingredients).joinToString("\n") { "  • $it" }
         } else {
-            "Not available"
+            "  Not available"
         }
         detailIngredients.text = if (canUseIngredients) {
-            "Ingredients:\n$ingredientsText"
+            "🧾 Ingredients\n$ingredientsText"
         } else {
-            "Ingredients:\nUpgrade to Pro or Max to view"
+            "🧾 Ingredients\n  Upgrade to Pro or Max to view"
         }
-        detailTaste.text = "Taste: ${pickText(detailItem.taste, "Not available") ?: "Not available"}"
+        detailTaste.text = "😋 Taste: ${pickText(detailItem.taste, "Not available") ?: "Not available"}"
         detailSimilar.text = if (canUseSimilar) {
-            "Similar Dishes:\n• ${pickText(detailItem.similarDish1, "Not available") ?: "Not available"}\n• ${pickText(detailItem.similarDish2, "Not available") ?: "Not available"}"
+            "🌍 Similar Dishes\n  • ${pickText(detailItem.similarDish1, "Not available") ?: "Not available"}\n  • ${pickText(detailItem.similarDish2, "Not available") ?: "Not available"}"
         } else {
-            "Similar Dishes:\nUpgrade to Pro to view"
+            "🌍 Similar Dishes\n  Upgrade to Pro to view"
         }
 
         val recommendationValue = if (showRecommendationColumn) {
-            "${pickText(detailItem.recommendation, "Recommended") ?: "Recommended"}${if (!detailItem.recommendation_reason.isNullOrBlank()) " (${detailItem.recommendation_reason})" else ""}"
+            "${pickText(detailItem.recommendation, "Recommended") ?: "Recommended"}${if (!detailItem.recommendation_reason.isNullOrBlank()) "\n  ${detailItem.recommendation_reason}" else ""}"
         } else {
             pickText(detailItem.recommendation, "Recommended") ?: "Recommended"
         }
         detailRecommendation.text = if (canUseRecommendations) {
-            "Health Recommendation: ${pickText(recommendationValue, "Not available") ?: "Not available"}"
+            "💊 Recommendation\n  ${pickText(recommendationValue, "Not available") ?: "Not available"}"
         } else {
-            "Health Recommendation: Upgrade to Max to view"
+            "💊 Recommendation\n  Upgrade to Max to view"
         }
-        val allergensText = if (!cleanList(detailItem.allergens).isNullOrEmpty()) cleanList(detailItem.allergens).joinToString(", ") else "Not available"
-        detailAllergens.text = if (canUseIngredients) "Allergens: $allergensText" else "Allergens: Upgrade to Pro or Max to view"
-        detailSpiciness.text = if (canUseIngredients) "Spiciness: ${pickText(detailItem.spiciness_level, "Not available") ?: "Not available"}" else "Spiciness: Upgrade to Pro or Max to view"
-        detailPreparation.text = if (canUseIngredients) "Preparation: ${pickText(detailItem.preparation_method, "Not available") ?: "Not available"}" else "Preparation: Upgrade to Pro or Max to view"
+        val allergensText = if (!cleanList(detailItem.allergens).isNullOrEmpty()) cleanList(detailItem.allergens).joinToString(", ") else "Not specified"
+        detailAllergens.text = if (canUseIngredients) "⚠️ Allergens: $allergensText" else "⚠️ Allergens: Upgrade to Pro or Max"
+        detailSpiciness.text = if (canUseIngredients) "🌶️ Spiciness: ${pickText(detailItem.spiciness_level, "Not available") ?: "Not available"}" else "🌶️ Spiciness: Upgrade to Pro or Max"
+        detailPreparation.text = if (canUseIngredients) "👨‍🍳 Preparation: ${pickText(detailItem.preparation_method, "Not available") ?: "Not available"}" else "👨‍🍳 Preparation: Upgrade to Pro or Max"
 
         geminiDishLinksContainer.visibility = View.GONE
         qwenDetailCard.visibility = View.VISIBLE

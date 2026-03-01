@@ -1,8 +1,13 @@
-//
+#!/usr/bin/env python3
+"""Write the new MenuOCRViewController.swift"""
+
+TARGET = "/Users/mohanakrishnanarsupalli/menu-ocr/menu-ocr-ios/MenuOCR/MenuOCR/Views/MenuOCRViewController.swift"
+
+content = """//
 //  MenuOCRViewController.swift
 //  MenuOCR
 //
-//  Menu OCR with camera/gallery support — full Gemini+Groq pipeline
+//  Menu OCR with camera/gallery support \u2014 full Gemini+Groq pipeline
 //  Matches Android MenuOcrFragment feature parity
 //
 
@@ -153,7 +158,7 @@ class MenuOCRViewController: UIViewController {
         uploadCard.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(uploadCard)
 
-        captureButton.setTitle("\u{1F4F7} Capture Image", for: .normal)
+        captureButton.setTitle("\\u{1F4F7} Capture Image", for: .normal)
         captureButton.backgroundColor = brandRed
         captureButton.setTitleColor(.white, for: .normal)
         captureButton.titleLabel?.font = .boldSystemFont(ofSize: 16)
@@ -162,7 +167,7 @@ class MenuOCRViewController: UIViewController {
         captureButton.translatesAutoresizingMaskIntoConstraints = false
         uploadCard.addSubview(captureButton)
 
-        galleryButton.setTitle("\u{1F5BC}\u{FE0F} Gallery", for: .normal)
+        galleryButton.setTitle("\\u{1F5BC}\\u{FE0F} Gallery", for: .normal)
         galleryButton.backgroundColor = .systemGreen
         galleryButton.setTitleColor(.white, for: .normal)
         galleryButton.titleLabel?.font = .boldSystemFont(ofSize: 16)
@@ -231,7 +236,7 @@ class MenuOCRViewController: UIViewController {
     }
 
     private func setupProcessButton() {
-        processButton.setTitle("\u{1F50D} Start Analysis", for: .normal)
+        processButton.setTitle("\\u{1F50D} Start Analysis", for: .normal)
         processButton.backgroundColor = brandRed
         processButton.setTitleColor(.white, for: .normal)
         processButton.titleLabel?.font = .boldSystemFont(ofSize: 18)
@@ -276,7 +281,7 @@ class MenuOCRViewController: UIViewController {
         translateSwitch.translatesAutoresizingMaskIntoConstraints = false
         translationRow.addSubview(translateSwitch)
 
-        languagePicker.setTitle("English \u{25BE}", for: .normal)
+        languagePicker.setTitle("English \\u{25BE}", for: .normal)
         languagePicker.setTitleColor(.systemBlue, for: .normal)
         languagePicker.titleLabel?.font = .systemFont(ofSize: 14)
         languagePicker.addTarget(self, action: #selector(languagePickerTapped), for: .touchUpInside)
@@ -327,7 +332,7 @@ class MenuOCRViewController: UIViewController {
         actionButtonsContainer.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(actionButtonsContainer)
 
-        resetButton.setTitle("\u{1F504} Reset", for: .normal)
+        resetButton.setTitle("\\u{1F504} Reset", for: .normal)
         resetButton.backgroundColor = .systemRed
         resetButton.setTitleColor(.white, for: .normal)
         resetButton.titleLabel?.font = .boldSystemFont(ofSize: 16)
@@ -336,7 +341,7 @@ class MenuOCRViewController: UIViewController {
         resetButton.translatesAutoresizingMaskIntoConstraints = false
         actionButtonsContainer.addSubview(resetButton)
 
-        exportButton.setTitle("\u{1F4E4} Export", for: .normal)
+        exportButton.setTitle("\\u{1F4E4} Export", for: .normal)
         exportButton.backgroundColor = .systemBlue
         exportButton.setTitleColor(.white, for: .normal)
         exportButton.titleLabel?.font = .boldSystemFont(ofSize: 16)
@@ -515,7 +520,7 @@ class MenuOCRViewController: UIViewController {
         }
 
         processingCancelled = false
-        processButton.setTitle("\u{2715} Cancel", for: .normal)
+        processButton.setTitle("\\u{2715} Cancel", for: .normal)
         processButton.backgroundColor = .systemOrange
         showLoading(true)
 
@@ -523,7 +528,7 @@ class MenuOCRViewController: UIViewController {
             defer {
                 Task { @MainActor in
                     self.showLoading(false)
-                    self.processButton.setTitle("\u{1F50D} Start Analysis", for: .normal)
+                    self.processButton.setTitle("\\u{1F50D} Start Analysis", for: .normal)
                     self.processButton.backgroundColor = self.brandRed
                     self.processButton.isEnabled = true
                 }
@@ -541,7 +546,7 @@ class MenuOCRViewController: UIViewController {
                     if processingCancelled { break }
 
                     await MainActor.run {
-                        loadingLabel.text = "Processing image \(index + 1) of \(selectedImages.count)..."
+                        loadingLabel.text = "Processing image \\(index + 1) of \\(selectedImages.count)..."
                     }
 
                     guard let jpegData = image.jpegData(compressionQuality: 0.8) else { continue }
@@ -589,7 +594,7 @@ class MenuOCRViewController: UIViewController {
         for (code, name) in availableLanguages {
             alert.addAction(UIAlertAction(title: name, style: .default) { [weak self] _ in
                 self?.selectedLanguage = code
-                self?.languagePicker.setTitle("\(name) \u{25BE}", for: .normal)
+                self?.languagePicker.setTitle("\\(name) \\u{25BE}", for: .normal)
                 if self?.isTranslateOn == true {
                     self?.performTranslation()
                 }
@@ -667,19 +672,18 @@ class MenuOCRViewController: UIViewController {
     }
 
     @objc private func exportTapped() {
-        var text = "Menu Items\n\n"
+        var text = "Menu Items\\n\\n"
         for (i, item) in accumulatedMenuItems.enumerated() {
-            text += "\(i + 1). \(item.name)"
-            if let p = item.price { text += " \u{2014} \(p)" }
-            text += "\n"
-            if let d = item.description { text += "   \(d)\n" }
+            text += "\\(i + 1). \\(item.name)"
+            if let p = item.price { text += " \\u{2014} \\(p)" }
+            text += "\\n"
+            if let d = item.description { text += "   \\(d)\\n" }
             if let ing = item.ingredients, !ing.isEmpty {
-                let joined = ing.joined(separator: ", ")
-                text += "   Ingredients: \(joined)\n"
+                text += "   Ingredients: \\(ing.joined(separator: \\", \\"))\\n"
             }
-            if let t = item.taste { text += "   Taste: \(t)\n" }
-            if let r = item.recommendation { text += "   Recommendation: \(r)\n" }
-            text += "\n"
+            if let t = item.taste { text += "   Taste: \\(t)\\n" }
+            if let r = item.recommendation { text += "   Recommendation: \\(r)\\n" }
+            text += "\\n"
         }
         let vc = UIActivityViewController(activityItems: [text], applicationActivities: nil)
         present(vc, animated: true)
@@ -713,7 +717,7 @@ class MenuOCRViewController: UIViewController {
 
             // Remove button overlay
             let removeBtn = UIButton(type: .system)
-            removeBtn.setTitle("\u{2715}", for: .normal)
+            removeBtn.setTitle("\\u{2715}", for: .normal)
             removeBtn.setTitleColor(.white, for: .normal)
             removeBtn.titleLabel?.font = .boldSystemFont(ofSize: 14)
             removeBtn.backgroundColor = UIColor.black.withAlphaComponent(0.6)
@@ -762,7 +766,7 @@ class MenuOCRViewController: UIViewController {
         if accumulatedMenuItems.isEmpty {
             resultsHeaderLabel.text = "No menu items detected"
         } else {
-            resultsHeaderLabel.text = "\u{1F4CB} \(accumulatedMenuItems.count) dishes found"
+            resultsHeaderLabel.text = "\\u{1F4CB} \\(accumulatedMenuItems.count) dishes found"
         }
         resultsHeaderLabel.isHidden = false
         resultsCard.isHidden = false
@@ -807,7 +811,7 @@ class MenuOCRViewController: UIViewController {
 
         // Close button
         let closeBtn = UIButton(type: .system)
-        closeBtn.setTitle("\u{2715} Close", for: .normal)
+        closeBtn.setTitle("\\u{2715} Close", for: .normal)
         closeBtn.setTitleColor(.systemRed, for: .normal)
         closeBtn.titleLabel?.font = .boldSystemFont(ofSize: 16)
         closeBtn.addTarget(self, action: #selector(closeDishDetail), for: .touchUpInside)
@@ -831,55 +835,55 @@ class MenuOCRViewController: UIViewController {
 
         // Category
         if let cat = item.category, !cat.isEmpty {
-            addDetailSection(to: stack, emoji: "\u{1F4C2}", title: "Category", body: cat)
+            addDetailSection(to: stack, emoji: "\\u{1F4C2}", title: "Category", body: cat)
         }
 
         // Description
         if let desc = item.description, !desc.isEmpty {
-            addDetailSection(to: stack, emoji: "\u{1F4DD}", title: "Description", body: desc)
+            addDetailSection(to: stack, emoji: "\\u{1F4DD}", title: "Description", body: desc)
         }
 
         // Ingredients
         if let ingredients = item.ingredients, !ingredients.isEmpty {
-            let bullets = ingredients.map { "  \u{2022} \($0)" }.joined(separator: "\n")
-            addDetailSection(to: stack, emoji: "\u{1F9FE}", title: "Ingredients", body: bullets)
+            let bullets = ingredients.map { "  \\u{2022} \\($0)" }.joined(separator: "\\n")
+            addDetailSection(to: stack, emoji: "\\u{1F9FE}", title: "Ingredients", body: bullets)
         }
 
         // Taste
         if let taste = item.taste, !taste.isEmpty {
-            addDetailSection(to: stack, emoji: "\u{1F60B}", title: "Taste", body: taste)
+            addDetailSection(to: stack, emoji: "\\u{1F60B}", title: "Taste", body: taste)
         }
 
         // Similar dishes
         var similarParts: [String] = []
-        if let s1 = item.similarDish1, !s1.isEmpty { similarParts.append("  \u{2022} \(s1)") }
-        if let s2 = item.similarDish2, !s2.isEmpty { similarParts.append("  \u{2022} \(s2)") }
+        if let s1 = item.similarDish1, !s1.isEmpty { similarParts.append("  \\u{2022} \\(s1)") }
+        if let s2 = item.similarDish2, !s2.isEmpty { similarParts.append("  \\u{2022} \\(s2)") }
         if !similarParts.isEmpty {
-            addDetailSection(to: stack, emoji: "\u{1F30D}", title: "Similar Dishes", body: similarParts.joined(separator: "\n"))
+            addDetailSection(to: stack, emoji: "\\u{1F30D}", title: "Similar Dishes", body: similarParts.joined(separator: "\\n"))
         }
 
         // Recommendation
         if let rec = item.recommendation, !rec.isEmpty {
             var body = rec
             if let reason = item.recommendation_reason, !reason.isEmpty {
-                body += "\n  \(reason)"
+                body += "\\n  \\(reason)"
             }
-            addDetailSection(to: stack, emoji: "\u{1F48A}", title: "Recommendation", body: body)
+            addDetailSection(to: stack, emoji: "\\u{1F48A}", title: "Recommendation", body: body)
         }
 
         // Allergens
         if let allergens = item.allergens, !allergens.isEmpty {
-            addDetailSection(to: stack, emoji: "\u{26A0}\u{FE0F}", title: "Allergens", body: allergens.joined(separator: ", "))
+            addDetailSection(to: stack, emoji: "\\u{26A0}\\u{FE0F}", title: "Allergens", body: allergens.joined(separator: ", "))
         }
 
         // Spiciness
         if let spice = item.spiciness_level, !spice.isEmpty {
-            addDetailSection(to: stack, emoji: "\u{1F336}\u{FE0F}", title: "Spiciness", body: spice)
+            addDetailSection(to: stack, emoji: "\\u{1F336}\\u{FE0F}", title: "Spiciness", body: spice)
         }
 
         // Preparation
         if let prep = item.preparation_method, !prep.isEmpty {
-            addDetailSection(to: stack, emoji: "\u{1F468}\u{200D}\u{1F373}", title: "Preparation", body: prep)
+            addDetailSection(to: stack, emoji: "\\u{1F468}\\u{200D}\\u{1F373}", title: "Preparation", body: prep)
         }
 
         // Layout card
@@ -918,7 +922,7 @@ class MenuOCRViewController: UIViewController {
         container.translatesAutoresizingMaskIntoConstraints = false
 
         let titleLbl = UILabel()
-        titleLbl.text = "\(emoji) \(title)"
+        titleLbl.text = "\\(emoji) \\(title)"
         titleLbl.font = .systemFont(ofSize: 15, weight: .semibold)
         titleLbl.textColor = .secondaryLabel
         titleLbl.translatesAutoresizingMaskIntoConstraints = false
@@ -1071,7 +1075,7 @@ extension MenuOCRViewController: UITableViewDataSource, UITableViewDelegate {
 
         if let taste = item.taste, !taste.isEmpty {
             let chip = UILabel()
-            chip.text = " \u{1F60B} \(taste) "
+            chip.text = " \\u{1F60B} \\(taste) "
             chip.font = .systemFont(ofSize: 11, weight: .medium)
             chip.textColor = .systemOrange
             chip.backgroundColor = UIColor.systemOrange.withAlphaComponent(0.1)
@@ -1086,7 +1090,7 @@ extension MenuOCRViewController: UITableViewDataSource, UITableViewDelegate {
         bottomRow.addArrangedSubview(spacer)
 
         let hintLbl = UILabel()
-        hintLbl.text = "Tap for details \u{2192}"
+        hintLbl.text = "Tap for details \\u{2192}"
         hintLbl.font = .systemFont(ofSize: 11)
         hintLbl.textColor = .tertiaryLabel
         bottomRow.addArrangedSubview(hintLbl)
@@ -1130,3 +1134,18 @@ extension MenuOCRViewController: UITableViewDataSource, UITableViewDelegate {
         showDishDetail(item)
     }
 }
+"""
+
+with open(TARGET, 'w') as f:
+    f.write(content)
+
+# Verify
+with open(TARGET, 'r') as f:
+    c = f.read()
+print(f"Written. Lines: {c.count(chr(10))}")
+print(f"processingCancelled: {'processingCancelled' in c}")
+print(f"showDishDetail: {'showDishDetail' in c}")
+print(f"didSelectRowAt: {'didSelectRowAt' in c}")
+print(f"processOcrUpload: {'processOcrUpload' in c}")
+print(f"translateSwitch: {'translateSwitch' in c}")
+print(f"removeImageTapped: {'removeImageTapped' in c}")

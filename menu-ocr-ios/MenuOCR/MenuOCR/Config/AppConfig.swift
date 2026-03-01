@@ -20,7 +20,7 @@ enum AppConfig {
         static let baseURL = "https://menu-ocr-f4mr.onrender.com"
         
         // Local development URL (for simulator testing)
-        static let localBaseURL = "http://localhost:8787"
+        static let localBaseURL = "http://localhost:8000"
         
         // Toggle between local and production
         static let useLocal = true

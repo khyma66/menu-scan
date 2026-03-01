@@ -177,17 +177,17 @@ class HealthConditionManager:
             condition_id = None
 
             # Insert into health_conditions table
-                condition_data = {
-                    "user_id": user_id,
-                    "condition_type": condition.condition_type,
-                    "condition_name": condition.condition_name,
-                    "severity": condition.severity,
-                    "description": condition.description
-                }
-                response = self.supabase.client.table("health_conditions").insert(condition_data).execute()
-                if not response.data:
-                    raise HealthServiceError("Failed to add health condition")
-                condition_id = response.data[0]['id']
+            condition_data = {
+                "user_id": user_id,
+                "condition_type": condition.condition_type,
+                "condition_name": condition.condition_name,
+                "severity": condition.severity,
+                "description": condition.description
+            }
+            response = self.supabase.client.table("health_conditions").insert(condition_data).execute()
+            if not response.data:
+                raise HealthServiceError("Failed to add health condition")
+            condition_id = response.data[0]['id']
             logger.info(f"Added health condition {condition.condition_name} for user {user_id}")
 
             # Track analytics
@@ -207,8 +207,8 @@ class HealthConditionManager:
             success = False
 
             # Delete from health_conditions table
-                response = self.supabase.client.table("health_conditions").delete().eq("user_id", user_id).eq("condition_name", condition_name).execute()
-                success = len(response.data or []) > 0
+            response = self.supabase.client.table("health_conditions").delete().eq("user_id", user_id).eq("condition_name", condition_name).execute()
+            success = len(response.data or []) > 0
 
             if success:
                 logger.info(f"Removed health condition {condition_name} for user {user_id}")
