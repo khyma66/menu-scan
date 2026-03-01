@@ -23,6 +23,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_header_health"
+                android:gravity="center"
                 android:orientation="vertical"
                 android:padding="16dp">
 
@@ -32,37 +33,6 @@
                     android:text="Health+"
                     android:textColor="@color/white"
                     android:textSize="22sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Set preferences once and get safer dish recommendations instantly"
-                    android:textColor="#DDFBF1"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Your health data stays on your device. We use it to filter menu suggestions in real time."
-                    android:textColor="#EDFFF8"
-                    android:textSize="13sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:background="@drawable/tag_background_green"
-                    android:paddingLeft="10dp"
-                    android:paddingTop="4dp"
-                    android:paddingRight="10dp"
-                    android:paddingBottom="4dp"
-                    android:text="Preferences Set"
-                    android:textColor="@color/green_700"
-                    android:textSize="11sp"
                     android:textStyle="bold" />
 
             </LinearLayout>

@@ -475,7 +475,7 @@ class RestaurantDiscoveryFragment : Fragment(), OnMapReadyCallback {
         // Set initial state for "All" button
         if (cuisine == "All") {
             button.setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
-            button.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.orange_500))
+            button.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.brand_primary))
         }
 
         return button
@@ -491,7 +491,7 @@ class RestaurantDiscoveryFragment : Fragment(), OnMapReadyCallback {
 
             if (buttonCuisine == cuisine) {
                 button.setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
-                button.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.orange_500))
+                button.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.brand_primary))
             } else {
                 button.setTextColor(ContextCompat.getColor(requireContext(), R.color.gray_700))
                 button.setBackgroundResource(R.drawable.cuisine_button_background)
@@ -637,7 +637,7 @@ class RestaurantDiscoveryFragment : Fragment(), OnMapReadyCallback {
         val distanceView = TextView(requireContext()).apply {
             text = distanceText
             textSize = 14f
-            setTextColor(ContextCompat.getColor(requireContext(), R.color.orange_500))
+            setTextColor(ContextCompat.getColor(requireContext(), R.color.brand_primary))
             setTypeface(null, android.graphics.Typeface.BOLD)
         }
         infoLayout.addView(distanceView)

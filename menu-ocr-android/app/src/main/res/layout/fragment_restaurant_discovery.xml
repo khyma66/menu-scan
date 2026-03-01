@@ -19,14 +19,6 @@
             android:orientation="vertical"
             android:padding="@dimen/header_padding">
 
-            <ImageView
-                android:layout_width="120dp"
-                android:layout_height="64dp"
-                android:adjustViewBounds="true"
-                android:contentDescription="Foodit Logo"
-                android:scaleType="fitCenter"
-                android:src="@drawable/foodit_logo" />
-
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -34,23 +26,6 @@
                 android:textColor="@color/white"
                 android:textSize="22sp"
                 android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Snap • Understand • Choose Better"
-                android:textColor="#DDE8FF"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Search restaurants, cuisines, and discover healthier choices nearby"
-                android:textColor="#F2F6FF"
-                android:textSize="13sp" />
 
             <EditText
                 android:id="@+id/search_bar"
@@ -60,7 +35,7 @@
                 android:background="@drawable/search_background"
                 android:drawableStart="@drawable/ic_search"
                 android:drawablePadding="12dp"
-                android:hint="Search restaurants, cuisines..."
+                android:hint="Search"
                 android:inputType="text"
                 android:padding="12dp"
                 android:textSize="16sp" />

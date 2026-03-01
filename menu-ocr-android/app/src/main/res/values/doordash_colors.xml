@@ -106,11 +106,13 @@
     <color name="transparent">#00000000</color>
     
     <!-- App palette -->
+    <color name="brand_primary">#FA3D2E</color>
+    <color name="brand_primary_dark">#E02E1F</color>
     <color name="doordash_primary">#030213</color>
     <color name="doordash_secondary">#ECECF0</color>
     <color name="doordash_accent">#E9EBEF</color>
-    <color name="doordash_red">#D4183D</color>
-    <color name="doordash_dark_red">#030213</color>
+    <color name="doordash_red">#FA3D2E</color>
+    <color name="doordash_dark_red">#E02E1F</color>
     
     <!-- Additional UI Colors -->
     <color name="background_light">#FFFFFF</color>

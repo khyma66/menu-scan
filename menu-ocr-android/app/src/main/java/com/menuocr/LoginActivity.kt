@@ -123,7 +123,7 @@ class LoginActivity : AppCompatActivity() {
 
     private fun switchToLoginMode() {
         isLoginMode = true
-        loginTab.setTextColor(getColor(R.color.green_700))
+        loginTab.setTextColor(getColor(R.color.brand_primary))
         signupTab.setTextColor(getColor(R.color.gray_text))
         confirmPasswordLayout.visibility = View.GONE
         forgotPasswordText.visibility = View.VISIBLE
@@ -133,7 +133,7 @@ class LoginActivity : AppCompatActivity() {
 
     private fun switchToSignupMode() {
         isLoginMode = false
-        signupTab.setTextColor(getColor(R.color.green_700))
+        signupTab.setTextColor(getColor(R.color.brand_primary))
         loginTab.setTextColor(getColor(R.color.gray_text))
         confirmPasswordLayout.visibility = View.VISIBLE
         forgotPasswordText.visibility = View.GONE
