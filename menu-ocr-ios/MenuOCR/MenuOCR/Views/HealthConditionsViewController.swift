@@ -63,6 +63,7 @@ class HealthConditionsViewController: UIViewController {
     private let headerIconLabel = UILabel()
     private let titleLabel = UILabel()
     private let subtitleLabel = UILabel()
+    private let profileButton = UIButton()
     
     // Form
     private let formCard = UIView()
@@ -98,6 +99,18 @@ class HealthConditionsViewController: UIViewController {
     private func setupUI() {
         view.backgroundColor = .systemGray6
         
+        // Status bar background to match header
+        let statusBarBg = UIView()
+        statusBarBg.backgroundColor = UIColor(red: 0.98, green: 0.24, blue: 0.18, alpha: 1.0)
+        statusBarBg.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(statusBarBg)
+        NSLayoutConstraint.activate([
+            statusBarBg.topAnchor.constraint(equalTo: view.topAnchor),
+            statusBarBg.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            statusBarBg.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            statusBarBg.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+        ])
+        
         // Scroll view
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -123,32 +136,33 @@ class HealthConditionsViewController: UIViewController {
     }
     
     private func setupHeader() {
-        headerView.backgroundColor = UIColor(red: 1.0, green: 0.3, blue: 0.22, alpha: 1.0) // DoorDash orange
-        headerView.layer.cornerRadius = 16
-        headerView.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+        headerView.backgroundColor = UIColor(red: 0.98, green: 0.24, blue: 0.18, alpha: 1.0)
         headerView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(headerView)
         
-        headerIconLabel.text = "💊"
-        headerIconLabel.font = .systemFont(ofSize: 40)
-        headerIconLabel.textAlignment = .center
+        // Icon hidden for clean header
+        headerIconLabel.isHidden = true
         headerIconLabel.translatesAutoresizingMaskIntoConstraints = false
         headerView.addSubview(headerIconLabel)
         
-        titleLabel.text = "Health Conditions"
-        titleLabel.font = .boldSystemFont(ofSize: 24)
+        titleLabel.text = "Health+"
+        titleLabel.font = .systemFont(ofSize: 20, weight: .bold)
         titleLabel.textColor = .white
         titleLabel.textAlignment = .center
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         headerView.addSubview(titleLabel)
         
-        subtitleLabel.text = "Set your health conditions for personalized recommendations"
-        subtitleLabel.font = .systemFont(ofSize: 14)
-        subtitleLabel.textColor = .white.withAlphaComponent(0.9)
-        subtitleLabel.textAlignment = .center
-        subtitleLabel.numberOfLines = 0
+        // Subtitle removed for simplicity
+        subtitleLabel.isHidden = true
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         headerView.addSubview(subtitleLabel)
+        
+        // Profile button in header
+        profileButton.setImage(UIImage(systemName: "person.circle.fill"), for: .normal)
+        profileButton.tintColor = .white
+        profileButton.addTarget(self, action: #selector(profileTapped), for: .touchUpInside)
+        profileButton.translatesAutoresizingMaskIntoConstraints = false
+        headerView.addSubview(profileButton)
     }
     
     private func setupForm() {
@@ -158,7 +172,7 @@ class HealthConditionsViewController: UIViewController {
         formCard.layer.shadowColor = UIColor.black.cgColor
         formCard.layer.shadowOffset = CGSize(width: 0, height: 2)
         formCard.layer.shadowOpacity = 0.1
-        formCard.layer.shadowRadius = 4
+        formCard.layer.shadowRadius = 8
         formCard.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(formCard)
         
@@ -277,18 +291,15 @@ class HealthConditionsViewController: UIViewController {
             headerView.topAnchor.constraint(equalTo: contentView.topAnchor),
             headerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             headerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            headerView.heightAnchor.constraint(equalToConstant: 140),
+            headerView.heightAnchor.constraint(equalToConstant: 56),
             
-            headerIconLabel.topAnchor.constraint(equalTo: headerView.topAnchor, constant: 16),
-            headerIconLabel.centerXAnchor.constraint(equalTo: headerView.centerXAnchor),
+            titleLabel.centerXAnchor.constraint(equalTo: headerView.centerXAnchor),
+            titleLabel.centerYAnchor.constraint(equalTo: headerView.centerYAnchor),
             
-            titleLabel.topAnchor.constraint(equalTo: headerIconLabel.bottomAnchor, constant: 8),
-            titleLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 16),
-            titleLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -16),
-            
-            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
-            subtitleLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 16),
-            subtitleLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -16),
+            profileButton.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -16),
+            profileButton.centerYAnchor.constraint(equalTo: headerView.centerYAnchor),
+            profileButton.widthAnchor.constraint(equalToConstant: 36),
+            profileButton.heightAnchor.constraint(equalToConstant: 36),
             
             // Form card
             formCard.topAnchor.constraint(equalTo: headerView.bottomAnchor, constant: 20),
@@ -400,6 +411,12 @@ class HealthConditionsViewController: UIViewController {
     }
     
     // MARK: - Actions
+    
+    @objc private func profileTapped() {
+        let profileVC = ProfileViewController()
+        profileVC.modalPresentationStyle = .formSheet
+        present(profileVC, animated: true)
+    }
     
     @objc private func saveProfileTapped() {
         // Parse input values

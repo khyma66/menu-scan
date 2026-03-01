@@ -14,9 +14,9 @@
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/card_margin"
-            android:layout_marginTop="@dimen/card_margin"
-            android:layout_marginEnd="@dimen/card_margin"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="12dp"
             app:cardCornerRadius="16dp"
             app:cardElevation="3dp">
 
@@ -25,16 +25,39 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_header_profile"
                 android:orientation="vertical"
-                android:padding="@dimen/header_padding">
+                android:padding="16dp">
 
-                <TextView
-                    android:id="@+id/profile_name_header"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Alex Johnson"
-                    android:textColor="@color/white"
-                    android:textSize="22sp"
-                    android:textStyle="bold" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/profile_name_header"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Alex Johnson"
+                        android:textColor="@color/white"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/premium_badge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/tag_background_orange"
+                        android:paddingLeft="10dp"
+                        android:paddingTop="4dp"
+                        android:paddingRight="10dp"
+                        android:paddingBottom="4dp"
+                        android:text="💎 Premium"
+                        android:textColor="@color/orange_700"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:visibility="gone" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/profile_email_header"
@@ -44,22 +67,7 @@
                     android:text="alex@example.com"
                     android:textColor="#FCE6F5"
                     android:textSize="13sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:background="@drawable/tag_background_orange"
-                    android:paddingLeft="10dp"
-                    android:paddingTop="4dp"
-                    android:paddingRight="10dp"
-                    android:paddingBottom="4dp"
-                    android:text="Pro Member"
-                    android:textColor="@color/orange_700"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
             </LinearLayout>
-
         </androidx.cardview.widget.CardView>
 
         <LinearLayout
@@ -82,9 +90,10 @@
                 android:orientation="vertical">
 
                 <TextView
+                    android:id="@+id/stat_scans"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="47"
+                    android:text="0"
                     android:textColor="#3B5BDB"
                     android:textSize="16sp"
                     android:textStyle="bold" />
@@ -105,17 +114,18 @@
                 android:orientation="vertical">
 
                 <TextView
+                    android:id="@+id/stat_plan"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="12"
-                    android:textColor="#EF4444"
+                    android:text="FREE"
+                    android:textColor="#10B981"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Saved"
+                    android:text="Plan"
                     android:textColor="@color/gray_500"
                     android:textSize="11sp" />
             </LinearLayout>
@@ -128,9 +138,10 @@
                 android:orientation="vertical">
 
                 <TextView
+                    android:id="@+id/stat_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="4.8"
+                    android:text="Active"
                     android:textColor="#F59E0B"
                     android:textSize="16sp"
                     android:textStyle="bold" />
@@ -138,7 +149,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Avg Score"
+                    android:text="Status"
                     android:textColor="@color/gray_500"
                     android:textSize="11sp" />
             </LinearLayout>
@@ -150,50 +161,6 @@
             android:layout_marginStart="12dp"
             android:layout_marginTop="10dp"
             android:layout_marginEnd="12dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_scan_primary_btn"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="12dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Great progress this week!\n8 dishes scanned with 85+ health score"
-                    android:textColor="@color/white"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🏆"
-                    android:textSize="22sp" />
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="14dp"
-            android:layout_marginTop="10dp"
-            android:text="PROFILE"
-            android:textColor="@color/gray_400"
-            android:textSize="11sp"
-            android:textStyle="bold" />
-
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="12dp"
             app:cardCornerRadius="14dp"
             app:cardElevation="2dp">
 
@@ -204,14 +171,14 @@
                 android:padding="12dp">
 
                 <Button
-                    android:id="@+id/btn_tab_details"
+                    android:id="@+id/btn_tab_profile"
                     android:layout_width="match_parent"
                     android:layout_height="40dp"
                     android:layout_marginBottom="8dp"
                     android:background="@drawable/profile_subtab_active"
                     android:backgroundTint="@null"
                     app:backgroundTint="@null"
-                    android:text="👤 Details"
+                    android:text="👤 Profile"
                     android:textAllCaps="false"
                     android:textColor="@color/white"
                     android:textSize="13sp" />
@@ -260,7 +227,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="40dp"
                     android:layout_marginBottom="8dp"
-                    android:background="@drawable/button_secondary"
+                    android:background="@drawable/profile_subtab_inactive"
                     android:backgroundTint="@null"
                     app:backgroundTint="@null"
                     android:text="🔔 Notifications"
@@ -272,67 +239,18 @@
                     android:id="@+id/btn_tab_privacy"
                     android:layout_width="match_parent"
                     android:layout_height="40dp"
-                    android:layout_marginBottom="8dp"
-                    android:background="@drawable/button_secondary"
+                    android:background="@drawable/profile_subtab_inactive"
                     android:backgroundTint="@null"
                     app:backgroundTint="@null"
                     android:text="🛡 Privacy &amp; Security"
                     android:textAllCaps="false"
                     android:textColor="@color/gray_900"
                     android:textSize="13sp" />
-
-                <Button
-                    android:id="@+id/btn_reset_password"
-                    android:layout_width="match_parent"
-                    android:layout_height="40dp"
-                    android:layout_marginBottom="8dp"
-                    android:background="@drawable/button_secondary"
-                    android:backgroundTint="@null"
-                    app:backgroundTint="@null"
-                    android:text="🔐 Reset Password"
-                    android:textAllCaps="false"
-                    android:textColor="@color/gray_900"
-                    android:textSize="13sp" />
-
-                <Button
-                    android:id="@+id/btn_logout"
-                    android:layout_width="match_parent"
-                    android:layout_height="40dp"
-                    android:layout_marginBottom="8dp"
-                    android:background="@drawable/button_secondary"
-                    android:backgroundTint="@null"
-                    app:backgroundTint="@null"
-                    android:text="🚪 Logout"
-                    android:textAllCaps="false"
-                    android:textColor="@color/gray_900"
-                    android:textSize="13sp" />
-
-                <Button
-                    android:id="@+id/btn_delete_account"
-                    android:layout_width="match_parent"
-                    android:layout_height="40dp"
-                    android:background="@drawable/button_secondary"
-                    android:backgroundTint="@null"
-                    app:backgroundTint="@null"
-                    android:text="🗑 Delete Account"
-                    android:textAllCaps="false"
-                    android:textColor="@color/gray_900"
-                    android:textSize="13sp" />
             </LinearLayout>
-
         </androidx.cardview.widget.CardView>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="14dp"
-            android:layout_marginTop="12dp"
-            android:text="ACCOUNT"
-            android:textColor="@color/gray_400"
-            android:textSize="11sp"
-            android:textStyle="bold" />
-
         <androidx.cardview.widget.CardView
+            android:id="@+id/section_profile"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
@@ -349,7 +267,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Account Details"
+                    android:text="Profile"
                     android:textColor="@color/gray_900"
                     android:textSize="18sp"
                     android:textStyle="bold" />
@@ -360,7 +278,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:background="@drawable/status_background"
-                    android:hint="Name"
+                    android:hint="Full Name"
                     android:padding="12dp" />
 
                 <EditText
@@ -369,8 +287,44 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:background="@drawable/status_background"
-                    android:enabled="false"
                     android:hint="Email"
+                    android:padding="12dp" />
+
+                <EditText
+                    android:id="@+id/input_contact"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/status_background"
+                    android:hint="Phone / Contact"
+                    android:inputType="phone"
+                    android:padding="12dp" />
+
+                <EditText
+                    android:id="@+id/input_country"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/status_background"
+                    android:hint="Country"
+                    android:padding="12dp" />
+
+                <EditText
+                    android:id="@+id/input_language"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/status_background"
+                    android:hint="Preferred Language"
+                    android:padding="12dp" />
+
+                <EditText
+                    android:id="@+id/input_timezone"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/status_background"
+                    android:hint="Timezone"
                     android:padding="12dp" />
 
                 <Button
@@ -381,29 +335,20 @@
                     android:background="@drawable/bg_scan_primary_btn"
                     android:backgroundTint="@null"
                     app:backgroundTint="@null"
-                    android:text="💾 Save Details"
+                    android:text="💾 Save Profile"
                     android:textAllCaps="false"
                     android:textColor="@color/white" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="14dp"
-            android:layout_marginTop="6dp"
-            android:text="DANGER ZONE"
-            android:textColor="@color/gray_400"
-            android:textSize="11sp"
-            android:textStyle="bold" />
-
         <androidx.cardview.widget.CardView
+            android:id="@+id/section_payment"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_marginTop="10dp"
             android:layout_marginEnd="12dp"
-            android:layout_marginBottom="16dp"
+            android:visibility="gone"
             app:cardCornerRadius="12dp">
 
             <LinearLayout
@@ -412,29 +357,364 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <Button
-                    android:id="@+id/btn_logout_danger"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Payment"
+                    android:textColor="@color/gray_900"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Store only masked card details and use secure payment provider tokens for transactions."
+                    android:textColor="@color/gray_600"
+                    android:textSize="12sp" />
+
+                <EditText
+                    android:id="@+id/input_card_holder"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/status_background"
+                    android:hint="Card Holder Name"
+                    android:padding="12dp" />
+
+                <EditText
+                    android:id="@+id/input_card_number"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/status_background"
+                    android:hint="Card Number"
+                    android:inputType="number"
+                    android:padding="12dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal"
+                    android:weightSum="2">
+
+                    <EditText
+                        android:id="@+id/input_card_expiry"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/status_background"
+                        android:hint="MM/YY"
+                        android:padding="12dp" />
+
+                    <EditText
+                        android:id="@+id/input_card_cvv"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/status_background"
+                        android:hint="CVV"
+                        android:inputType="numberPassword"
+                        android:padding="12dp" />
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/btn_save_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_scan_primary_btn"
+                    android:backgroundTint="@null"
+                    app:backgroundTint="@null"
+                    android:text="🔒 Store Card Securely"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white" />
+
+                <TextView
+                    android:id="@+id/card_info_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/status_background"
+                    android:padding="12dp"
+                    android:text="Card: Not stored"
+                    android:textColor="@color/gray_700" />
+
+                <TextView
+                    android:id="@+id/payment_history_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/status_background"
+                    android:padding="12dp"
+                    android:text="Last payments will show here"
+                    android:textColor="@color/gray_700" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/section_scans"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginEnd="12dp"
+            android:visibility="gone"
+            app:cardCornerRadius="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Recent Scans"
+                    android:textColor="@color/gray_900"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/scans_summary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Total scans: 0"
+                    android:textColor="@color/gray_700" />
+
+                <TextView
+                    android:id="@+id/scan_history_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/status_background"
+                    android:padding="12dp"
+                    android:text="Latest scan dates will appear here"
+                    android:textColor="@color/gray_700" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/section_subscription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginEnd="12dp"
+            android:visibility="gone"
+            app:cardCornerRadius="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/subscription_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Current: FREE"
+                    android:textColor="@color/gray_900"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Choose a plan"
+                    android:textColor="@color/gray_600"
+                    android:textSize="12sp" />
+
+                <Button
+                    android:id="@+id/btn_plan_free"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
                     android:background="@drawable/button_secondary"
                     android:backgroundTint="@null"
                     app:backgroundTint="@null"
-                    android:text="🚪 Logout"
+                    android:text="Free • $0/mo • 3 scans + translation"
                     android:textAllCaps="false"
                     android:textColor="@color/gray_900" />
 
                 <Button
+                    android:id="@+id/btn_plan_pro"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:background="@drawable/button_secondary"
+                    android:background="@drawable/bg_scan_primary_btn"
                     android:backgroundTint="@null"
                     app:backgroundTint="@null"
-                    android:text="🗑 Delete Account"
+                    android:text="Pro • $6.99/mo • Unlimited + similar dishes + ingredients"
                     android:textAllCaps="false"
-                    android:textColor="@color/red_600" />
+                    android:textColor="@color/white" />
+
+                <Button
+                    android:id="@+id/btn_plan_max"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_scan_primary_btn"
+                    android:backgroundTint="@null"
+                    app:backgroundTint="@null"
+                    android:text="Max • $9.99/mo • Pro + personalized recommendations"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/section_notifications"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginEnd="12dp"
+            android:visibility="gone"
+            app:cardCornerRadius="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Notifications"
+                    android:textColor="@color/gray_900"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <CheckBox
+                    android:id="@+id/check_notifications_enabled"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="Enable notifications"
+                    android:textColor="@color/gray_900" />
+
+                <CheckBox
+                    android:id="@+id/check_notifications_push"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Push notifications"
+                    android:textColor="@color/gray_900" />
+
+                <CheckBox
+                    android:id="@+id/check_notifications_email"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Email notifications"
+                    android:textColor="@color/gray_900" />
+
+                <Button
+                    android:id="@+id/btn_save_notifications"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_scan_primary_btn"
+                    android:backgroundTint="@null"
+                    app:backgroundTint="@null"
+                    android:text="Save Notifications"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/section_privacy"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginEnd="12dp"
+            android:layout_marginBottom="18dp"
+            android:visibility="gone"
+            app:cardCornerRadius="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Privacy &amp; Security"
+                    android:textColor="@color/gray_900"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <Spinner
+                    android:id="@+id/spinner_profile_visibility"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp" />
+
+                <CheckBox
+                    android:id="@+id/check_analytics_opt_in"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Allow analytics"
+                    android:textColor="@color/gray_900" />
+
+                <CheckBox
+                    android:id="@+id/check_marketing_opt_in"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Allow product updates and offers"
+                    android:textColor="@color/gray_900" />
+
+                <Button
+                    android:id="@+id/btn_save_privacy"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_scan_primary_btn"
+                    android:backgroundTint="@null"
+                    app:backgroundTint="@null"
+                    android:text="Save Privacy Settings"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <LinearLayout
+            android:id="@+id/loading_progress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/loading_background"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:visibility="gone">
+
+            <ProgressBar
+                android:layout_width="32dp"
+                android:layout_height="32dp" />
+
+            <TextView
+                android:id="@+id/loading_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Loading..."
+                android:textColor="@color/gray_600" />
+        </LinearLayout>
 
     </LinearLayout>
 

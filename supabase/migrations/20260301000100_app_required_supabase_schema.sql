@@ -114,7 +114,27 @@ create table if not exists public.health_conditions (
   updated_at timestamptz not null default now()
 );
 
--- health_profiles and health_conditions_v2 removed (duplicates of health_conditions + user_health_preferences)
+create table if not exists public.health_profiles (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid not null,
+  profile_name text,
+  is_active boolean default true,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists public.health_conditions_v2 (
+  id uuid primary key default uuid_generate_v4(),
+  profile_id uuid references public.health_profiles(id) on delete cascade,
+  condition_type text not null check (condition_type in ('allergy','illness','dietary','preference')),
+  condition_name text not null,
+  severity text check (severity in ('mild','moderate','severe')),
+  description text,
+  is_active boolean default true,
+  metadata jsonb,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
 
 create table if not exists public.health_recommendations_cache (
   id uuid primary key default uuid_generate_v4(),
@@ -297,7 +317,12 @@ begin
   if not exists (select 1 from pg_trigger where tgname = 'trg_user_health_preferences_updated_at') then
     create trigger trg_user_health_preferences_updated_at before update on public.user_health_preferences for each row execute procedure public.set_updated_at_timestamp();
   end if;
-  -- health_profiles / health_conditions_v2 triggers removed (tables dropped)
+  if not exists (select 1 from pg_trigger where tgname = 'trg_health_profiles_updated_at') then
+    create trigger trg_health_profiles_updated_at before update on public.health_profiles for each row execute procedure public.set_updated_at_timestamp();
+  end if;
+  if not exists (select 1 from pg_trigger where tgname = 'trg_health_conditions_v2_updated_at') then
+    create trigger trg_health_conditions_v2_updated_at before update on public.health_conditions_v2 for each row execute procedure public.set_updated_at_timestamp();
+  end if;
   if not exists (select 1 from pg_trigger where tgname = 'trg_user_scan_preferences_updated_at') then
     create trigger trg_user_scan_preferences_updated_at before update on public.user_scan_preferences for each row execute procedure public.set_updated_at_timestamp();
   end if;
@@ -328,7 +353,8 @@ alter table public.user_profile_preferences enable row level security;
 alter table public.user_discovery_preferences enable row level security;
 alter table public.user_health_preferences enable row level security;
 alter table public.health_conditions enable row level security;
--- health_profiles / health_conditions_v2 RLS removed (tables dropped)
+alter table public.health_profiles enable row level security;
+alter table public.health_conditions_v2 enable row level security;
 alter table public.health_recommendations_cache enable row level security;
 alter table public.health_analytics enable row level security;
 alter table public.ocr_results enable row level security;

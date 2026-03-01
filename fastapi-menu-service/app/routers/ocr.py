@@ -240,20 +240,11 @@ async def _get_user_health_profile(user_id: Optional[str]) -> Dict[str, Any]:
 
         rows: List[Dict[str, Any]] = []
 
-        # Preferred: normalized v2 health tables
+        # Primary: legacy individual condition rows
         try:
-            profile_row = supabase.client.table("health_profiles").select("id").eq("user_id", user_id).eq("is_active", True).limit(1).execute().data or []
-            if profile_row:
-                rows = supabase.client.table("health_conditions_v2").select("condition_type,condition_name,description").eq("profile_id", profile_row[0].get("id")).eq("is_active", True).execute().data or []
+            rows = supabase.client.table("health_conditions").select("condition_type,condition_name,description").eq("user_id", user_id).execute().data or []
         except Exception:
             rows = []
-
-        # Fallback: legacy condition rows
-        if not rows:
-            try:
-                rows = supabase.client.table("health_conditions").select("condition_type,condition_name,description").eq("user_id", user_id).execute().data or []
-            except Exception:
-                rows = []
 
         # Fallback: compact array profile row
         if not rows:

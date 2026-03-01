@@ -17,11 +17,17 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Create the window
         window = UIWindow(windowScene: windowScene)
 
-        // Create the DoorDash-style tab bar controller
-        let tabBarController = DoorDashTabBarController()
-        
-        // Set root view controller
-        window?.rootViewController = tabBarController
+        // Show splash screen first with breathe-out animation
+        let splashVC = SplashViewController()
+        splashVC.onAnimationComplete = { [weak self] in
+            guard let self = self else { return }
+            // Transition to the main tab bar controller
+            let tabBarController = DoorDashTabBarController()
+            self.window?.rootViewController = tabBarController
+            self.window?.makeKeyAndVisible()
+        }
+
+        window?.rootViewController = splashVC
         window?.makeKeyAndVisible()
     }
 

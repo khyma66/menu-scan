@@ -72,3 +72,6 @@ menu-ocr-android/app/build/
 menu-ocr-android/.gradle/
 menu-ocr-android/build/
 
+
+menu-ocr-android/.gradle/
+supabase/.temp/

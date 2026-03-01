@@ -27,10 +27,10 @@ class LoginViewController: UIViewController {
     
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.text = "Foodit"
-        label.font = .systemFont(ofSize: 32, weight: .bold)
+        label.text = "Welcome Back"
+        label.font = .systemFont(ofSize: 24, weight: .bold)
         label.textAlignment = .center
-        label.textColor = UIColor(red: 0.0, green: 0.6, blue: 0.3, alpha: 1.0) // Green color
+        label.textColor = UIColor(red: 0.15, green: 0.15, blue: 0.15, alpha: 1.0) // Off-black per UX playbook
         return label
     }()
     
@@ -66,7 +66,7 @@ class LoginViewController: UIViewController {
     private let signInButton: UIButton = {
         let button = UIButton(type: .system)
         button.setTitle("Sign In", for: .normal)
-        button.backgroundColor = UIColor.systemGreen
+        button.backgroundColor = UIColor(red: 0.98, green: 0.24, blue: 0.18, alpha: 1.0)
         button.setTitleColor(.white, for: .normal)
         button.layer.cornerRadius = 12
         button.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
@@ -76,8 +76,8 @@ class LoginViewController: UIViewController {
     private let signUpButton: UIButton = {
         let button = UIButton(type: .system)
         button.setTitle("Create Account", for: .normal)
-        button.backgroundColor = UIColor.systemGreen.withAlphaComponent(0.15)
-        button.setTitleColor(.systemGreen, for: .normal)
+        button.backgroundColor = UIColor(red: 0.98, green: 0.24, blue: 0.18, alpha: 0.12)
+        button.setTitleColor(UIColor(red: 0.98, green: 0.24, blue: 0.18, alpha: 1.0), for: .normal)
         button.layer.cornerRadius = 12
         button.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
         return button
@@ -138,7 +138,7 @@ class LoginViewController: UIViewController {
         let button = UIButton(type: .system)
         button.setTitle("  Sign in with Google", for: .normal)
         button.backgroundColor = .white
-        button.setTitleColor(.black, for: .normal)
+        button.setTitleColor(UIColor(red: 0.13, green: 0.13, blue: 0.13, alpha: 1.0), for: .normal)
         button.layer.cornerRadius = 12
         button.layer.borderWidth = 1
         button.layer.borderColor = UIColor.separator.cgColor
@@ -429,14 +429,8 @@ class LoginViewController: UIViewController {
     }
 
     @objc private func appleSignInTapped() {
-        let provider = ASAuthorizationAppleIDProvider()
-        let request = provider.createRequest()
-        request.requestedScopes = [.fullName, .email]
-        
-        let controller = ASAuthorizationController(authorizationRequests: [request])
-        controller.delegate = self
-        controller.presentationContextProvider = self
-        controller.performRequests()
+        // Use authViewModel which properly creates a Supabase session
+        authViewModel.signInWithApple()
     }
     
     @objc private func googleSignInTapped() {
@@ -463,49 +457,5 @@ extension LoginViewController: UITextFieldDelegate {
     }
 }
 
-// MARK: - ASAuthorizationControllerDelegate
-
-extension LoginViewController: ASAuthorizationControllerDelegate {
-    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
-        if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential {
-            let userIdentifier = appleIDCredential.user
-            let fullName = appleIDCredential.fullName
-            let email = appleIDCredential.email
-            
-            // Create a user from Apple credentials
-            let name = [fullName?.givenName, fullName?.familyName]
-                .compactMap { $0 }
-                .joined(separator: " ")
-            
-            // For now, create a user and navigate to main
-            // In a real app, you'd send the identity token to your backend
-            let user = User(
-                id: userIdentifier,
-                email: email ?? "apple_\(userIdentifier)@privaterelay.appleid.com",
-                name: name.isEmpty ? nil : name
-            )
-            
-            // Store the user
-            UserDefaults.standard.set(userIdentifier, forKey: "apple_user_id")
-            UserDefaults.standard.set(user.email, forKey: "user_email")
-            
-            DispatchQueue.main.async {
-                self.navigateToMain()
-            }
-        }
-    }
-    
-    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
-        DispatchQueue.main.async {
-            self.showError("Apple Sign In failed: \(error.localizedDescription)")
-        }
-    }
-}
-
-// MARK: - ASAuthorizationControllerPresentationContextProviding
-
-extension LoginViewController: ASAuthorizationControllerPresentationContextProviding {
-    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        return view.window!
-    }
-}
+// Apple Sign In is now handled by authViewModel.signInWithApple()
+// which properly creates a Supabase session via SupabaseService

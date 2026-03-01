@@ -122,6 +122,30 @@ interface ApiService {
 
     @PUT("/user/discovery-preferences")
     suspend fun updateDiscoveryPreferences(@Body request: DiscoveryPreferencesRequest): Response<DiscoveryPreferences>
+
+    @GET("/user/profile-preferences")
+    suspend fun getProfilePreferences(): Response<ProfilePreferences>
+
+    @PUT("/user/profile-preferences")
+    suspend fun updateProfilePreferences(@Body request: ProfilePreferencesRequest): Response<ProfilePreferences>
+
+    @GET("/user/saved-cards")
+    suspend fun getSavedCards(): Response<SavedCardsResponse>
+
+    @POST("/user/saved-cards")
+    suspend fun saveCard(@Body request: SaveCardRequest): Response<SavedCard>
+
+    @GET("/user/payment-history")
+    suspend fun getUserPaymentHistory(): Response<UserPaymentHistoryResponse>
+
+    @GET("/user/subscription/plans")
+    suspend fun getSubscriptionPlans(): Response<SubscriptionPlansResponse>
+
+    @GET("/user/subscription")
+    suspend fun getSubscriptionInfo(): Response<UserSubscriptionStatus>
+
+    @PUT("/user/subscription/select")
+    suspend fun selectSubscriptionPlan(@Body request: SelectSubscriptionPlanRequest): Response<UserSubscriptionStatus>
 }
 
 data class ScanMenuResponse(
@@ -371,4 +395,90 @@ data class DiscoveryPreferences(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val updated_at: String? = null
+)
+
+data class ProfilePreferencesRequest(
+    val notifications_enabled: Boolean = true,
+    val push_notifications: Boolean = true,
+    val email_notifications: Boolean = false,
+    val profile_visibility: String = "private",
+    val analytics_opt_in: Boolean = true,
+    val marketing_opt_in: Boolean = false,
+    val language: String? = null,
+    val timezone: String? = null
+)
+
+data class ProfilePreferences(
+    val user_id: String,
+    val notifications_enabled: Boolean = true,
+    val push_notifications: Boolean = true,
+    val email_notifications: Boolean = false,
+    val profile_visibility: String = "private",
+    val analytics_opt_in: Boolean = true,
+    val marketing_opt_in: Boolean = false,
+    val language: String? = null,
+    val timezone: String? = null,
+    val updated_at: String? = null
+)
+
+data class SaveCardRequest(
+    val card_brand: String,
+    val card_last_four: String,
+    val card_exp_month: Int,
+    val card_exp_year: Int,
+    val cardholder_name: String? = null,
+    val tokenized_card_id: String? = null,
+    val is_default: Boolean = true
+)
+
+data class SavedCard(
+    val id: String,
+    val card_brand: String,
+    val card_last_four: String,
+    val card_exp_month: Int,
+    val card_exp_year: Int,
+    val cardholder_name: String? = null,
+    val is_default: Boolean = false,
+    val created_at: String? = null
+)
+
+data class SavedCardsResponse(
+    val cards: List<SavedCard>
+)
+
+data class UserPaymentRecord(
+    val id: String,
+    val amount_cents: Int,
+    val currency: String,
+    val status: String,
+    val transaction_type: String,
+    val created_at: String? = null
+)
+
+data class UserPaymentHistoryResponse(
+    val payments: List<UserPaymentRecord>
+)
+
+data class SubscriptionPlan(
+    val name: String,
+    val price_display: String,
+    val billing_period: String,
+    val description: String,
+    val features: List<String>
+)
+
+data class SubscriptionPlansResponse(
+    val plans: List<SubscriptionPlan>
+)
+
+data class SelectSubscriptionPlanRequest(
+    val plan_name: String
+)
+
+data class UserSubscriptionStatus(
+    val plan_name: String,
+    val plan_description: String,
+    val status: String,
+    val current_period_end: String? = null,
+    val cancel_at_period_end: Boolean = false
 )

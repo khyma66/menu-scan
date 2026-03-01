@@ -14,7 +14,9 @@ class MenuOCRViewController: UIViewController {
     // MARK: - Services
     
     var apiService: ApiService?
-    private let ocrService: OcrService?
+    private var ocrService: OcrService? {
+        apiService.map { OcrService(apiService: $0) }
+    }
     
     // MARK: - State
     
@@ -31,6 +33,7 @@ class MenuOCRViewController: UIViewController {
     private let headerIconLabel = UILabel()
     private let titleLabel = UILabel()
     private let subtitleLabel = UILabel()
+    private let profileButton = UIButton()
     
     // Upload card
     private let uploadCard = UIView()
@@ -65,12 +68,10 @@ class MenuOCRViewController: UIViewController {
     // MARK: - Initialization
     
     init() {
-        self.ocrService = apiService.map { OcrService(apiService: $0) }
         super.init(nibName: nil, bundle: nil)
     }
     
     required init?(coder: NSCoder) {
-        self.ocrService = nil
         super.init(coder: coder)
     }
     
@@ -87,6 +88,18 @@ class MenuOCRViewController: UIViewController {
     
     private func setupUI() {
         view.backgroundColor = .systemGray6
+        
+        // Status bar background to match header
+        let statusBarBg = UIView()
+        statusBarBg.backgroundColor = UIColor(red: 0.98, green: 0.24, blue: 0.18, alpha: 1.0)
+        statusBarBg.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(statusBarBg)
+        NSLayoutConstraint.activate([
+            statusBarBg.topAnchor.constraint(equalTo: view.topAnchor),
+            statusBarBg.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            statusBarBg.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            statusBarBg.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+        ])
         
         // Setup navigation
         title = "Menu OCR"
@@ -121,31 +134,33 @@ class MenuOCRViewController: UIViewController {
     }
     
     private func setupHeader() {
-        headerView.backgroundColor = UIColor(red: 1.0, green: 0.3, blue: 0.22, alpha: 1.0)
-        headerView.layer.cornerRadius = 16
-        headerView.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+        headerView.backgroundColor = UIColor(red: 0.98, green: 0.24, blue: 0.18, alpha: 1.0)
         headerView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(headerView)
         
-        headerIconLabel.text = "📷"
-        headerIconLabel.font = .systemFont(ofSize: 40)
-        headerIconLabel.textAlignment = .center
+        // Icon hidden for clean header
+        headerIconLabel.isHidden = true
         headerIconLabel.translatesAutoresizingMaskIntoConstraints = false
         headerView.addSubview(headerIconLabel)
         
-        titleLabel.text = "Menu OCR"
-        titleLabel.font = .boldSystemFont(ofSize: 24)
+        titleLabel.text = "Menu Scan"
+        titleLabel.font = .systemFont(ofSize: 20, weight: .bold)
         titleLabel.textColor = .white
         titleLabel.textAlignment = .center
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         headerView.addSubview(titleLabel)
         
-        subtitleLabel.text = "Scan menus with AI-powered OCR"
-        subtitleLabel.font = .systemFont(ofSize: 14)
-        subtitleLabel.textColor = .white.withAlphaComponent(0.9)
-        subtitleLabel.textAlignment = .center
+        // Subtitle removed for simplicity
+        subtitleLabel.isHidden = true
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         headerView.addSubview(subtitleLabel)
+        
+        // Profile button in header
+        profileButton.setImage(UIImage(systemName: "person.circle.fill"), for: .normal)
+        profileButton.tintColor = .white
+        profileButton.addTarget(self, action: #selector(profileTapped), for: .touchUpInside)
+        profileButton.translatesAutoresizingMaskIntoConstraints = false
+        headerView.addSubview(profileButton)
     }
     
     private func setupUploadCard() {
@@ -154,7 +169,7 @@ class MenuOCRViewController: UIViewController {
         uploadCard.layer.shadowColor = UIColor.black.cgColor
         uploadCard.layer.shadowOffset = CGSize(width: 0, height: 2)
         uploadCard.layer.shadowOpacity = 0.1
-        uploadCard.layer.shadowRadius = 4
+        uploadCard.layer.shadowRadius = 8
         uploadCard.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(uploadCard)
         
@@ -183,7 +198,7 @@ class MenuOCRViewController: UIViewController {
         imagesPreviewCard.layer.shadowColor = UIColor.black.cgColor
         imagesPreviewCard.layer.shadowOffset = CGSize(width: 0, height: 2)
         imagesPreviewCard.layer.shadowOpacity = 0.1
-        imagesPreviewCard.layer.shadowRadius = 4
+        imagesPreviewCard.layer.shadowRadius = 8
         imagesPreviewCard.isHidden = true
         imagesPreviewCard.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(imagesPreviewCard)
@@ -270,7 +285,7 @@ class MenuOCRViewController: UIViewController {
         resultsCard.layer.shadowColor = UIColor.black.cgColor
         resultsCard.layer.shadowOffset = CGSize(width: 0, height: 2)
         resultsCard.layer.shadowOpacity = 0.1
-        resultsCard.layer.shadowRadius = 4
+        resultsCard.layer.shadowRadius = 8
         resultsCard.isHidden = true
         resultsCard.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(resultsCard)
@@ -288,7 +303,7 @@ class MenuOCRViewController: UIViewController {
         resultsTableView.translatesAutoresizingMaskIntoConstraints = false
         resultsCard.addSubview(resultsTableView)
         
-        resultsTextView.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
+        resultsTextView.font = .monospacedSystemFont(ofSize: 14, weight: .regular)
         resultsTextView.isEditable = false
         resultsTextView.backgroundColor = .systemGray6
         resultsTextView.layer.cornerRadius = 8
@@ -341,18 +356,15 @@ class MenuOCRViewController: UIViewController {
             headerView.topAnchor.constraint(equalTo: contentView.topAnchor),
             headerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             headerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            headerView.heightAnchor.constraint(equalToConstant: 140),
+            headerView.heightAnchor.constraint(equalToConstant: 56),
             
-            headerIconLabel.topAnchor.constraint(equalTo: headerView.topAnchor, constant: 16),
-            headerIconLabel.centerXAnchor.constraint(equalTo: headerView.centerXAnchor),
+            titleLabel.centerXAnchor.constraint(equalTo: headerView.centerXAnchor),
+            titleLabel.centerYAnchor.constraint(equalTo: headerView.centerYAnchor),
             
-            titleLabel.topAnchor.constraint(equalTo: headerIconLabel.bottomAnchor, constant: 8),
-            titleLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 16),
-            titleLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -16),
-            
-            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
-            subtitleLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 16),
-            subtitleLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -16),
+            profileButton.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -16),
+            profileButton.centerYAnchor.constraint(equalTo: headerView.centerYAnchor),
+            profileButton.widthAnchor.constraint(equalToConstant: 36),
+            profileButton.heightAnchor.constraint(equalToConstant: 36),
             
             // Upload card
             uploadCard.topAnchor.constraint(equalTo: headerView.bottomAnchor, constant: 20),
@@ -456,6 +468,12 @@ class MenuOCRViewController: UIViewController {
     
     // MARK: - Actions
     
+    @objc private func profileTapped() {
+        let profileVC = ProfileViewController()
+        profileVC.modalPresentationStyle = .formSheet
+        present(profileVC, animated: true)
+    }
+    
     @objc private func captureTapped() {
         let imagePicker = UIImagePickerController()
         imagePicker.delegate = self
@@ -505,12 +523,17 @@ class MenuOCRViewController: UIViewController {
                     let request = OcrRequest(image_base64: base64String)
                     
                     // Process with API
-                    if let apiService = apiService {
-                        let response = try await apiService.processOcr(request: request)
-                        
+                    guard let apiService = apiService else {
                         await MainActor.run {
-                            accumulatedMenuItems.append(contentsOf: response.menu_items)
+                            self.showLoading(false)
+                            self.showAlert(title: "Not Connected", message: "Unable to reach the server. Please check your connection and try again.")
                         }
+                        return
+                    }
+                    let response = try await apiService.processOcr(request: request)
+                    
+                    await MainActor.run {
+                        accumulatedMenuItems.append(contentsOf: response.menu_items)
                     }
                 }
                 

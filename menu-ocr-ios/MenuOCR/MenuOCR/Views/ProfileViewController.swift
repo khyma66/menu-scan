@@ -25,7 +25,7 @@ class ProfileViewController: UIViewController {
         let label = UILabel()
         label.font = .systemFont(ofSize: 16)
         label.textColor = .secondaryLabel
-        label.textAlignment = .center
+        label.textAlignment = .left
         return label
     }()
 
@@ -33,7 +33,7 @@ class ProfileViewController: UIViewController {
         let label = UILabel()
         label.font = .systemFont(ofSize: 12)
         label.textColor = .tertiaryLabel
-        label.textAlignment = .center
+        label.textAlignment = .left
         label.numberOfLines = 0
         return label
     }()
@@ -41,14 +41,14 @@ class ProfileViewController: UIViewController {
     private let createdAtLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 14)
-        label.textAlignment = .center
+        label.textAlignment = .left
         return label
     }()
 
     private let lastSignInLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 14)
-        label.textAlignment = .center
+        label.textAlignment = .left
         return label
     }()
 
@@ -145,22 +145,26 @@ class ProfileViewController: UIViewController {
         lastSignInLabel.text = "Last sign in: Recently"
 
         Task {
-            // Keep backend profile details in sync for cross-device profile consistency
-            _ = try? await apiService.updateAppProfile(
-                request: AppProfileDetailsRequest(
-                    full_name: user.name,
-                    email: user.email,
-                    contact: nil,
-                    phone: nil,
-                    country: nil
+            do {
+                // Keep backend profile details in sync for cross-device profile consistency
+                _ = try await apiService.updateAppProfile(
+                    request: AppProfileDetailsRequest(
+                        full_name: user.name,
+                        email: user.email,
+                        contact: nil,
+                        phone: nil,
+                        country: nil
+                    )
                 )
-            )
 
-            if let appProfile = try? await apiService.getAppProfile() {
+                let appProfile = try await apiService.getAppProfile()
                 await MainActor.run {
                     nameLabel.text = appProfile.full_name ?? user.name ?? "User"
                     emailLabel.text = appProfile.email ?? user.email
                 }
+            } catch {
+                // Profile sync failed — show local data, display subtle warning
+                print("Profile sync error: \(error.localizedDescription)")
             }
         }
     }

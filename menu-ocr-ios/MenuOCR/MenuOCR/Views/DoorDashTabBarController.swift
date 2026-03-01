@@ -28,33 +28,48 @@ class DoorDashTabBarController: UITabBarController {
     // MARK: - Setup
     
     private func setupAppearance() {
-        // Tab bar appearance
+        // Tab bar appearance - UX playbook: clean, minimal, proper contrast
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = .systemBackground
         
-        // Selected item color (DoorDash orange)
-        appearance.stackedLayoutAppearance.selected.iconColor = UIColor(red: 1.0, green: 0.3, blue: 0.22, alpha: 1.0)
+        // Primary color (brand red-orange)
+        let primaryColor = UIColor(red: 0.98, green: 0.24, blue: 0.18, alpha: 1.0)
+        
+        // Selected item color
+        appearance.stackedLayoutAppearance.selected.iconColor = primaryColor
         appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
-            .foregroundColor: UIColor(red: 1.0, green: 0.3, blue: 0.22, alpha: 1.0)
+            .foregroundColor: primaryColor,
+            .font: UIFont.systemFont(ofSize: 11, weight: .semibold)
         ]
         
-        // Normal item color
-        appearance.stackedLayoutAppearance.normal.iconColor = .systemGray
+        // Normal item color - off-black per UX playbook (avoid pure black)
+        let offBlackGray = UIColor(red: 0.45, green: 0.45, blue: 0.45, alpha: 1.0)
+        appearance.stackedLayoutAppearance.normal.iconColor = offBlackGray
         appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
-            .foregroundColor: UIColor.systemGray
+            .foregroundColor: offBlackGray,
+            .font: UIFont.systemFont(ofSize: 11, weight: .medium)
         ]
+        
+        // Add subtle shadow to tab bar for depth
+        tabBar.layer.shadowColor = UIColor.black.cgColor
+        tabBar.layer.shadowOffset = CGSize(width: 0, height: -1)
+        tabBar.layer.shadowOpacity = 0.08
+        tabBar.layer.shadowRadius = 4
         
         tabBar.standardAppearance = appearance
         if #available(iOS 15.0, *) {
             tabBar.scrollEdgeAppearance = appearance
         }
         
-        // Navigation bar appearance
+        // Navigation bar appearance - clean centered title
         let navAppearance = UINavigationBarAppearance()
         navAppearance.configureWithOpaqueBackground()
-        navAppearance.backgroundColor = UIColor(red: 1.0, green: 0.3, blue: 0.22, alpha: 1.0)
-        navAppearance.titleTextAttributes = [.foregroundColor: UIColor.white]
+        navAppearance.backgroundColor = UIColor(red: 0.98, green: 0.24, blue: 0.18, alpha: 1.0)
+        navAppearance.titleTextAttributes = [
+            .foregroundColor: UIColor.white,
+            .font: UIFont.systemFont(ofSize: 18, weight: .semibold)
+        ]
         navAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
         
         UINavigationBar.appearance().standardAppearance = navAppearance
@@ -76,13 +91,14 @@ class DoorDashTabBarController: UITabBarController {
         restaurantVC.overpassService = overpassService
         
         restaurantVC.tabBarItem = UITabBarItem(
-            title: "Nearby",
+            title: "Discover",
             image: UIImage(systemName: "fork.knife"),
             selectedImage: UIImage(systemName: "fork.knife.fill")
         )
         
         let navController = UINavigationController(rootViewController: restaurantVC)
-        navController.navigationBar.prefersLargeTitles = true
+        navController.navigationBar.prefersLargeTitles = false
+        navController.setNavigationBarHidden(true, animated: false)
         return navController
     }
     
@@ -91,13 +107,14 @@ class DoorDashTabBarController: UITabBarController {
         menuOcrVC.apiService = apiService
         
         menuOcrVC.tabBarItem = UITabBarItem(
-            title: "Menu OCR",
+            title: "Scan",
             image: UIImage(systemName: "camera"),
             selectedImage: UIImage(systemName: "camera.fill")
         )
         
         let navController = UINavigationController(rootViewController: menuOcrVC)
-        navController.navigationBar.prefersLargeTitles = true
+        navController.navigationBar.prefersLargeTitles = false
+        navController.setNavigationBarHidden(true, animated: false)
         return navController
     }
     
@@ -105,13 +122,14 @@ class DoorDashTabBarController: UITabBarController {
         let healthVC = HealthConditionsViewController()
         
         healthVC.tabBarItem = UITabBarItem(
-            title: "Health",
+            title: "Health+",
             image: UIImage(systemName: "heart.text.square"),
             selectedImage: UIImage(systemName: "heart.text.square.fill")
         )
         
         let navController = UINavigationController(rootViewController: healthVC)
-        navController.navigationBar.prefersLargeTitles = true
+        navController.navigationBar.prefersLargeTitles = false
+        navController.setNavigationBarHidden(true, animated: false)
         return navController
     }
     

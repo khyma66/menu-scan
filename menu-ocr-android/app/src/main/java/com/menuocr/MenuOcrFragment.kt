@@ -161,6 +161,7 @@ class MenuOcrFragment : Fragment() {
         setupTranslationControls()
         setupClickListeners()
         checkPermissions()
+        syncPlanTierFromBackend()
 
         // Animate content on load
         animateContent()
@@ -352,17 +353,49 @@ class MenuOcrFragment : Fragment() {
             .setTitle("Upgrade Required")
             .setMessage("Your 3 free scans are used.\n\nPro: Unlimited scans + Translation + Similar dishes + Ingredients\nMax: Unlimited scans + Ingredients + Recommendations")
             .setPositiveButton("Get Pro") { _, _ ->
-                ScanLimitManager.setPlanTier(requireContext(), ScanLimitManager.PlanTier.PRO)
-                Toast.makeText(requireContext(), "Pro activated", Toast.LENGTH_SHORT).show()
+                upgradePlan("PRO", ScanLimitManager.PlanTier.PRO)
             }
             .setNeutralButton("Get Max") { _, _ ->
-                ScanLimitManager.setPlanTier(requireContext(), ScanLimitManager.PlanTier.MAX)
-                Toast.makeText(requireContext(), "Max activated", Toast.LENGTH_SHORT).show()
+                upgradePlan("MAX", ScanLimitManager.PlanTier.MAX)
             }
             .setNegativeButton("Cancel") { dialog, _ ->
                 dialog.dismiss()
             }
             .show()
+    }
+
+    private fun syncPlanTierFromBackend() {
+        uiScope.launch {
+            try {
+                val response = apiService?.getSubscriptionInfo()
+                if (response?.isSuccessful == true && response.body() != null) {
+                    val planName = response.body()!!.plan_name.uppercase()
+                    val tier = when (planName) {
+                        "PRO" -> ScanLimitManager.PlanTier.PRO
+                        "MAX" -> ScanLimitManager.PlanTier.MAX
+                        else -> ScanLimitManager.PlanTier.FREE
+                    }
+                    ScanLimitManager.setPlanTier(requireContext(), tier)
+                }
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    private fun upgradePlan(planName: String, tier: ScanLimitManager.PlanTier) {
+        uiScope.launch {
+            try {
+                val response = apiService?.selectSubscriptionPlan(SelectSubscriptionPlanRequest(plan_name = planName))
+                if (response?.isSuccessful == true) {
+                    ScanLimitManager.setPlanTier(requireContext(), tier)
+                    Toast.makeText(requireContext(), "$planName activated", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(requireContext(), "Failed to activate $planName", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Upgrade failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
     
     /**

@@ -106,16 +106,32 @@ class RestaurantDiscoveryViewController: UIViewController {
 
     private func persistDiscoveryPreferences() {
         Task {
-            let selected = selectedCuisine.map { [$0] } ?? []
-            _ = try? await apiService.updateDiscoveryPreferences(
-                request: DiscoveryPreferencesRequest(
-                    search_radius_miles: currentRadiusMiles,
-                    selected_cuisines: selected,
-                    location_label: nil,
-                    latitude: currentLocation?.latitude,
-                    longitude: currentLocation?.longitude
+            do {
+                let selected = selectedCuisine.map { [$0] } ?? []
+                _ = try await apiService.updateDiscoveryPreferences(
+                    request: DiscoveryPreferencesRequest(
+                        search_radius_miles: currentRadiusMiles,
+                        selected_cuisines: selected,
+                        location_label: nil,
+                        latitude: currentLocation?.latitude,
+                        longitude: currentLocation?.longitude
+                    )
                 )
-            )
+            } catch {
+                await MainActor.run {
+                    let banner = UILabel()
+                    banner.text = "Failed to save preferences"
+                    banner.textColor = .white
+                    banner.backgroundColor = UIColor.systemRed.withAlphaComponent(0.9)
+                    banner.textAlignment = .center
+                    banner.font = .systemFont(ofSize: 14, weight: .medium)
+                    banner.frame = CGRect(x: 0, y: self.view.safeAreaInsets.top, width: self.view.bounds.width, height: 36)
+                    banner.layer.cornerRadius = 8
+                    banner.clipsToBounds = true
+                    self.view.addSubview(banner)
+                    UIView.animate(withDuration: 0.3, delay: 2.0, options: [], animations: { banner.alpha = 0 }) { _ in banner.removeFromSuperview() }
+                }
+            }
         }
     }
     
@@ -124,9 +140,21 @@ class RestaurantDiscoveryViewController: UIViewController {
     private func setupUI() {
         view.backgroundColor = .systemGray6
         
+        // Status bar background to match header
+        let statusBarBg = UIView()
+        statusBarBg.backgroundColor = UIColor(red: 0.98, green: 0.24, blue: 0.18, alpha: 1.0)
+        statusBarBg.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(statusBarBg)
+        NSLayoutConstraint.activate([
+            statusBarBg.topAnchor.constraint(equalTo: view.topAnchor),
+            statusBarBg.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            statusBarBg.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            statusBarBg.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+        ])
+        
         // Setup navigation
-        title = "Restaurant Nearby"
-        navigationController?.navigationBar.prefersLargeTitles = true
+        title = "Discover"
+        navigationController?.navigationBar.prefersLargeTitles = false
         
         // Scroll view
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -166,21 +194,19 @@ class RestaurantDiscoveryViewController: UIViewController {
     }
     
     private func setupHeader() {
-        headerView.backgroundColor = UIColor(red: 1.0, green: 0.3, blue: 0.22, alpha: 1.0)
-        headerView.layer.cornerRadius = 16
-        headerView.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+        headerView.backgroundColor = UIColor(red: 0.98, green: 0.24, blue: 0.18, alpha: 1.0)
         headerView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(headerView)
         
-        titleLabel.text = "🍽️ FoodDelivery"
-        titleLabel.font = .boldSystemFont(ofSize: 20)
+        titleLabel.text = "Discover"
+        titleLabel.font = .systemFont(ofSize: 20, weight: .bold)
         titleLabel.textColor = .white
+        titleLabel.textAlignment = .center
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         headerView.addSubview(titleLabel)
         
-        subtitleLabel.text = "Discover amazing restaurants near you"
-        subtitleLabel.font = .systemFont(ofSize: 14)
-        subtitleLabel.textColor = .white.withAlphaComponent(0.9)
+        // Subtitle removed per UX simplicity rules
+        subtitleLabel.isHidden = true
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         headerView.addSubview(subtitleLabel)
         
@@ -219,7 +245,7 @@ class RestaurantDiscoveryViewController: UIViewController {
     }
     
     private func setupSearch() {
-        searchBar.placeholder = "Search restaurants, cuisines..."
+        searchBar.placeholder = "Search"
         searchBar.searchBarStyle = .minimal
         searchBar.delegate = self
         searchBar.translatesAutoresizingMaskIntoConstraints = false
@@ -285,7 +311,7 @@ class RestaurantDiscoveryViewController: UIViewController {
         card.layer.shadowColor = UIColor.black.cgColor
         card.layer.shadowOffset = CGSize(width: 0, height: 2)
         card.layer.shadowOpacity = 0.1
-        card.layer.shadowRadius = 4
+        card.layer.shadowRadius = 8
         
         let titleLabel = UILabel()
         titleLabel.text = title
@@ -405,13 +431,10 @@ class RestaurantDiscoveryViewController: UIViewController {
             headerView.topAnchor.constraint(equalTo: contentView.topAnchor),
             headerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             headerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            headerView.heightAnchor.constraint(equalToConstant: 80),
+            headerView.heightAnchor.constraint(equalToConstant: 56),
             
-            titleLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 16),
-            titleLabel.centerYAnchor.constraint(equalTo: headerView.centerYAnchor, constant: -8),
-            
-            subtitleLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 2),
+            titleLabel.centerXAnchor.constraint(equalTo: headerView.centerXAnchor),
+            titleLabel.centerYAnchor.constraint(equalTo: headerView.centerYAnchor),
             
             profileButton.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -16),
             profileButton.centerYAnchor.constraint(equalTo: headerView.centerYAnchor),
@@ -707,7 +730,7 @@ class RestaurantDiscoveryViewController: UIViewController {
         card.layer.shadowColor = UIColor.black.cgColor
         card.layer.shadowOffset = CGSize(width: 0, height: 2)
         card.layer.shadowOpacity = 0.1
-        card.layer.shadowRadius = 4
+        card.layer.shadowRadius = 8
         
         // Calculate distance
         let distanceMeters = currentLocation.map { restaurant.distanceFrom($0.latitude, $0.longitude) } ?? 0
