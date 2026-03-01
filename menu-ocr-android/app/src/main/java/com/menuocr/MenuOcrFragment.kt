@@ -508,10 +508,16 @@ class MenuOcrFragment : Fragment() {
                 btnProcessOcr.isEnabled = true
                 btnProcessOcr.setOnClickListener { processImagesWithMLKitAndAPI() }
                 
-                // Clear selected images after processing to allow adding more
-                selectedBitmaps.clear()
-                imagesPreviewCard.visibility = View.GONE
-                btnProcessOcr.visibility = View.GONE
+                // Keep images visible above results for reference (user can add/remove)
+                if (selectedBitmaps.isNotEmpty()) {
+                    imagesPreviewCard.visibility = View.VISIBLE
+                    btnAddMoreImages.visibility = View.VISIBLE
+                    btnProcessOcr.visibility = View.VISIBLE
+                    btnProcessOcr.text = "⚡ Re-analyze"
+                } else {
+                    imagesPreviewCard.visibility = View.GONE
+                    btnProcessOcr.visibility = View.GONE
+                }
             }
         }
     }
@@ -1225,6 +1231,10 @@ class MenuOcrFragment : Fragment() {
         ocrResults.text = ""
         resultsCard.visibility = View.GONE
         actionButtons.visibility = View.GONE
+        // Also clear images and hide preview
+        selectedBitmaps.clear()
+        imagesPreviewCard.visibility = View.GONE
+        btnProcessOcr.visibility = View.GONE
     }
 
     private fun requestTranslation(targetLanguage: String) {

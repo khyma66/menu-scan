@@ -1,4 +1,16 @@
-//
+#!/usr/bin/env python3
+"""Write the updated MenuOCRViewController.swift v2
+Fixes:
+- Keep images above results after processing (don't clear)
+- Detail view: proper back button alignment with drag handle
+- Groq empty fields: fallback inference for all detail sections
+- UX playbook: 16pt body, 1.5x line height styling, off-black text, proper whitespace
+- Export/Share visible
+"""
+
+TARGET = "/Users/mohanakrishnanarsupalli/menu-ocr/menu-ocr-ios/MenuOCR/MenuOCR/Views/MenuOCRViewController.swift"
+
+content = r"""//
 //  MenuOCRViewController.swift
 //  MenuOCR
 //
@@ -1319,3 +1331,21 @@ extension MenuOCRViewController: UITableViewDataSource, UITableViewDelegate {
         showDishDetail(item)
     }
 }
+"""
+
+with open(TARGET, 'w') as f:
+    f.write(content)
+
+# Verify
+with open(TARGET, 'r') as f:
+    c = f.read()
+lines = c.count('\n')
+print(f"Written. Lines: {lines}")
+print(f"processedImages: {'processedImages' in c}")
+print(f"buildDetailItem: {'buildDetailItem' in c}")
+print(f"inferIngredients: {'inferIngredients' in c}")
+print(f"drag handle: {'handle' in c}")
+print(f"Back button: {'Back' in c}")
+print(f"paragraphStyle: {'paragraphStyle' in c}")
+print(f"textPrimary: {'textPrimary' in c}")
+print(f"UIGestureRecognizerDelegate: {'UIGestureRecognizerDelegate' in c}")
