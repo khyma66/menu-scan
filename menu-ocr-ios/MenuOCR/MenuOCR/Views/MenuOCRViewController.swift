@@ -267,11 +267,22 @@ class MenuOCRViewController: UIViewController {
 
     private func setupTranslationRow() {
         translationRow.isHidden = true
+        translationRow.backgroundColor = .white
+        translationRow.layer.cornerRadius = 12
+        translationRow.layer.shadowColor = UIColor.black.cgColor
+        translationRow.layer.shadowOffset = CGSize(width: 0, height: 1)
+        translationRow.layer.shadowOpacity = 0.06
+        translationRow.layer.shadowRadius = 4
         translationRow.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(translationRow)
 
+        let globeIcon = UIImageView(image: UIImage(systemName: "globe"))
+        globeIcon.tintColor = scanPurple
+        globeIcon.translatesAutoresizingMaskIntoConstraints = false
+        translationRow.addSubview(globeIcon)
+
         translateLabel.text = "Translate"
-        translateLabel.font = .systemFont(ofSize: 15, weight: .medium)
+        translateLabel.font = .systemFont(ofSize: 15, weight: .semibold)
         translateLabel.textColor = textPrimary
         translateLabel.translatesAutoresizingMaskIntoConstraints = false
         translationRow.addSubview(translateLabel)
@@ -283,37 +294,41 @@ class MenuOCRViewController: UIViewController {
         translationRow.addSubview(translateSwitch)
 
         languagePicker.setTitle("English \u{25BE}", for: .normal)
-        languagePicker.setTitleColor(.systemBlue, for: .normal)
-        languagePicker.titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
+        languagePicker.setTitleColor(scanPurple, for: .normal)
+        languagePicker.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
+        languagePicker.backgroundColor = scanPurple.withAlphaComponent(0.08)
+        languagePicker.layer.cornerRadius = 8
+        languagePicker.contentEdgeInsets = UIEdgeInsets(top: 4, left: 10, bottom: 4, right: 10)
         languagePicker.addTarget(self, action: #selector(languagePickerTapped), for: .touchUpInside)
         languagePicker.translatesAutoresizingMaskIntoConstraints = false
         translationRow.addSubview(languagePicker)
 
         NSLayoutConstraint.activate([
-            translateLabel.leadingAnchor.constraint(equalTo: translationRow.leadingAnchor),
+            globeIcon.leadingAnchor.constraint(equalTo: translationRow.leadingAnchor, constant: 14),
+            globeIcon.centerYAnchor.constraint(equalTo: translationRow.centerYAnchor),
+            globeIcon.widthAnchor.constraint(equalToConstant: 20),
+            globeIcon.heightAnchor.constraint(equalToConstant: 20),
+
+            translateLabel.leadingAnchor.constraint(equalTo: globeIcon.trailingAnchor, constant: 8),
             translateLabel.centerYAnchor.constraint(equalTo: translationRow.centerYAnchor),
 
             translateSwitch.leadingAnchor.constraint(equalTo: translateLabel.trailingAnchor, constant: 8),
             translateSwitch.centerYAnchor.constraint(equalTo: translationRow.centerYAnchor),
 
-            languagePicker.trailingAnchor.constraint(equalTo: translationRow.trailingAnchor),
+            languagePicker.trailingAnchor.constraint(equalTo: translationRow.trailingAnchor, constant: -14),
             languagePicker.centerYAnchor.constraint(equalTo: translationRow.centerYAnchor)
         ])
     }
 
     private func setupResults() {
-        resultsHeaderLabel.font = .systemFont(ofSize: 17, weight: .bold)
+        resultsHeaderLabel.font = .systemFont(ofSize: 18, weight: .bold)
         resultsHeaderLabel.textColor = textPrimary
         resultsHeaderLabel.isHidden = true
         resultsHeaderLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(resultsHeaderLabel)
 
-        resultsCard.backgroundColor = .systemBackground
-        resultsCard.layer.cornerRadius = 14
-        resultsCard.layer.shadowColor = UIColor.black.cgColor
-        resultsCard.layer.shadowOffset = CGSize(width: 0, height: 2)
-        resultsCard.layer.shadowOpacity = 0.08
-        resultsCard.layer.shadowRadius = 10
+        resultsCard.backgroundColor = UIColor(red: 0.97, green: 0.97, blue: 0.98, alpha: 1) // subtle warm bg
+        resultsCard.layer.cornerRadius = 16
         resultsCard.isHidden = true
         resultsCard.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(resultsCard)
@@ -333,9 +348,9 @@ class MenuOCRViewController: UIViewController {
         actionButtonsContainer.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(actionButtonsContainer)
 
-        resetButton.setTitle("\u{1F504} Reset", for: .normal)
-        resetButton.backgroundColor = .systemRed
-        resetButton.setTitleColor(.white, for: .normal)
+        resetButton.setTitle("\u{1F504} New Scan", for: .normal)
+        resetButton.backgroundColor = UIColor.systemGray5
+        resetButton.setTitleColor(textPrimary, for: .normal)
         resetButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
         resetButton.layer.cornerRadius = 12
         resetButton.addTarget(self, action: #selector(resetTapped), for: .touchUpInside)
@@ -343,7 +358,7 @@ class MenuOCRViewController: UIViewController {
         actionButtonsContainer.addSubview(resetButton)
 
         exportButton.setTitle("\u{1F4E4} Share", for: .normal)
-        exportButton.backgroundColor = .systemBlue
+        exportButton.backgroundColor = scanPurple
         exportButton.setTitleColor(.white, for: .normal)
         exportButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
         exportButton.layer.cornerRadius = 12
@@ -417,9 +432,9 @@ class MenuOCRViewController: UIViewController {
             loadingLabel.centerYAnchor.constraint(equalTo: loadingContainer.centerYAnchor),
 
             translationRow.topAnchor.constraint(equalTo: processButton.bottomAnchor, constant: 16),
-            translationRow.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
-            translationRow.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-            translationRow.heightAnchor.constraint(equalToConstant: 36),
+            translationRow.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            translationRow.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            translationRow.heightAnchor.constraint(equalToConstant: 48),
 
             resultsHeaderLabel.topAnchor.constraint(equalTo: translationRow.bottomAnchor, constant: 16),
             resultsHeaderLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
@@ -621,6 +636,7 @@ class MenuOCRViewController: UIViewController {
 
         Task {
             do {
+                // Send ALL fields so the worker can translate everything
                 let dictItems: [[String: AnyCodable]] = accumulatedMenuItems.map { item in
                     var dict: [String: AnyCodable] = [
                         "name": AnyCodable(item.name)
@@ -628,8 +644,15 @@ class MenuOCRViewController: UIViewController {
                     if let p = item.price { dict["price"] = AnyCodable(p) }
                     if let d = item.description { dict["description"] = AnyCodable(d) }
                     if let c = item.category { dict["category"] = AnyCodable(c) }
+                    if let ing = item.ingredients, !ing.isEmpty { dict["ingredients"] = AnyCodable(ing) }
                     if let t = item.taste { dict["taste"] = AnyCodable(t) }
+                    if let s1 = item.similarDish1 { dict["similarDish1"] = AnyCodable(s1) }
+                    if let s2 = item.similarDish2 { dict["similarDish2"] = AnyCodable(s2) }
                     if let r = item.recommendation { dict["recommendation"] = AnyCodable(r) }
+                    if let rr = item.recommendation_reason { dict["recommendation_reason"] = AnyCodable(rr) }
+                    if let a = item.allergens, !a.isEmpty { dict["allergens"] = AnyCodable(a) }
+                    if let sl = item.spiciness_level { dict["spiciness_level"] = AnyCodable(sl) }
+                    if let pm = item.preparation_method { dict["preparation_method"] = AnyCodable(pm) }
                     return dict
                 }
 
@@ -638,16 +661,20 @@ class MenuOCRViewController: UIViewController {
                 await MainActor.run {
                     for (idx, itemDict) in translated.enumerated() where idx < accumulatedMenuItems.count {
                         let old = accumulatedMenuItems[idx]
-                        let newName = (itemDict["name"]?.value as? String) ?? old.name
-                        let newDesc = (itemDict["description"]?.value as? String) ?? old.description
                         accumulatedMenuItems[idx] = MenuItem(
-                            name: newName, price: old.price, description: newDesc,
-                            category: old.category, ingredients: old.ingredients,
-                            taste: old.taste, similarDish1: old.similarDish1,
-                            similarDish2: old.similarDish2, recommendation: old.recommendation,
-                            recommendation_reason: old.recommendation_reason,
-                            allergens: old.allergens, spiciness_level: old.spiciness_level,
-                            preparation_method: old.preparation_method
+                            name: (itemDict["name"]?.value as? String) ?? old.name,
+                            price: old.price,
+                            description: (itemDict["description"]?.value as? String) ?? old.description,
+                            category: (itemDict["category"]?.value as? String) ?? old.category,
+                            ingredients: (itemDict["ingredients"]?.value as? [String]) ?? old.ingredients,
+                            taste: (itemDict["taste"]?.value as? String) ?? old.taste,
+                            similarDish1: (itemDict["similarDish1"]?.value as? String) ?? old.similarDish1,
+                            similarDish2: (itemDict["similarDish2"]?.value as? String) ?? old.similarDish2,
+                            recommendation: old.recommendation,
+                            recommendation_reason: (itemDict["recommendation_reason"]?.value as? String) ?? old.recommendation_reason,
+                            allergens: (itemDict["allergens"]?.value as? [String]) ?? old.allergens,
+                            spiciness_level: old.spiciness_level,
+                            preparation_method: (itemDict["preparation_method"]?.value as? String) ?? old.preparation_method
                         )
                     }
                     showLoading(false)
@@ -903,142 +930,197 @@ class MenuOCRViewController: UIViewController {
         let detail = buildDetailItem(item)
 
         let overlay = UIView(frame: view.bounds)
-        overlay.backgroundColor = UIColor.black.withAlphaComponent(0.45)
+        overlay.backgroundColor = UIColor.black.withAlphaComponent(0.5)
         overlay.tag = 8888
         overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
 
         let card = UIView()
-        card.backgroundColor = .systemBackground
-        card.layer.cornerRadius = 20
+        card.backgroundColor = UIColor(red: 0.97, green: 0.97, blue: 0.98, alpha: 1) // slight warm gray
+        card.layer.cornerRadius = 24
         card.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        card.layer.shadowColor = UIColor.black.cgColor
+        card.layer.shadowOffset = CGSize(width: 0, height: -4)
+        card.layer.shadowOpacity = 0.15
+        card.layer.shadowRadius = 16
         card.translatesAutoresizingMaskIntoConstraints = false
         overlay.addSubview(card)
 
-        // Drag handle at top
+        // Drag handle
         let handle = UIView()
         handle.backgroundColor = UIColor.systemGray3
         handle.layer.cornerRadius = 2.5
         handle.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(handle)
 
-        // Top bar: back arrow left-aligned, title center
+        // ─── Top Bar ────────────────────────────
         let topBar = UIView()
         topBar.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(topBar)
 
-        let backBtn = UIButton(type: .custom)
-        let chevConfig = UIImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
-        let chevImg = UIImage(systemName: "chevron.left", withConfiguration: chevConfig)
-        backBtn.setImage(chevImg, for: .normal)
-        backBtn.setTitle(" Back", for: .normal)
-        backBtn.setTitleColor(.white, for: .normal)
-        backBtn.tintColor = .white
-        backBtn.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
-        backBtn.backgroundColor = scanPurple
-        backBtn.layer.cornerRadius = 18
-        backBtn.contentEdgeInsets = UIEdgeInsets(top: 6, left: 14, bottom: 6, right: 18)
-        backBtn.layer.shadowColor = scanPurple.cgColor
-        backBtn.layer.shadowOffset = CGSize(width: 0, height: 2)
-        backBtn.layer.shadowOpacity = 0.3
-        backBtn.layer.shadowRadius = 4
-        backBtn.addTarget(self, action: #selector(closeDishDetail), for: .touchUpInside)
-        backBtn.translatesAutoresizingMaskIntoConstraints = false
-        topBar.addSubview(backBtn)
+        // Close button — minimal circle X on right
+        let closeBtn = UIButton(type: .custom)
+        let xConfig = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
+        let xImg = UIImage(systemName: "xmark", withConfiguration: xConfig)
+        closeBtn.setImage(xImg, for: .normal)
+        closeBtn.tintColor = .secondaryLabel
+        closeBtn.backgroundColor = UIColor.systemGray5
+        closeBtn.layer.cornerRadius = 16
+        closeBtn.addTarget(self, action: #selector(closeDishDetail), for: .touchUpInside)
+        closeBtn.translatesAutoresizingMaskIntoConstraints = false
+        topBar.addSubview(closeBtn)
 
         let detailTitle = UILabel()
-        detailTitle.text = "Additional Details"
-        detailTitle.font = .systemFont(ofSize: 17, weight: .bold)
+        detailTitle.text = "Dish Details"
+        detailTitle.font = .systemFont(ofSize: 18, weight: .bold)
         detailTitle.textColor = textPrimary
-        detailTitle.textAlignment = .center
         detailTitle.translatesAutoresizingMaskIntoConstraints = false
         topBar.addSubview(detailTitle)
 
         let cardScroll = UIScrollView()
+        cardScroll.showsVerticalScrollIndicator = false
         cardScroll.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(cardScroll)
 
         let stack = UIStackView()
         stack.axis = .vertical
-        stack.spacing = 16
+        stack.spacing = 12
         stack.translatesAutoresizingMaskIntoConstraints = false
         cardScroll.addSubview(stack)
 
-        // Name
+        // ─── Hero: Name + Price ─────────────────
+        let heroCard = UIView()
+        heroCard.backgroundColor = .white
+        heroCard.layer.cornerRadius = 16
+        heroCard.layer.shadowColor = UIColor.black.cgColor
+        heroCard.layer.shadowOffset = CGSize(width: 0, height: 1)
+        heroCard.layer.shadowOpacity = 0.06
+        heroCard.layer.shadowRadius = 6
+        heroCard.translatesAutoresizingMaskIntoConstraints = false
+
         let nameLbl = UILabel()
         nameLbl.text = detail.name
         nameLbl.font = .systemFont(ofSize: 22, weight: .bold)
         nameLbl.textColor = textPrimary
         nameLbl.numberOfLines = 0
-        stack.addArrangedSubview(nameLbl)
+        nameLbl.translatesAutoresizingMaskIntoConstraints = false
+        heroCard.addSubview(nameLbl)
 
-        // Price
+        let priceLbl = UILabel()
         if let price = detail.price, !price.isEmpty {
-            let priceLbl = UILabel()
             priceLbl.text = price
-            priceLbl.font = .systemFont(ofSize: 18, weight: .bold)
-            priceLbl.textColor = brandRed
-            stack.addArrangedSubview(priceLbl)
+            priceLbl.font = .systemFont(ofSize: 20, weight: .heavy)
+            priceLbl.textColor = scanPurple
+        }
+        priceLbl.translatesAutoresizingMaskIntoConstraints = false
+        heroCard.addSubview(priceLbl)
+
+        // Recommendation badge
+        let recBadge = UILabel()
+        if let rec = detail.recommendation, !rec.isEmpty {
+            let bgColor: UIColor
+            let icon: String
+            switch rec.lowercased() {
+            case let r where r.contains("most"):
+                bgColor = UIColor.systemGreen; icon = "\u{2B50}"
+            case let r where r.contains("not"):
+                bgColor = UIColor.systemRed; icon = "\u{26A0}\u{FE0F}"
+            default:
+                bgColor = UIColor.systemBlue; icon = "\u{1F44D}"
+            }
+            recBadge.text = " \(icon) \(rec) "
+            recBadge.font = .systemFont(ofSize: 12, weight: .bold)
+            recBadge.textColor = .white
+            recBadge.backgroundColor = bgColor
+            recBadge.layer.cornerRadius = 10
+            recBadge.clipsToBounds = true
+        }
+        recBadge.translatesAutoresizingMaskIntoConstraints = false
+        heroCard.addSubview(recBadge)
+
+        NSLayoutConstraint.activate([
+            nameLbl.topAnchor.constraint(equalTo: heroCard.topAnchor, constant: 16),
+            nameLbl.leadingAnchor.constraint(equalTo: heroCard.leadingAnchor, constant: 16),
+            nameLbl.trailingAnchor.constraint(equalTo: heroCard.trailingAnchor, constant: -16),
+            priceLbl.topAnchor.constraint(equalTo: nameLbl.bottomAnchor, constant: 6),
+            priceLbl.leadingAnchor.constraint(equalTo: heroCard.leadingAnchor, constant: 16),
+            recBadge.centerYAnchor.constraint(equalTo: priceLbl.centerYAnchor),
+            recBadge.trailingAnchor.constraint(equalTo: heroCard.trailingAnchor, constant: -16),
+            recBadge.heightAnchor.constraint(equalToConstant: 22),
+            priceLbl.bottomAnchor.constraint(equalTo: heroCard.bottomAnchor, constant: -16),
+        ])
+        stack.addArrangedSubview(heroCard)
+
+        // ─── Info Grid (Category, Taste, Spiciness) ────
+        if detail.category != nil || detail.taste != nil || detail.spiciness_level != nil {
+            let gridCard = UIView()
+            gridCard.backgroundColor = .white
+            gridCard.layer.cornerRadius = 16
+            gridCard.layer.shadowColor = UIColor.black.cgColor
+            gridCard.layer.shadowOffset = CGSize(width: 0, height: 1)
+            gridCard.layer.shadowOpacity = 0.06
+            gridCard.layer.shadowRadius = 6
+            gridCard.translatesAutoresizingMaskIntoConstraints = false
+
+            let gridStack = UIStackView()
+            gridStack.axis = .horizontal
+            gridStack.distribution = .fillEqually
+            gridStack.spacing = 1
+            gridStack.translatesAutoresizingMaskIntoConstraints = false
+            gridCard.addSubview(gridStack)
+
+            if let cat = detail.category, !cat.isEmpty {
+                gridStack.addArrangedSubview(makeInfoPill(icon: "\u{1F4C2}", label: "Category", value: cat, color: .systemIndigo))
+            }
+            if let taste = detail.taste, !taste.isEmpty {
+                gridStack.addArrangedSubview(makeInfoPill(icon: "\u{1F60B}", label: "Taste", value: taste, color: .systemOrange))
+            }
+            if let spice = detail.spiciness_level, !spice.isEmpty {
+                let spiceIcon = spice.lowercased().contains("hot") ? "\u{1F525}" : "\u{1F336}\u{FE0F}"
+                gridStack.addArrangedSubview(makeInfoPill(icon: spiceIcon, label: "Spice", value: spice, color: .systemRed))
+            }
+
+            NSLayoutConstraint.activate([
+                gridStack.topAnchor.constraint(equalTo: gridCard.topAnchor, constant: 12),
+                gridStack.leadingAnchor.constraint(equalTo: gridCard.leadingAnchor, constant: 12),
+                gridStack.trailingAnchor.constraint(equalTo: gridCard.trailingAnchor, constant: -12),
+                gridStack.bottomAnchor.constraint(equalTo: gridCard.bottomAnchor, constant: -12),
+            ])
+            stack.addArrangedSubview(gridCard)
         }
 
-        // Divider
-        let divider = UIView()
-        divider.backgroundColor = UIColor.systemGray5
-        divider.translatesAutoresizingMaskIntoConstraints = false
-        divider.heightAnchor.constraint(equalToConstant: 1).isActive = true
-        stack.addArrangedSubview(divider)
-
-        // Category
-        if let cat = detail.category, !cat.isEmpty {
-            addDetailSection(to: stack, emoji: "\u{1F4C2}", title: "Category", body: cat)
-        }
-
-        // Description
+        // ─── Description ────────────────────────
         if let desc = detail.description, !desc.isEmpty {
-            addDetailSection(to: stack, emoji: "\u{1F4DD}", title: "Description", body: desc)
+            stack.addArrangedSubview(makeDetailCard(icon: "\u{1F4DD}", title: "Description", body: desc, accentColor: .systemBlue))
         }
 
-        // Ingredients (bullets)
+        // ─── Ingredients ────────────────────────
         if let ingredients = detail.ingredients, !ingredients.isEmpty {
-            let bullets = ingredients.map { "  \u{2022} \($0)" }.joined(separator: "\n")
-            addDetailSection(to: stack, emoji: "\u{1F9FE}", title: "Ingredients", body: bullets)
+            let pills = ingredients.map { "  \u{2022} \($0)" }.joined(separator: "\n")
+            stack.addArrangedSubview(makeDetailCard(icon: "\u{1F9FE}", title: "Ingredients", body: pills, accentColor: .systemGreen))
         }
 
-        // Taste
-        if let taste = detail.taste, !taste.isEmpty {
-            addDetailSection(to: stack, emoji: "\u{1F60B}", title: "Taste", body: taste)
-        }
-
-        // Similar dishes (bullets)
+        // ─── Similar Dishes ─────────────────────
         var similarParts: [String] = []
         if let s1 = detail.similarDish1, !s1.isEmpty { similarParts.append("  \u{2022} \(s1)") }
         if let s2 = detail.similarDish2, !s2.isEmpty { similarParts.append("  \u{2022} \(s2)") }
         if !similarParts.isEmpty {
-            addDetailSection(to: stack, emoji: "\u{1F30D}", title: "Similar Dishes", body: similarParts.joined(separator: "\n"))
+            stack.addArrangedSubview(makeDetailCard(icon: "\u{1F30D}", title: "Similar Dishes", body: similarParts.joined(separator: "\n"), accentColor: .systemTeal))
         }
 
-        // Recommendation
-        if let rec = detail.recommendation, !rec.isEmpty {
-            var body = rec
-            if let reason = detail.recommendation_reason, !reason.isEmpty {
-                body += "\n  \(reason)"
-            }
-            addDetailSection(to: stack, emoji: "\u{1F48A}", title: "Recommendation", body: body)
+        // ─── Recommendation reason ──────────────
+        if let reason = detail.recommendation_reason, !reason.isEmpty {
+            stack.addArrangedSubview(makeDetailCard(icon: "\u{1F48A}", title: "Health Insight", body: reason, accentColor: .systemPurple))
         }
 
-        // Allergens
+        // ─── Allergens ──────────────────────────
         if let allergens = detail.allergens, !allergens.isEmpty {
             let joined = allergens.joined(separator: ", ")
-            addDetailSection(to: stack, emoji: "\u{26A0}\u{FE0F}", title: "Allergens", body: joined)
+            stack.addArrangedSubview(makeDetailCard(icon: "\u{26A0}\u{FE0F}", title: "Allergens", body: joined, accentColor: .systemYellow))
         }
 
-        // Spiciness
-        if let spice = detail.spiciness_level, !spice.isEmpty {
-            addDetailSection(to: stack, emoji: "\u{1F336}\u{FE0F}", title: "Spiciness", body: spice)
-        }
-
-        // Preparation
+        // ─── Preparation ────────────────────────
         if let prep = detail.preparation_method, !prep.isEmpty {
-            addDetailSection(to: stack, emoji: "\u{1F468}\u{200D}\u{1F373}", title: "Preparation", body: prep)
+            stack.addArrangedSubview(makeDetailCard(icon: "\u{1F468}\u{200D}\u{1F373}", title: "Preparation", body: prep, accentColor: .systemBrown))
         }
 
         // Layout
@@ -1046,29 +1128,30 @@ class MenuOCRViewController: UIViewController {
             card.leadingAnchor.constraint(equalTo: overlay.leadingAnchor),
             card.trailingAnchor.constraint(equalTo: overlay.trailingAnchor),
             card.bottomAnchor.constraint(equalTo: overlay.bottomAnchor),
-            card.heightAnchor.constraint(lessThanOrEqualTo: overlay.heightAnchor, multiplier: 0.8),
+            card.heightAnchor.constraint(lessThanOrEqualTo: overlay.heightAnchor, multiplier: 0.82),
 
             handle.topAnchor.constraint(equalTo: card.topAnchor, constant: 10),
             handle.centerXAnchor.constraint(equalTo: card.centerXAnchor),
             handle.widthAnchor.constraint(equalToConstant: 40),
             handle.heightAnchor.constraint(equalToConstant: 5),
 
-            topBar.topAnchor.constraint(equalTo: handle.bottomAnchor, constant: 10),
-            topBar.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
-            topBar.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
-            topBar.heightAnchor.constraint(equalToConstant: 40),
+            topBar.topAnchor.constraint(equalTo: handle.bottomAnchor, constant: 12),
+            topBar.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
+            topBar.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -20),
+            topBar.heightAnchor.constraint(equalToConstant: 36),
 
-            backBtn.leadingAnchor.constraint(equalTo: topBar.leadingAnchor),
-            backBtn.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
-            backBtn.heightAnchor.constraint(equalToConstant: 36),
-
-            detailTitle.centerXAnchor.constraint(equalTo: topBar.centerXAnchor),
+            detailTitle.leadingAnchor.constraint(equalTo: topBar.leadingAnchor),
             detailTitle.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
 
-            cardScroll.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 8),
-            cardScroll.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
-            cardScroll.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -20),
-            cardScroll.bottomAnchor.constraint(equalTo: card.safeAreaLayoutGuide.bottomAnchor, constant: -16),
+            closeBtn.trailingAnchor.constraint(equalTo: topBar.trailingAnchor),
+            closeBtn.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
+            closeBtn.widthAnchor.constraint(equalToConstant: 32),
+            closeBtn.heightAnchor.constraint(equalToConstant: 32),
+
+            cardScroll.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 10),
+            cardScroll.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
+            cardScroll.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
+            cardScroll.bottomAnchor.constraint(equalTo: card.safeAreaLayoutGuide.bottomAnchor, constant: -12),
 
             stack.topAnchor.constraint(equalTo: cardScroll.topAnchor),
             stack.leadingAnchor.constraint(equalTo: cardScroll.leadingAnchor),
@@ -1085,31 +1168,45 @@ class MenuOCRViewController: UIViewController {
         // Animate in
         view.addSubview(overlay)
         card.transform = CGAffineTransform(translationX: 0, y: 400)
-        UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.85, initialSpringVelocity: 0.5) {
+        overlay.subviews.first { $0 != card }?.alpha = 0
+        UIView.animate(withDuration: 0.35, delay: 0, usingSpringWithDamping: 0.85, initialSpringVelocity: 0.5) {
             card.transform = .identity
         }
     }
 
-    // UX Playbook: proper section styling - 15pt semibold header (off-black), 15pt body with 1.5x line spacing
-    private func addDetailSection(to stack: UIStackView, emoji: String, title: String, body: String) {
-        let container = UIView()
-        container.translatesAutoresizingMaskIntoConstraints = false
+    // MARK: - Detail card builder (white card with colored left accent)
+
+    private func makeDetailCard(icon: String, title: String, body: String, accentColor: UIColor) -> UIView {
+        let wrapper = UIView()
+        wrapper.backgroundColor = .white
+        wrapper.layer.cornerRadius = 14
+        wrapper.layer.shadowColor = UIColor.black.cgColor
+        wrapper.layer.shadowOffset = CGSize(width: 0, height: 1)
+        wrapper.layer.shadowOpacity = 0.05
+        wrapper.layer.shadowRadius = 4
+        wrapper.translatesAutoresizingMaskIntoConstraints = false
+
+        // Color accent bar on left
+        let accent = UIView()
+        accent.backgroundColor = accentColor
+        accent.layer.cornerRadius = 2
+        accent.translatesAutoresizingMaskIntoConstraints = false
+        wrapper.addSubview(accent)
 
         let titleLbl = UILabel()
-        titleLbl.text = "\(emoji) \(title)"
-        titleLbl.font = .systemFont(ofSize: 15, weight: .semibold)
-        titleLbl.textColor = textSecondary
+        titleLbl.text = "\(icon)  \(title)"
+        titleLbl.font = .systemFont(ofSize: 14, weight: .bold)
+        titleLbl.textColor = accentColor
         titleLbl.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(titleLbl)
+        wrapper.addSubview(titleLbl)
 
         let bodyLbl = UILabel()
         bodyLbl.numberOfLines = 0
         bodyLbl.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(bodyLbl)
+        wrapper.addSubview(bodyLbl)
 
-        // UX playbook: 1.5x line spacing for readability
         let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.lineSpacing = 6 // ~1.5x for 15pt font
+        paragraphStyle.lineSpacing = 5
         let attrs: [NSAttributedString.Key: Any] = [
             .font: UIFont.systemFont(ofSize: 15),
             .foregroundColor: textPrimary,
@@ -1118,17 +1215,72 @@ class MenuOCRViewController: UIViewController {
         bodyLbl.attributedText = NSAttributedString(string: body, attributes: attrs)
 
         NSLayoutConstraint.activate([
-            titleLbl.topAnchor.constraint(equalTo: container.topAnchor),
-            titleLbl.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            titleLbl.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            accent.leadingAnchor.constraint(equalTo: wrapper.leadingAnchor, constant: 0),
+            accent.topAnchor.constraint(equalTo: wrapper.topAnchor, constant: 12),
+            accent.bottomAnchor.constraint(equalTo: wrapper.bottomAnchor, constant: -12),
+            accent.widthAnchor.constraint(equalToConstant: 4),
+
+            titleLbl.topAnchor.constraint(equalTo: wrapper.topAnchor, constant: 14),
+            titleLbl.leadingAnchor.constraint(equalTo: accent.trailingAnchor, constant: 14),
+            titleLbl.trailingAnchor.constraint(equalTo: wrapper.trailingAnchor, constant: -14),
 
             bodyLbl.topAnchor.constraint(equalTo: titleLbl.bottomAnchor, constant: 6),
-            bodyLbl.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 4),
-            bodyLbl.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            bodyLbl.bottomAnchor.constraint(equalTo: container.bottomAnchor)
+            bodyLbl.leadingAnchor.constraint(equalTo: accent.trailingAnchor, constant: 14),
+            bodyLbl.trailingAnchor.constraint(equalTo: wrapper.trailingAnchor, constant: -14),
+            bodyLbl.bottomAnchor.constraint(equalTo: wrapper.bottomAnchor, constant: -14)
         ])
 
-        stack.addArrangedSubview(container)
+        // Clip accent bar to card corners
+        wrapper.clipsToBounds = true
+        accent.layer.cornerRadius = 0
+
+        return wrapper
+    }
+
+    // MARK: - Info pill (for grid: Category / Taste / Spiciness)
+
+    private func makeInfoPill(icon: String, label: String, value: String, color: UIColor) -> UIView {
+        let pill = UIView()
+        pill.translatesAutoresizingMaskIntoConstraints = false
+
+        let iconLbl = UILabel()
+        iconLbl.text = icon
+        iconLbl.font = .systemFont(ofSize: 22)
+        iconLbl.textAlignment = .center
+        iconLbl.translatesAutoresizingMaskIntoConstraints = false
+        pill.addSubview(iconLbl)
+
+        let labelLbl = UILabel()
+        labelLbl.text = label.uppercased()
+        labelLbl.font = .systemFont(ofSize: 10, weight: .bold)
+        labelLbl.textColor = .tertiaryLabel
+        labelLbl.textAlignment = .center
+        labelLbl.translatesAutoresizingMaskIntoConstraints = false
+        pill.addSubview(labelLbl)
+
+        let valueLbl = UILabel()
+        valueLbl.text = value
+        valueLbl.font = .systemFont(ofSize: 13, weight: .semibold)
+        valueLbl.textColor = color
+        valueLbl.textAlignment = .center
+        valueLbl.numberOfLines = 2
+        valueLbl.translatesAutoresizingMaskIntoConstraints = false
+        pill.addSubview(valueLbl)
+
+        NSLayoutConstraint.activate([
+            iconLbl.topAnchor.constraint(equalTo: pill.topAnchor, constant: 4),
+            iconLbl.centerXAnchor.constraint(equalTo: pill.centerXAnchor),
+            labelLbl.topAnchor.constraint(equalTo: iconLbl.bottomAnchor, constant: 2),
+            labelLbl.centerXAnchor.constraint(equalTo: pill.centerXAnchor),
+            valueLbl.topAnchor.constraint(equalTo: labelLbl.bottomAnchor, constant: 2),
+            valueLbl.centerXAnchor.constraint(equalTo: pill.centerXAnchor),
+            valueLbl.leadingAnchor.constraint(greaterThanOrEqualTo: pill.leadingAnchor, constant: 4),
+            valueLbl.trailingAnchor.constraint(lessThanOrEqualTo: pill.trailingAnchor, constant: -4),
+            valueLbl.bottomAnchor.constraint(equalTo: pill.bottomAnchor, constant: -4),
+        ])
+        pill.heightAnchor.constraint(greaterThanOrEqualToConstant: 70).isActive = true
+
+        return pill
     }
 
     @objc private func closeDishDetail() {
@@ -1227,63 +1379,91 @@ extension MenuOCRViewController: UITableViewDataSource, UITableViewDelegate {
 
         // Card container
         let cardView = UIView()
-        cardView.backgroundColor = .systemBackground
-        cardView.layer.cornerRadius = 12
-        cardView.layer.borderWidth = 1
-        cardView.layer.borderColor = UIColor.systemGray5.cgColor
-        // UX playbook: subtle shadow for depth
+        cardView.backgroundColor = .white
+        cardView.layer.cornerRadius = 14
         cardView.layer.shadowColor = UIColor.black.cgColor
-        cardView.layer.shadowOffset = CGSize(width: 0, height: 1)
-        cardView.layer.shadowOpacity = 0.06
-        cardView.layer.shadowRadius = 4
+        cardView.layer.shadowOffset = CGSize(width: 0, height: 2)
+        cardView.layer.shadowOpacity = 0.07
+        cardView.layer.shadowRadius = 8
         cardView.translatesAutoresizingMaskIntoConstraints = false
         cell.contentView.addSubview(cardView)
 
-        // Name (UX: 16pt semibold, off-black)
+        // Recommendation color indicator (left accent bar)
+        let accentBar = UIView()
+        let recColor: UIColor
+        switch (item.recommendation ?? "").lowercased() {
+        case let r where r.contains("most"): recColor = .systemGreen
+        case let r where r.contains("not"): recColor = .systemRed
+        default: recColor = scanPurple
+        }
+        accentBar.backgroundColor = recColor
+        accentBar.layer.cornerRadius = 2
+        accentBar.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(accentBar)
+
+        // Row number badge
+        let numBadge = UILabel()
+        numBadge.text = "\(indexPath.row + 1)"
+        numBadge.font = .systemFont(ofSize: 11, weight: .bold)
+        numBadge.textColor = .white
+        numBadge.textAlignment = .center
+        numBadge.backgroundColor = scanPurple.withAlphaComponent(0.85)
+        numBadge.layer.cornerRadius = 11
+        numBadge.clipsToBounds = true
+        numBadge.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(numBadge)
+
+        // Name (bold, off-black)
         let nameLbl = UILabel()
         nameLbl.text = item.name
-        nameLbl.font = .systemFont(ofSize: 16, weight: .semibold)
+        nameLbl.font = .systemFont(ofSize: 16, weight: .bold)
         nameLbl.textColor = textPrimary
         nameLbl.numberOfLines = 2
         nameLbl.translatesAutoresizingMaskIntoConstraints = false
         cardView.addSubview(nameLbl)
 
-        // Price
+        // Price (right-aligned, brand purple)
         let priceLbl = UILabel()
         priceLbl.text = item.price ?? ""
-        priceLbl.font = .systemFont(ofSize: 15, weight: .bold)
-        priceLbl.textColor = brandRed
+        priceLbl.font = .systemFont(ofSize: 16, weight: .heavy)
+        priceLbl.textColor = scanPurple
         priceLbl.textAlignment = .right
         priceLbl.setContentHuggingPriority(.required, for: .horizontal)
         priceLbl.translatesAutoresizingMaskIntoConstraints = false
         cardView.addSubview(priceLbl)
 
-        // Description (truncated, UX: 14pt secondary color)
+        // Description (truncated)
         let descLbl = UILabel()
         let descText = item.description ?? ""
-        descLbl.text = descText.count > 80 ? String(descText.prefix(80)) + "..." : descText
-        descLbl.font = .systemFont(ofSize: 14)
+        descLbl.text = descText.count > 85 ? String(descText.prefix(85)) + "..." : descText
+        descLbl.font = .systemFont(ofSize: 13)
         descLbl.textColor = textSecondary
         descLbl.numberOfLines = 2
         descLbl.translatesAutoresizingMaskIntoConstraints = false
         cardView.addSubview(descLbl)
 
-        // Bottom row: taste chip + hint
+        // Bottom chips row
         let bottomRow = UIStackView()
         bottomRow.axis = .horizontal
-        bottomRow.spacing = 8
+        bottomRow.spacing = 6
         bottomRow.translatesAutoresizingMaskIntoConstraints = false
         cardView.addSubview(bottomRow)
 
+        // Recommendation chip
+        if let rec = item.recommendation, !rec.isEmpty, !isEmptyLike(rec) {
+            let chip = makeMiniChip(text: rec, color: recColor)
+            bottomRow.addArrangedSubview(chip)
+        }
+
+        // Taste chip
         if let taste = item.taste, !taste.isEmpty, !isEmptyLike(taste) {
-            let chip = UILabel()
-            chip.text = " \u{1F60B} \(taste) "
-            chip.font = .systemFont(ofSize: 12, weight: .medium)
-            chip.textColor = .systemOrange
-            chip.backgroundColor = UIColor.systemOrange.withAlphaComponent(0.1)
-            chip.layer.cornerRadius = 8
-            chip.clipsToBounds = true
-            chip.translatesAutoresizingMaskIntoConstraints = false
+            let chip = makeMiniChip(text: "\u{1F60B} \(taste)", color: .systemOrange)
+            bottomRow.addArrangedSubview(chip)
+        }
+
+        // Spiciness chip
+        if let spice = item.spiciness_level, !spice.isEmpty, !isEmptyLike(spice), spice.lowercased() != "none" {
+            let chip = makeMiniChip(text: "\u{1F336}\u{FE0F} \(spice)", color: .systemRed)
             bottomRow.addArrangedSubview(chip)
         }
 
@@ -1291,36 +1471,60 @@ extension MenuOCRViewController: UITableViewDataSource, UITableViewDelegate {
         spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
         bottomRow.addArrangedSubview(spacer)
 
-        let hintLbl = UILabel()
-        hintLbl.text = "Tap for details \u{2192}"
-        hintLbl.font = .systemFont(ofSize: 12)
-        hintLbl.textColor = .tertiaryLabel
-        bottomRow.addArrangedSubview(hintLbl)
+        // Arrow hint
+        let arrow = UIImageView(image: UIImage(systemName: "chevron.right"))
+        arrow.tintColor = .tertiaryLabel
+        arrow.translatesAutoresizingMaskIntoConstraints = false
+        arrow.widthAnchor.constraint(equalToConstant: 12).isActive = true
+        arrow.heightAnchor.constraint(equalToConstant: 14).isActive = true
+        arrow.contentMode = .scaleAspectFit
+        bottomRow.addArrangedSubview(arrow)
 
         NSLayoutConstraint.activate([
-            cardView.topAnchor.constraint(equalTo: cell.contentView.topAnchor, constant: 5),
-            cardView.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 8),
-            cardView.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -8),
-            cardView.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor, constant: -5),
+            cardView.topAnchor.constraint(equalTo: cell.contentView.topAnchor, constant: 4),
+            cardView.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 6),
+            cardView.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -6),
+            cardView.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor, constant: -4),
+
+            accentBar.leadingAnchor.constraint(equalTo: cardView.leadingAnchor),
+            accentBar.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 10),
+            accentBar.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -10),
+            accentBar.widthAnchor.constraint(equalToConstant: 4),
+
+            numBadge.leadingAnchor.constraint(equalTo: accentBar.trailingAnchor, constant: 10),
+            numBadge.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 14),
+            numBadge.widthAnchor.constraint(equalToConstant: 22),
+            numBadge.heightAnchor.constraint(equalToConstant: 22),
 
             nameLbl.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 14),
-            nameLbl.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 14),
+            nameLbl.leadingAnchor.constraint(equalTo: numBadge.trailingAnchor, constant: 8),
             nameLbl.trailingAnchor.constraint(lessThanOrEqualTo: priceLbl.leadingAnchor, constant: -8),
 
             priceLbl.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 14),
             priceLbl.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -14),
 
-            descLbl.topAnchor.constraint(equalTo: nameLbl.bottomAnchor, constant: 6),
-            descLbl.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 14),
+            descLbl.topAnchor.constraint(equalTo: nameLbl.bottomAnchor, constant: 4),
+            descLbl.leadingAnchor.constraint(equalTo: numBadge.trailingAnchor, constant: 8),
             descLbl.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -14),
 
             bottomRow.topAnchor.constraint(equalTo: descLbl.bottomAnchor, constant: 8),
-            bottomRow.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 14),
+            bottomRow.leadingAnchor.constraint(equalTo: numBadge.trailingAnchor, constant: 8),
             bottomRow.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -14),
             bottomRow.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -12)
         ])
 
         return cell
+    }
+
+    private func makeMiniChip(text: String, color: UIColor) -> UILabel {
+        let chip = UILabel()
+        chip.text = " \(text) "
+        chip.font = .systemFont(ofSize: 11, weight: .semibold)
+        chip.textColor = color
+        chip.backgroundColor = color.withAlphaComponent(0.1)
+        chip.layer.cornerRadius = 8
+        chip.clipsToBounds = true
+        return chip
     }
 
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {

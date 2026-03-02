@@ -450,19 +450,59 @@ RULES:
 }
 
 async function groqTranslate(items, targetLang, env) {
-  const prompt = `Translate these menu items to ${targetLang}. Translate: name, description, ingredients, taste, similarDish1, similarDish2, recommendation_reason, allergens, preparation_method.
-Do NOT translate: price, spiciness_level, recommendation (keep "Most Recommended"/"Recommended"/"Not Recommended" as-is).
-Return same JSON structure, same item count=${items.length}.
+  // Chunk large batches to prevent Groq from dropping items
+  const CHUNK = 12;
+  if (items.length > CHUNK) {
+    const results = [];
+    for (let i = 0; i < items.length; i += CHUNK) {
+      const chunk = items.slice(i, i + CHUNK);
+      const translated = await groqTranslateChunk(chunk, targetLang, env);
+      results.push(...translated);
+    }
+    return results;
+  }
+  return groqTranslateChunk(items, targetLang, env);
+}
 
-Input:
-${JSON.stringify(items)}
+async function groqTranslateChunk(items, targetLang, env) {
+  const prompt = `Translate ALL ${items.length} menu items below into ${targetLang}.
 
-Return: { "menu_items": [...] }`;
+FIELDS TO TRANSLATE: name, description, category, ingredients (each element), taste, similarDish1, similarDish2, recommendation_reason, allergens (each element), preparation_method.
+FIELDS TO KEEP AS-IS (do NOT translate): price, spiciness_level, recommendation.
+
+CRITICAL RULES:
+- You MUST return EXACTLY ${items.length} items — no more, no less.
+- Preserve every field from each item. Do NOT drop or merge items.
+- Keep the same JSON key names. Keep array fields as arrays.
+- Return strict JSON only: { "menu_items": [...] }
+
+Input (${items.length} items):
+${JSON.stringify(items)}`;
 
   const data = await callGroq(prompt, env);
   const translated = data?.menu_items || data;
   if (!Array.isArray(translated) || translated.length === 0) return items;
-  return translated;
+
+  // Safely merge: use translated fields when available, fall back to originals
+  return items.map((orig, i) => {
+    const tr = translated[i];
+    if (!tr) return orig;
+    return {
+      name: tr.name || orig.name,
+      price: orig.price,                              // never translate price
+      description: tr.description || orig.description,
+      category: tr.category || orig.category,
+      ingredients: Array.isArray(tr.ingredients) && tr.ingredients.length > 0 ? tr.ingredients : orig.ingredients,
+      taste: tr.taste || orig.taste,
+      similarDish1: tr.similarDish1 || orig.similarDish1,
+      similarDish2: tr.similarDish2 || orig.similarDish2,
+      recommendation: orig.recommendation,             // never translate
+      recommendation_reason: tr.recommendation_reason || orig.recommendation_reason,
+      allergens: Array.isArray(tr.allergens) && tr.allergens.length > 0 ? tr.allergens : orig.allergens,
+      spiciness_level: orig.spiciness_level,           // never translate
+      preparation_method: tr.preparation_method || orig.preparation_method,
+    };
+  });
 }
 
 async function callGroq(prompt, env) {

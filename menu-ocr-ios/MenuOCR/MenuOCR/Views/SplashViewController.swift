@@ -2,8 +2,8 @@
 //  SplashViewController.swift
 //  MenuOCR
 //
-//  Splash screen — logo-only with breathe-out animation
-//  Rich deep gradient, no text, device-adaptive centering
+//  Splash screen — large attractive logo with rich gradient, no box
+//  Full-bleed gradient adapts to every device
 //
 
 import UIKit
@@ -15,28 +15,30 @@ class SplashViewController: UIViewController {
 
     // MARK: - UI Components
 
-    /// Deep purple gradient background
+    /// Rich deep-purple gradient (fills entire screen on every device)
     private let gradientLayer: CAGradientLayer = {
         let layer = CAGradientLayer()
         layer.colors = [
-            UIColor(red: 0.176, green: 0.106, blue: 0.412, alpha: 1.0).cgColor, // #2D1B69
-            UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 1.0).cgColor  // #7C3AED
+            UIColor(red: 0.12, green: 0.05, blue: 0.35, alpha: 1.0).cgColor,   // deep indigo top
+            UIColor(red: 0.30, green: 0.10, blue: 0.60, alpha: 1.0).cgColor,   // rich purple mid
+            UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 1.0).cgColor  // vibrant violet bottom
         ]
-        layer.startPoint = CGPoint(x: 0.2, y: 0)
-        layer.endPoint = CGPoint(x: 0.8, y: 1)
+        layer.locations = [0.0, 0.45, 1.0]
+        layer.startPoint = CGPoint(x: 0.5, y: 0)
+        layer.endPoint = CGPoint(x: 0.5, y: 1)
         return layer
     }()
 
-    /// Subtle radial glow behind logo
+    /// Soft radial glow behind logo
     private let glowView: UIView = {
         let v = UIView()
-        v.backgroundColor = UIColor.white.withAlphaComponent(0.08)
-        v.layer.cornerRadius = 90
+        v.backgroundColor = UIColor.white.withAlphaComponent(0.06)
+        v.layer.cornerRadius = 110
         v.translatesAutoresizingMaskIntoConstraints = false
         return v
     }()
 
-    /// Logo image (no white bg — shown on gradient)
+    /// Logo — circular, no box, large & attractive
     private let logoImageView: UIImageView = {
         let iv = UIImageView()
         if let img = UIImage(named: "fooder_logo") {
@@ -47,26 +49,54 @@ class SplashViewController: UIViewController {
         }
         iv.contentMode = .scaleAspectFit
         iv.clipsToBounds = true
-        iv.layer.cornerRadius = 28
-        // Drop shadow for depth
+        // Fully round — no rectangular box
+        iv.layer.cornerRadius = 0
+        // Soft shadow for floating look
         iv.layer.shadowColor = UIColor.black.cgColor
-        iv.layer.shadowOffset = CGSize(width: 0, height: 6)
-        iv.layer.shadowOpacity = 0.3
-        iv.layer.shadowRadius = 16
+        iv.layer.shadowOffset = CGSize(width: 0, height: 8)
+        iv.layer.shadowOpacity = 0.35
+        iv.layer.shadowRadius = 24
         iv.layer.masksToBounds = false
         iv.translatesAutoresizingMaskIntoConstraints = false
         return iv
+    }()
+
+    /// Elegant "Fooder" text below logo
+    private let brandLabel: UILabel = {
+        let lbl = UILabel()
+        lbl.text = "Fooder"
+        lbl.font = .systemFont(ofSize: 34, weight: .bold)
+        lbl.textColor = .white
+        lbl.textAlignment = .center
+        lbl.alpha = 0
+        lbl.translatesAutoresizingMaskIntoConstraints = false
+        return lbl
+    }()
+
+    /// Tagline
+    private let taglineLabel: UILabel = {
+        let lbl = UILabel()
+        lbl.text = "Scan. Discover. Enjoy."
+        lbl.font = .systemFont(ofSize: 16, weight: .medium)
+        lbl.textColor = UIColor.white.withAlphaComponent(0.65)
+        lbl.textAlignment = .center
+        lbl.alpha = 0
+        lbl.translatesAutoresizingMaskIntoConstraints = false
+        return lbl
     }()
 
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        // Set background color as fallback (same as gradient start)
+        view.backgroundColor = UIColor(red: 0.12, green: 0.05, blue: 0.35, alpha: 1.0)
         setupUI()
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        // Always cover the full screen, including safe areas
         gradientLayer.frame = view.bounds
     }
 
@@ -84,20 +114,29 @@ class SplashViewController: UIViewController {
 
         view.addSubview(glowView)
         view.addSubview(logoImageView)
+        view.addSubview(brandLabel)
+        view.addSubview(taglineLabel)
 
-        // Device-adaptive logo size
-        let logoSize: CGFloat = min(UIScreen.main.bounds.width * 0.4, 160)
+        // Adaptive logo size — big and bold, proportional to screen
+        let screenW = UIScreen.main.bounds.width
+        let logoSize: CGFloat = min(screenW * 0.48, 200)
 
         NSLayoutConstraint.activate([
             glowView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            glowView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            glowView.widthAnchor.constraint(equalToConstant: 180),
-            glowView.heightAnchor.constraint(equalToConstant: 180),
+            glowView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -30),
+            glowView.widthAnchor.constraint(equalToConstant: 220),
+            glowView.heightAnchor.constraint(equalToConstant: 220),
 
             logoImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            logoImageView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            logoImageView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -30),
             logoImageView.widthAnchor.constraint(equalToConstant: logoSize),
             logoImageView.heightAnchor.constraint(equalToConstant: logoSize),
+
+            brandLabel.topAnchor.constraint(equalTo: logoImageView.bottomAnchor, constant: 20),
+            brandLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+
+            taglineLabel.topAnchor.constraint(equalTo: brandLabel.bottomAnchor, constant: 6),
+            taglineLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
         ])
 
         // Start invisible + small
@@ -116,13 +155,13 @@ class SplashViewController: UIViewController {
             usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5,
             options: .curveEaseOut,
             animations: {
-                self.logoImageView.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
+                self.logoImageView.transform = CGAffineTransform(scaleX: 1.12, y: 1.12)
                 self.logoImageView.alpha = 1
                 self.glowView.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
                 self.glowView.alpha = 1
             },
             completion: { _ in
-                // Phase 2: Settle to normal
+                // Phase 2: Settle + reveal text
                 UIView.animate(withDuration: 0.35, delay: 0,
                     usingSpringWithDamping: 0.8, initialSpringVelocity: 0.3,
                     options: .curveEaseInOut,
@@ -130,12 +169,18 @@ class SplashViewController: UIViewController {
                         self.logoImageView.transform = .identity
                         self.glowView.transform = .identity
                     }, completion: nil)
+
+                // Fade in brand text
+                UIView.animate(withDuration: 0.4, delay: 0.1, options: .curveEaseOut, animations: {
+                    self.brandLabel.alpha = 1
+                    self.taglineLabel.alpha = 1
+                })
             }
         )
 
         // Phase 3: Gentle pulse, then fade out and transition
         UIView.animate(
-            withDuration: 0.5, delay: 1.2, options: .curveEaseInOut,
+            withDuration: 0.5, delay: 1.3, options: .curveEaseInOut,
             animations: {
                 self.logoImageView.transform = CGAffineTransform(scaleX: 1.06, y: 1.06)
             },
@@ -146,7 +191,7 @@ class SplashViewController: UIViewController {
                         self.logoImageView.transform = .identity
                     },
                     completion: { _ in
-                        // Fade out
+                        // Fade out everything
                         UIView.animate(withDuration: 0.3, delay: 0.1, options: .curveEaseIn,
                             animations: { self.view.alpha = 0 },
                             completion: { _ in self.onAnimationComplete?() }
