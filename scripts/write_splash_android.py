@@ -1,4 +1,9 @@
-package com.menuocr
+#!/usr/bin/env python3
+"""Rewrite Android SplashActivity.kt: logo-only, deep purple gradient, no text."""
+
+TARGET = "/Users/mohanakrishnanarsupalli/menu-ocr/menu-ocr-android/app/src/main/java/com/menuocr/SplashActivity.kt"
+
+content = '''package com.menuocr
 
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
@@ -140,3 +145,12 @@ class SplashActivity : AppCompatActivity() {
         finish()
     }
 }
+'''
+
+with open(TARGET, 'w') as f:
+    f.write(content)
+
+print(f"Written: {content.count(chr(10))} lines")
+print(f"No 'Fooder': {'Fooder' not in content}")
+print(f"No tagline: {'tagline' not in content}")
+print(f"Has #2D1B69: {'#2D1B69' in content}")

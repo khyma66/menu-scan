@@ -729,13 +729,20 @@ class MenuOCRViewController: UIViewController {
             imageView.translatesAutoresizingMaskIntoConstraints = false
             wrapper.addSubview(imageView)
 
-            // Remove button overlay
-            let removeBtn = UIButton(type: .system)
-            removeBtn.setTitle("\u{2715}", for: .normal)
-            removeBtn.setTitleColor(.white, for: .normal)
-            removeBtn.titleLabel?.font = .boldSystemFont(ofSize: 13)
-            removeBtn.backgroundColor = UIColor.black.withAlphaComponent(0.6)
-            removeBtn.layer.cornerRadius = 12
+            // Remove button overlay — bold red ✕ for clear visibility
+            let removeBtn = UIButton(type: .custom)
+            let xConfig = UIImage.SymbolConfiguration(pointSize: 16, weight: .bold)
+            let xImage = UIImage(systemName: "xmark.circle.fill", withConfiguration: xConfig)
+            removeBtn.setImage(xImage, for: .normal)
+            removeBtn.tintColor = .white
+            removeBtn.backgroundColor = UIColor.systemRed
+            removeBtn.layer.cornerRadius = 14
+            removeBtn.layer.borderWidth = 2
+            removeBtn.layer.borderColor = UIColor.white.cgColor
+            removeBtn.layer.shadowColor = UIColor.black.cgColor
+            removeBtn.layer.shadowOffset = CGSize(width: 0, height: 1)
+            removeBtn.layer.shadowOpacity = 0.3
+            removeBtn.layer.shadowRadius = 2
             removeBtn.tag = index
             removeBtn.addTarget(self, action: #selector(removeImageTapped(_:)), for: .touchUpInside)
             removeBtn.translatesAutoresizingMaskIntoConstraints = false
@@ -747,10 +754,10 @@ class MenuOCRViewController: UIViewController {
                 imageView.trailingAnchor.constraint(equalTo: wrapper.trailingAnchor),
                 imageView.bottomAnchor.constraint(equalTo: wrapper.bottomAnchor),
 
-                removeBtn.topAnchor.constraint(equalTo: wrapper.topAnchor, constant: 2),
-                removeBtn.trailingAnchor.constraint(equalTo: wrapper.trailingAnchor, constant: -2),
-                removeBtn.widthAnchor.constraint(equalToConstant: 24),
-                removeBtn.heightAnchor.constraint(equalToConstant: 24)
+                removeBtn.topAnchor.constraint(equalTo: wrapper.topAnchor, constant: -4),
+                removeBtn.trailingAnchor.constraint(equalTo: wrapper.trailingAnchor, constant: 4),
+                removeBtn.widthAnchor.constraint(equalToConstant: 28),
+                removeBtn.heightAnchor.constraint(equalToConstant: 28)
             ])
 
             imagesStackView.addArrangedSubview(wrapper)
@@ -919,11 +926,21 @@ class MenuOCRViewController: UIViewController {
         topBar.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(topBar)
 
-        let backBtn = UIButton(type: .system)
-        backBtn.setTitle("\u{2190} Back", for: .normal)
-        backBtn.setTitleColor(scanPurple, for: .normal)
-        backBtn.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
-        backBtn.contentHorizontalAlignment = .left
+        let backBtn = UIButton(type: .custom)
+        let chevConfig = UIImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
+        let chevImg = UIImage(systemName: "chevron.left", withConfiguration: chevConfig)
+        backBtn.setImage(chevImg, for: .normal)
+        backBtn.setTitle(" Back", for: .normal)
+        backBtn.setTitleColor(.white, for: .normal)
+        backBtn.tintColor = .white
+        backBtn.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
+        backBtn.backgroundColor = scanPurple
+        backBtn.layer.cornerRadius = 18
+        backBtn.contentEdgeInsets = UIEdgeInsets(top: 6, left: 14, bottom: 6, right: 18)
+        backBtn.layer.shadowColor = scanPurple.cgColor
+        backBtn.layer.shadowOffset = CGSize(width: 0, height: 2)
+        backBtn.layer.shadowOpacity = 0.3
+        backBtn.layer.shadowRadius = 4
         backBtn.addTarget(self, action: #selector(closeDishDetail), for: .touchUpInside)
         backBtn.translatesAutoresizingMaskIntoConstraints = false
         topBar.addSubview(backBtn)
@@ -1043,7 +1060,7 @@ class MenuOCRViewController: UIViewController {
 
             backBtn.leadingAnchor.constraint(equalTo: topBar.leadingAnchor),
             backBtn.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),
-            backBtn.widthAnchor.constraint(equalToConstant: 70),
+            backBtn.heightAnchor.constraint(equalToConstant: 36),
 
             detailTitle.centerXAnchor.constraint(equalTo: topBar.centerXAnchor),
             detailTitle.centerYAnchor.constraint(equalTo: topBar.centerYAnchor),

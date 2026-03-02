@@ -1,4 +1,13 @@
-//
+#!/usr/bin/env python3
+"""Rewrite SplashViewController.swift:
+- Remove 'Fooder' text label + tagline
+- Just logo, larger, centered on deep purple gradient
+- Breathe animation on logo only, then transition
+"""
+
+TARGET = "/Users/mohanakrishnanarsupalli/menu-ocr/menu-ocr-ios/MenuOCR/MenuOCR/Views/SplashViewController.swift"
+
+content = r'''//
 //  SplashViewController.swift
 //  MenuOCR
 //
@@ -157,3 +166,14 @@ class SplashViewController: UIViewController {
         )
     }
 }
+'''
+
+with open(TARGET, 'w') as f:
+    f.write(content)
+
+lines = content.count('\n')
+print(f"SplashVC written: {lines} lines")
+print(f"No 'Fooder' text: {'Fooder' not in content}")
+print(f"No tagline: {'tagline' not in content.split('//')[0]}")
+print(f"Has gradient: {'#2D1B69' in content}")
+print(f"Has glowView: {'glowView' in content}")

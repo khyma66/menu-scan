@@ -1,21 +1,21 @@
 name = "menu-ocr-api-worker"
 main = "src/main.py"
 compatibility_date = "2025-01-01"
+compatibility_flags = ["python_workers"]
 
 [vars]
-SUPABASE_URL = ""
-SUPABASE_SERVICE_ROLE_KEY = ""
+SUPABASE_URL = "https://jlfqzcaospvspmzbvbxd.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsZnF6Y2Fvc3B2c3BtemJ2YnhkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTM3MDMzNiwiZXhwIjoyMDc2OTQ2MzM2fQ.5xdkvyJSsza79Iz3kiASMEE22WhNbBktQD6QBb2UgBY"
 SUPABASE_JWT_SECRET = ""
-SUPABASE_ANON_KEY = ""
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsZnF6Y2Fvc3B2c3BtemJ2YnhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNzAzMzYsImV4cCI6MjA3Njk0NjMzNn0.cTI-Zo2NXeIZQDiQ4mcLia3slwRMyvMLpLj_-4BtviA"
 DEV_BYPASS_AUTH = "true"
 DEV_BYPASS_USER_ID = "00000000-0000-0000-0000-000000000001"
 DEV_BYPASS_EMAIL = "dev-bypass@example.com"
 DEV_BYPASS_COUNTRY = "IN"
-R2_BUCKET = ""
-R2_ACCESS_KEY_ID = ""
-R2_SECRET_ACCESS_KEY = ""
-CF_ACCOUNT_ID = ""
-CF_API_TOKEN = ""
+R2_BUCKET = "ocr"
+R2_ACCESS_KEY_ID = "8f7123e075455d78af61abd58ba1e3ca"
+R2_SECRET_ACCESS_KEY = "093e6bc6ee58d9f7f2739cba6416d7f36cada7ca26ce90e0dcd4d5a4c634497f"
+CF_ACCOUNT_ID = "3ae98b91b615a3cf17f8acb402881aae"
 
 [[queues.producers]]
 binding = "OCR_QUEUE"
@@ -23,5 +23,5 @@ queue = "menu-ocr-jobs"
 
 [[r2_buckets]]
 binding = "MENU_IMAGES"
-bucket_name = ""
-preview_bucket_name = ""
+bucket_name = "ocr"
+preview_bucket_name = "ocr"

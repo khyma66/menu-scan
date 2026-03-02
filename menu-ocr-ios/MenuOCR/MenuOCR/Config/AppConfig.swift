@@ -23,7 +23,7 @@ enum AppConfig {
         static let localBaseURL = "http://localhost:8000"
         
         // Toggle between local and production
-        static let useLocal = true
+        static let useLocal = false
     }
     
     // MARK: - Overpass API Configuration (OpenStreetMap POI data)

@@ -266,16 +266,23 @@ class MenuOcrFragment : Fragment() {
                 }
 
                 val removeButton = TextView(requireContext()).apply {
-                    layoutParams = FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.WRAP_CONTENT,
-                        FrameLayout.LayoutParams.WRAP_CONTENT,
+                    val btnSize = (28 * resources.displayMetrics.density).toInt()
+                    layoutParams = FrameLayout.LayoutParams(btnSize, btnSize,
                         Gravity.END or Gravity.TOP
-                    )
+                    ).apply {
+                        topMargin = (-4 * resources.displayMetrics.density).toInt()
+                        rightMargin = (-4 * resources.displayMetrics.density).toInt()
+                    }
                     text = "✕"
-                    textSize = 12f
-                    setPadding(8, 4, 8, 4)
-                    setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
-                    background = ContextCompat.getDrawable(requireContext(), R.drawable.button_secondary)
+                    textSize = 16f
+                    gravity = Gravity.CENTER
+                    setTextColor(android.graphics.Color.WHITE)
+                    val shape = android.graphics.drawable.GradientDrawable()
+                    shape.shape = android.graphics.drawable.GradientDrawable.OVAL
+                    shape.setColor(android.graphics.Color.parseColor("#EF4444"))
+                    shape.setStroke((2 * resources.displayMetrics.density).toInt(), android.graphics.Color.WHITE)
+                    background = shape
+                    elevation = 4f
                     setOnClickListener {
                         if (index in selectedBitmaps.indices) {
                             selectedBitmaps.removeAt(index)

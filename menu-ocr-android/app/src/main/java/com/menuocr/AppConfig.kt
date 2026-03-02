@@ -16,18 +16,18 @@ object AppConfig {
         const val AUTH_REDIRECT_URL = "com.menuocr://auth-callback"
     }
     
-    // Menu OCR API Configuration (using local backend for development)
+    // Menu OCR API Configuration (production Render backend)
     object MenuOcrApi {
         const val BASE_URL = "https://menu-ocr-f4mr.onrender.com"
         const val LOCAL_BASE_URL = "http://10.0.2.2:8000"
-        const val USE_LOCAL = true
+        const val USE_LOCAL = false
     }
 
     // FastAPI OCR backend (Gemini extraction + Groq enhancement)
     object FastApi {
         const val BASE_URL = "https://menu-ocr-f4mr.onrender.com"
         const val LOCAL_BASE_URL = "http://10.0.2.2:8000"
-        const val USE_LOCAL = true
+        const val USE_LOCAL = false
     }
 
     // Legacy Render API Configuration (payments, preferences)

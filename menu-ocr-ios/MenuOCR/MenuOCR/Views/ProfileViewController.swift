@@ -170,8 +170,10 @@ class ProfileViewController: UIViewController {
     }
 
     private func navigateToLogin() {
-        navigationController?.popToRootViewController(animated: true)
-        // The root view controller will handle showing the login screen
+        dismiss(animated: true) {
+            // Post notification so the app can show login screen
+            NotificationCenter.default.post(name: Notification.Name("UserDidSignOut"), object: nil)
+        }
     }
 
     private func showError(_ message: String) {
@@ -185,6 +187,6 @@ class ProfileViewController: UIViewController {
     }
 
     @objc private func backTapped() {
-        navigationController?.popViewController(animated: true)
+        dismiss(animated: true)
     }
 }
