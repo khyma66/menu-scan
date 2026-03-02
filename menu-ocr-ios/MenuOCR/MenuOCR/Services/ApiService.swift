@@ -518,15 +518,15 @@ class ApiService {
         var errorDescription: String? {
             switch self {
             case .invalidResponse:
-                return "Invalid response from server"
-            case .networkError(let error):
-                return "Network error: \(error.localizedDescription)"
-            case .decodingError(let error):
-                return "Data decoding error: \(error.localizedDescription)"
+                return "Something went wrong. Please try again."
+            case .networkError:
+                return "Please check your internet connection and try again."
+            case .decodingError:
+                return "We had trouble reading the results. Please try again."
             case .authenticationRequired:
-                return "Authentication required"
-            case .serverError(let message):
-                return "Server error: \(message)"
+                return "Please sign in to continue."
+            case .serverError:
+                return "We're having trouble processing your request. Please try again in a moment."
             }
         }
     }

@@ -16,7 +16,7 @@ export default {
       return addCors(res);
     } catch (err) {
       console.error('Unhandled error:', err);
-      return addCors(json({ error: err.message || 'Internal Server Error' }, 500));
+      return addCors(json({ error: 'Something went wrong. Please try again.' }, 500));
     }
   }
 };
@@ -112,6 +112,19 @@ function addCors(res) {
   const h = corsHeaders();
   for (const [k, v] of Object.entries(h)) res.headers.set(k, v);
   return res;
+}
+
+// ─── Fetch with timeout (AbortController) ─────────────────────
+
+async function fetchWithTimeout(url, opts, timeoutMs = 25000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...opts, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 // ─── Auth Helpers ─────────────────────────────────────────────
@@ -229,6 +242,21 @@ async function handleOcrUpload(req, env) {
     }
   }
 
+  // If no items found at all, return a helpful message
+  if (merged.length === 0) {
+    return json({
+      success: true,
+      menu_items: [],
+      gemini_menu_items: [],
+      raw_text: '',
+      processing_time_ms: Date.now() - start,
+      enhanced: false,
+      cached: false,
+      metadata: { gemini_count: 0, pass2_count: 0, merged_count: 0, enhanced_count: 0 },
+      user_message: 'No menu items found. Please try a clearer photo with good lighting.'
+    });
+  }
+
   const elapsed = Date.now() - start;
   return json({
     success: true,
@@ -308,12 +336,13 @@ async function geminiExtract(base64, languageHint, env) {
     generationConfig: { temperature: 0.0, response_mime_type: 'application/json' },
   };
 
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent?key=${env.GEMINI_API_KEY}`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) },
+    25000
   );
 
-  if (!res.ok) { const t = await res.text(); throw new Error(`Gemini API ${res.status}: ${t}`); }
+  if (!res.ok) { const t = await res.text(); console.error(`Gemini API ${res.status}: ${t}`); throw new Error('Menu extraction service temporarily unavailable'); }
 
   const data = await res.json();
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -337,9 +366,10 @@ If nothing is missed, return {"menu_items": []}`;
     generationConfig: { temperature: 0.0, response_mime_type: 'application/json' },
   };
 
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent?key=${env.GEMINI_API_KEY}`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) },
+    25000
   );
 
   if (!res.ok) return [];
@@ -506,7 +536,7 @@ ${JSON.stringify(items)}`;
 }
 
 async function callGroq(prompt, env) {
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env.GROQ_API_KEY}` },
     body: JSON.stringify({
@@ -518,9 +548,9 @@ async function callGroq(prompt, env) {
       temperature: 0.0,
       response_format: { type: 'json_object' },
     }),
-  });
+  }, 25000);
 
-  if (!res.ok) { const t = await res.text(); throw new Error(`Groq API ${res.status}: ${t}`); }
+  if (!res.ok) { const t = await res.text(); console.error(`Groq API ${res.status}: ${t}`); throw new Error('Enhancement service temporarily unavailable'); }
   const data = await res.json();
   const text = data.choices?.[0]?.message?.content || '';
   try { return JSON.parse(text); } catch {
@@ -560,7 +590,8 @@ async function handleTranslate(req, env) {
     const translated = await groqTranslate(items, targetLang, env);
     return json({ menu_items: translated });
   } catch (e) {
-    return json({ menu_items: items, error: e.message });
+    console.error('Translation error:', e.message);
+    return json({ menu_items: items, error: 'Translation is temporarily unavailable. Showing original text.' });
   }
 }
 
@@ -601,7 +632,8 @@ async function handleTableExtract(req, env) {
     const data = await callGroq(prompt, env);
     return json({ success: true, raw_table: data, format: body.format || 'json', model_used: env.GROQ_MODEL, tokens_used: 0 });
   } catch (e) {
-    return json({ success: false, error: e.message }, 500);
+    console.error('Table extraction error:', e.message);
+    return json({ success: false, error: 'Table extraction is temporarily unavailable. Please try again.' }, 500);
   }
 }
 

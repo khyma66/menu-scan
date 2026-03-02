@@ -595,7 +595,7 @@ class MenuOCRViewController: UIViewController {
 
             } catch {
                 await MainActor.run {
-                    showAlert(title: "Processing Error", message: error.localizedDescription)
+                    showAlert(title: "Oops!", message: friendlyMessage(for: error))
                 }
             }
         }
@@ -683,7 +683,7 @@ class MenuOCRViewController: UIViewController {
             } catch {
                 await MainActor.run {
                     showLoading(false)
-                    showAlert(title: "Translation Error", message: error.localizedDescription)
+                    showAlert(title: "Oops!", message: friendlyMessage(for: error))
                 }
             }
         }
@@ -1309,6 +1309,29 @@ class MenuOCRViewController: UIViewController {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
+    }
+
+    /// Maps any error to a safe, user-friendly message (no technical details leak)
+    private func friendlyMessage(for error: Error) -> String {
+        // URLSession timeout
+        if (error as NSError).code == NSURLErrorTimedOut {
+            return "The request took too long. Please try again with a clearer photo."
+        }
+        // No internet
+        if (error as NSError).code == NSURLErrorNotConnectedToInternet ||
+           (error as NSError).code == NSURLErrorNetworkConnectionLost {
+            return "No internet connection. Please check your network and try again."
+        }
+        // Cancelled by user
+        if (error as NSError).code == NSURLErrorCancelled {
+            return "Request was cancelled."
+        }
+        // Our own ApiError already returns user-friendly strings
+        if error is ApiService.ApiError {
+            return error.localizedDescription
+        }
+        // Catch-all
+        return "Something went wrong. Please try again."
     }
 }
 
