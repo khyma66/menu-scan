@@ -14,10 +14,10 @@ enum AppConfig {
         static let anonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsZnF6Y2Fvc3B2c3BtemJ2YnhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNzAzMzYsImV4cCI6MjA3Njk0NjMzNn0.5xdkvyJSsza79Iz3kiASMEE22WhNbBktQD6QBb2UgBY"
     }
     
-    // MARK: - Menu OCR API Configuration
+    // MARK: - Menu OCR API Configuration (Cloudflare Workers)
     enum MenuOcrApi {
-        // Production backend URL
-        static let baseURL = "https://menu-ocr-f4mr.onrender.com"
+        // Production backend URL — Cloudflare Worker
+        static let baseURL = "https://menu-ocr-backend.varunchinna5966.workers.dev"
         
         // Local development URL (for simulator testing)
         static let localBaseURL = "http://localhost:8000"

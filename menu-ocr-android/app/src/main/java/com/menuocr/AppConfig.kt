@@ -16,26 +16,24 @@ object AppConfig {
         const val AUTH_REDIRECT_URL = "com.menuocr://auth-callback"
     }
     
-    // Menu OCR API Configuration (production Render backend)
+    // Menu OCR API Configuration (Cloudflare Workers)
     object MenuOcrApi {
-        const val BASE_URL = "https://menu-ocr-f4mr.onrender.com"
+        const val BASE_URL = "https://menu-ocr-backend.varunchinna5966.workers.dev"
         const val LOCAL_BASE_URL = "http://10.0.2.2:8000"
         const val USE_LOCAL = false
     }
 
-    // FastAPI OCR backend (Gemini extraction + Groq enhancement)
+    // FastAPI OCR backend (Cloudflare Workers — Gemini + Groq)
     object FastApi {
-        const val BASE_URL = "https://menu-ocr-f4mr.onrender.com"
+        const val BASE_URL = "https://menu-ocr-backend.varunchinna5966.workers.dev"
         const val LOCAL_BASE_URL = "http://10.0.2.2:8000"
         const val USE_LOCAL = false
     }
 
-    // Legacy Render API Configuration (payments, preferences)
-    object Render {
-        const val BASE_URL = "https://menu-ocr-f4mr.onrender.com"
+    // API endpoint paths
+    object Api {
         const val OCR_ENDPOINT = "/ocr/process"
         const val DISHES_ENDPOINT = "/dishes/extract"
-        const val PAYMENTS_ENDPOINT = "/payments"
         const val HEALTH_ENDPOINT = "/health"
         const val USER_PREFERENCES_ENDPOINT = "/user/preferences"
     }
