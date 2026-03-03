@@ -38,7 +38,7 @@ class SplashViewController: UIViewController {
         return v
     }()
 
-    /// Logo — circular, no box, large & attractive
+    /// Logo — no box, no red/rectangle background. Just the image centered.
     private let logoImageView: UIImageView = {
         let iv = UIImageView()
         if let img = UIImage(named: "fooder_logo") {
@@ -49,12 +49,13 @@ class SplashViewController: UIViewController {
         }
         iv.contentMode = .scaleAspectFit
         iv.clipsToBounds = true
-        // Fully round — no rectangular box
-        iv.layer.cornerRadius = 0
+        iv.backgroundColor = .clear                 // NO background colour
+        iv.layer.cornerRadius = 40                  // soft round, not rectangular
+        iv.layer.borderWidth = 0                    // no border
         // Soft shadow for floating look
         iv.layer.shadowColor = UIColor.black.cgColor
         iv.layer.shadowOffset = CGSize(width: 0, height: 8)
-        iv.layer.shadowOpacity = 0.35
+        iv.layer.shadowOpacity = 0.25
         iv.layer.shadowRadius = 24
         iv.layer.masksToBounds = false
         iv.translatesAutoresizingMaskIntoConstraints = false

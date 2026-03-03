@@ -33,8 +33,8 @@ class DoorDashTabBarController: UITabBarController {
         appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = .systemBackground
         
-        // Primary color (brand red-orange)
-        let primaryColor = UIColor(red: 0.98, green: 0.24, blue: 0.18, alpha: 1.0)
+        // Primary color (brand violet)
+        let primaryColor = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 1.0) // #7C3AED
         
         // Selected item color
         appearance.stackedLayoutAppearance.selected.iconColor = primaryColor
@@ -65,7 +65,7 @@ class DoorDashTabBarController: UITabBarController {
         // Navigation bar appearance - clean centered title
         let navAppearance = UINavigationBarAppearance()
         navAppearance.configureWithOpaqueBackground()
-        navAppearance.backgroundColor = UIColor(red: 0.98, green: 0.24, blue: 0.18, alpha: 1.0)
+        navAppearance.backgroundColor = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 1.0) // violet
         navAppearance.titleTextAttributes = [
             .foregroundColor: UIColor.white,
             .font: UIFont.systemFont(ofSize: 18, weight: .semibold)

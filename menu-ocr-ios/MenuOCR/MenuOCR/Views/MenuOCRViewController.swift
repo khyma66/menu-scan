@@ -33,7 +33,11 @@ class MenuOCRViewController: UIViewController {
     private var tableHeightConstraint: NSLayoutConstraint?
 
     // MARK: - Brand colours
-    private let brandRed = UIColor(red: 250/255, green: 61/255, blue: 46/255, alpha: 1) // #FA3D2E
+    private let brandViolet = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 1) // #7C3AED
+    private let brandVioletLight = UIColor(red: 0.91, green: 0.87, blue: 1.0, alpha: 1) // #E8DEFF
+    private let brandVioletBg = UIColor(red: 0.96, green: 0.94, blue: 1.0, alpha: 1) // #F5F0FF
+    // Legacy alias kept for button highlight
+    private let brandRed = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 1) // now violet
     private let scanPurple = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 1) // #7C3AED
     // UX playbook: off-black for text (not pure #000)
     private let textPrimary = UIColor(red: 0.12, green: 0.12, blue: 0.14, alpha: 1) // #1F1F24
@@ -84,6 +88,12 @@ class MenuOCRViewController: UIViewController {
     private let resetButton = UIButton()
     private let exportButton = UIButton()
 
+    // Scan limit badge
+    private let scanBadgeLabel = UILabel()
+
+    // Footer branding
+    private let footerLabel = UILabel()
+
     // MARK: - Lifecycle
 
     init() { super.init(nibName: nil, bundle: nil) }
@@ -96,10 +106,15 @@ class MenuOCRViewController: UIViewController {
         checkPermissions()
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        updateScanBadge()
+    }
+
     // MARK: - UI Setup
 
     private func setupUI() {
-        view.backgroundColor = UIColor(red: 0.965, green: 0.965, blue: 0.975, alpha: 1) // light gray bg
+        view.backgroundColor = UIColor(red: 0.96, green: 0.94, blue: 1.0, alpha: 1) // light violet bg
 
         // Status bar bg
         let statusBarBg = UIView()
@@ -126,6 +141,8 @@ class MenuOCRViewController: UIViewController {
         setupTranslationRow()
         setupResults()
         setupActionButtons()
+        setupScanBadge()
+        setupFooter()
     }
 
     private func setupHeader() {
@@ -158,7 +175,7 @@ class MenuOCRViewController: UIViewController {
         contentView.addSubview(uploadCard)
 
         captureButton.setTitle("\u{1F4F7} Capture Image", for: .normal)
-        captureButton.backgroundColor = brandRed
+        captureButton.backgroundColor = brandViolet
         captureButton.setTitleColor(.white, for: .normal)
         captureButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
         captureButton.layer.cornerRadius = 12
@@ -167,7 +184,7 @@ class MenuOCRViewController: UIViewController {
         uploadCard.addSubview(captureButton)
 
         galleryButton.setTitle("\u{1F5BC}\u{FE0F} Gallery", for: .normal)
-        galleryButton.backgroundColor = .systemGreen
+        galleryButton.backgroundColor = brandViolet.withAlphaComponent(0.75)
         galleryButton.setTitleColor(.white, for: .normal)
         galleryButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
         galleryButton.layer.cornerRadius = 12
@@ -327,7 +344,7 @@ class MenuOCRViewController: UIViewController {
         resultsHeaderLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(resultsHeaderLabel)
 
-        resultsCard.backgroundColor = UIColor(red: 0.97, green: 0.97, blue: 0.98, alpha: 1) // subtle warm bg
+        resultsCard.backgroundColor = UIColor(red: 0.96, green: 0.94, blue: 1.0, alpha: 1) // light violet bg
         resultsCard.layer.cornerRadius = 16
         resultsCard.isHidden = true
         resultsCard.translatesAutoresizingMaskIntoConstraints = false
@@ -365,6 +382,39 @@ class MenuOCRViewController: UIViewController {
         exportButton.addTarget(self, action: #selector(exportTapped), for: .touchUpInside)
         exportButton.translatesAutoresizingMaskIntoConstraints = false
         actionButtonsContainer.addSubview(exportButton)
+    }
+
+    private func setupScanBadge() {
+        scanBadgeLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        scanBadgeLabel.textAlignment = .center
+        scanBadgeLabel.layer.cornerRadius = 12
+        scanBadgeLabel.clipsToBounds = true
+        scanBadgeLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(scanBadgeLabel)
+        updateScanBadge()
+    }
+
+    private func updateScanBadge() {
+        let limiter = ScanLimitManager.shared
+        if limiter.isPremium {
+            scanBadgeLabel.text = "  \u{2728} \(limiter.planName.capitalized) Plan  "
+            scanBadgeLabel.textColor = brandViolet
+            scanBadgeLabel.backgroundColor = brandVioletLight
+        } else {
+            let remaining = limiter.remainingFreeScans
+            scanBadgeLabel.text = "  \(remaining) free scan\(remaining == 1 ? "" : "s") left  "
+            scanBadgeLabel.textColor = remaining > 0 ? brandViolet : .systemRed
+            scanBadgeLabel.backgroundColor = remaining > 0 ? brandVioletLight : UIColor.systemRed.withAlphaComponent(0.1)
+        }
+    }
+
+    private func setupFooter() {
+        footerLabel.text = "Fooder"
+        footerLabel.font = .systemFont(ofSize: 14, weight: .semibold)
+        footerLabel.textColor = brandViolet.withAlphaComponent(0.5)
+        footerLabel.textAlignment = .center
+        footerLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(footerLabel)
     }
 
     // MARK: - Constraints
@@ -453,7 +503,16 @@ class MenuOCRViewController: UIViewController {
             actionButtonsContainer.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             actionButtonsContainer.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             actionButtonsContainer.heightAnchor.constraint(equalToConstant: 48),
-            actionButtonsContainer.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -32),
+
+            // Scan badge — between upload card and process button area
+            scanBadgeLabel.topAnchor.constraint(equalTo: uploadCard.topAnchor, constant: -14),
+            scanBadgeLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            scanBadgeLabel.heightAnchor.constraint(equalToConstant: 26),
+
+            // Footer
+            footerLabel.topAnchor.constraint(equalTo: actionButtonsContainer.bottomAnchor, constant: 24),
+            footerLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            footerLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20),
 
             resetButton.leadingAnchor.constraint(equalTo: actionButtonsContainer.leadingAnchor),
             resetButton.trailingAnchor.constraint(equalTo: actionButtonsContainer.centerXAnchor, constant: -8),
@@ -535,6 +594,13 @@ class MenuOCRViewController: UIViewController {
             return
         }
 
+        // ── Free limit gate ──
+        let limiter = ScanLimitManager.shared
+        if limiter.isLimitReached {
+            showPaywall()
+            return
+        }
+
         processingCancelled = false
         processButton.setTitle("\u{2715} Cancel", for: .normal)
         processButton.backgroundColor = .systemOrange
@@ -545,8 +611,9 @@ class MenuOCRViewController: UIViewController {
                 Task { @MainActor in
                     self.showLoading(false)
                     self.processButton.setTitle("\u{1F50D} Start Analysis", for: .normal)
-                    self.processButton.backgroundColor = self.brandRed
+                    self.processButton.backgroundColor = self.brandViolet
                     self.processButton.isEnabled = true
+                    self.updateScanBadge()
                 }
             }
 
@@ -574,6 +641,9 @@ class MenuOCRViewController: UIViewController {
                         outputLanguage: "en"
                     )
 
+                    // Count this scan
+                    limiter.recordScan()
+
                     if processingCancelled { break }
 
                     await MainActor.run {
@@ -599,6 +669,15 @@ class MenuOCRViewController: UIViewController {
                 }
             }
         }
+    }
+
+    // MARK: - Paywall
+
+    private func showPaywall() {
+        let paywall = PaywallViewController()
+        paywall.delegate = self
+        paywall.modalPresentationStyle = .fullScreen
+        present(paywall, animated: true)
     }
 
     // MARK: - Translation
@@ -1561,5 +1640,19 @@ extension MenuOCRViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let item = accumulatedMenuItems[indexPath.row]
         showDishDetail(item)
+    }
+}
+
+// MARK: - PaywallDelegate
+
+extension MenuOCRViewController: PaywallDelegate {
+    func paywallDidPurchase(plan: String) {
+        updateScanBadge()
+        // Proceed with the scan that was blocked
+        processTapped()
+    }
+
+    func paywallDidDismiss() {
+        // User closed paywall without purchasing — do nothing
     }
 }

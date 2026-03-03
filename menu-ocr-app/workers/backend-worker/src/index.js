@@ -81,6 +81,10 @@ async function route(path, method, req, url, env) {
   if (path === '/user/change-password' && method === 'POST') return handleChangePassword(req, env);
   if (path.startsWith('/user/referral')) return handleReferral(path, method, req, env);
 
+  // ─── Stripe / Checkout ─────────────────────
+  if (path === '/stripe/create-checkout-session' && method === 'POST') return handleStripeCheckout(req, env);
+  if (path === '/stripe/webhook' && method === 'POST') return handleStripeWebhook(req, env);
+
   // ─── LLM Status ───────────────────────────
   if (path === '/llm/status' && method === 'GET') return json({ provider: 'gemini', configured: true, model: env.GEMINI_MODEL, api_key_configured: !!env.GEMINI_API_KEY });
   if (path === '/llm/providers' && method === 'GET') return json({ current_provider: 'gemini', providers: ['gemini', 'groq'] });
@@ -922,9 +926,9 @@ async function handlePaymentHistory(req, env) {
 async function handleSubscriptionPlans(req, env) {
   return json({
     plans: [
-      { name: 'free', display_name: 'Free', price: 0, currency: 'USD', features: ['5 scans/month', 'Basic OCR', 'English only'], limits: { scans_per_month: 5 } },
-      { name: 'pro', display_name: 'Pro', price: 9.99, currency: 'USD', features: ['Unlimited scans', 'AI Enhancement', 'All languages', 'Health recommendations'], limits: { scans_per_month: -1 } },
-      { name: 'enterprise', display_name: 'Enterprise', price: 29.99, currency: 'USD', features: ['Everything in Pro', 'Priority support', 'API access', 'Custom integrations'], limits: { scans_per_month: -1 } },
+      { name: 'free', display_name: 'Free', price: 0, currency: 'USD', features: ['3 scans per device', 'Basic OCR', 'English only'], limits: { scans_total: 3 } },
+      { name: 'pro', display_name: 'Pro', price: 9.99, currency: 'USD', features: ['Unlimited scans', 'AI Enhancement', 'All languages', 'Health recommendations'], limits: { scans_total: -1 } },
+      { name: 'max', display_name: 'Max', price: 19.99, currency: 'USD', features: ['Everything in Pro', 'Priority processing', 'API access', 'Custom integrations', 'Priority support'], limits: { scans_total: -1 } },
     ]
   });
 }
@@ -946,6 +950,71 @@ async function handleSubscriptionSelect(req, env) {
   }
   const result = await sb(env, '/user_subscriptions', { method: 'POST', body: { user_id: user.id, plan_name: body.plan_name, status: 'active' } });
   return json(result?.[0] || { user_id: user.id, plan_name: body.plan_name, status: 'active' });
+}
+
+// ─── Stripe Integration ──────────────────────────────────────
+
+const STRIPE_PLANS = {
+  pro:  { price_cents: 999,  name: 'Fooder Pro' },
+  max:  { price_cents: 1999, name: 'Fooder Max' },
+};
+
+async function handleStripeCheckout(req, env) {
+  const user = await requireUser(req, env);
+  const body = await req.json();
+  const plan = body.plan || 'pro';
+  const planInfo = STRIPE_PLANS[plan];
+  if (!planInfo) return json({ error: 'Invalid plan' }, 400);
+
+  // Create Stripe Checkout Session via Stripe API
+  const stripeRes = await fetchWithTimeout('https://api.stripe.com/v1/checkout/sessions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      'mode': 'subscription',
+      'customer_email': user.email,
+      'line_items[0][price_data][currency]': 'usd',
+      'line_items[0][price_data][unit_amount]': String(planInfo.price_cents),
+      'line_items[0][price_data][recurring][interval]': 'month',
+      'line_items[0][price_data][product_data][name]': planInfo.name,
+      'line_items[0][quantity]': '1',
+      'success_url': 'https://menuocr.app/success?session_id={CHECKOUT_SESSION_ID}',
+      'cancel_url': 'https://menuocr.app/cancel',
+      'metadata[user_id]': user.id,
+      'metadata[plan]': plan,
+    }).toString(),
+  }, 15000);
+
+  if (!stripeRes.ok) {
+    console.error('Stripe error:', await stripeRes.text());
+    // Still record the selection even if Stripe fails
+    await sb(env, '/user_subscriptions', {
+      method: 'POST', body: { user_id: user.id, plan_name: plan, status: 'active' },
+    });
+    return json({ success: true, plan, fallback: true });
+  }
+
+  const session = await stripeRes.json();
+
+  // Record subscription
+  const existing = await sb(env, `/user_subscriptions?user_id=eq.${user.id}&select=id`, { defaultVal: [] });
+  if (Array.isArray(existing) && existing.length > 0) {
+    await sb(env, `/user_subscriptions?user_id=eq.${user.id}`, { method: 'PATCH', body: { plan_name: plan, status: 'active', stripe_session_id: session.id } });
+  } else {
+    await sb(env, '/user_subscriptions', { method: 'POST', body: { user_id: user.id, plan_name: plan, status: 'active', stripe_session_id: session.id } });
+  }
+
+  return json({ success: true, checkout_url: session.url, session_id: session.id, plan });
+}
+
+async function handleStripeWebhook(req, env) {
+  // In production, verify Stripe signature. For now, just log.
+  const body = await req.text();
+  console.log('Stripe webhook received:', body.substring(0, 200));
+  return json({ received: true });
 }
 
 // ─── Full Profile / Addresses ────────────────────────────────

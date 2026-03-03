@@ -507,6 +507,40 @@ class ApiService {
             return false
         }
     }
+
+    // MARK: - Stripe Checkout
+
+    struct CheckoutResponse: Codable {
+        let success: Bool
+        let checkout_url: String?
+        let session_id: String?
+        let plan: String?
+        let fallback: Bool?
+    }
+
+    func createCheckoutSession(plan: String) async throws -> CheckoutResponse {
+        let url = URL(string: "\(baseURL)/stripe/create-checkout-session")!
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.timeoutInterval = 30
+
+        if let authToken = await getAuthToken() {
+            urlRequest.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+        }
+
+        let body: [String: String] = ["plan": plan]
+        urlRequest.httpBody = try JSONEncoder().encode(body)
+
+        let (data, response) = try await session.data(for: urlRequest)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw ApiError.invalidResponse
+        }
+
+        return try JSONDecoder().decode(CheckoutResponse.self, from: data)
+    }
     
     enum ApiError: Error, LocalizedError {
         case invalidResponse
