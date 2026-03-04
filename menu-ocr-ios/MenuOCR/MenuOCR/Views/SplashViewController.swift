@@ -2,8 +2,7 @@
 //  SplashViewController.swift
 //  MenuOCR
 //
-//  Splash screen — large attractive logo with rich gradient, no box
-//  Full-bleed gradient adapts to every device
+//  Splash screen — light violet bg, Fooder brand with tomato-O logo
 //
 
 import UIKit
@@ -13,61 +12,31 @@ class SplashViewController: UIViewController {
     // MARK: - Completion Handler
     var onAnimationComplete: (() -> Void)?
 
-    // MARK: - UI Components
+    // MARK: - Theme
+    private let violetPrimary = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 1.0)
+    private let violetBg      = UIColor(red: 0.96, green: 0.94, blue: 1.0, alpha: 1.0)
 
-    /// Rich deep-purple gradient (fills entire screen on every device)
-    private let gradientLayer: CAGradientLayer = {
-        let layer = CAGradientLayer()
-        layer.colors = [
-            UIColor(red: 0.12, green: 0.05, blue: 0.35, alpha: 1.0).cgColor,   // deep indigo top
-            UIColor(red: 0.30, green: 0.10, blue: 0.60, alpha: 1.0).cgColor,   // rich purple mid
-            UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 1.0).cgColor  // vibrant violet bottom
-        ]
-        layer.locations = [0.0, 0.45, 1.0]
-        layer.startPoint = CGPoint(x: 0.5, y: 0)
-        layer.endPoint = CGPoint(x: 0.5, y: 1)
-        return layer
-    }()
+    // MARK: - UI Components
 
     /// Soft radial glow behind logo
     private let glowView: UIView = {
         let v = UIView()
-        v.backgroundColor = UIColor.white.withAlphaComponent(0.06)
-        v.layer.cornerRadius = 110
+        v.backgroundColor = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 0.08)
+        v.layer.cornerRadius = 90
         v.translatesAutoresizingMaskIntoConstraints = false
         return v
     }()
 
-    /// Logo — no box, no red/rectangle background. Just the image centered.
-    private let logoImageView: UIImageView = {
-        let iv = UIImageView()
-        if let img = UIImage(named: "fooder_logo") {
-            iv.image = img
-        } else if let path = Bundle.main.path(forResource: "fooder_logo", ofType: "jpg"),
-                  let img = UIImage(contentsOfFile: path) {
-            iv.image = img
-        }
-        iv.contentMode = .scaleAspectFit
-        iv.clipsToBounds = true
-        iv.backgroundColor = .clear                 // NO background colour
-        iv.layer.cornerRadius = 40                  // soft round, not rectangular
-        iv.layer.borderWidth = 0                    // no border
-        // Soft shadow for floating look
-        iv.layer.shadowColor = UIColor.black.cgColor
-        iv.layer.shadowOffset = CGSize(width: 0, height: 8)
-        iv.layer.shadowOpacity = 0.25
-        iv.layer.shadowRadius = 24
-        iv.layer.masksToBounds = false
-        iv.translatesAutoresizingMaskIntoConstraints = false
-        return iv
+    /// Tomato "O" icon — a red circle with a green leaf
+    private let tomatoContainer: UIView = {
+        let v = UIView()
+        v.translatesAutoresizingMaskIntoConstraints = false
+        return v
     }()
 
-    /// Elegant "Fooder" text below logo
+    /// "Fooder" brand label (the 'oo' will look like it includes the tomato)
     private let brandLabel: UILabel = {
         let lbl = UILabel()
-        lbl.text = "Fooder"
-        lbl.font = .systemFont(ofSize: 34, weight: .bold)
-        lbl.textColor = .white
         lbl.textAlignment = .center
         lbl.alpha = 0
         lbl.translatesAutoresizingMaskIntoConstraints = false
@@ -77,9 +46,9 @@ class SplashViewController: UIViewController {
     /// Tagline
     private let taglineLabel: UILabel = {
         let lbl = UILabel()
-        lbl.text = "Scan. Discover. Enjoy."
+        lbl.text = "Scan menus. Eat smarter."
         lbl.font = .systemFont(ofSize: 16, weight: .medium)
-        lbl.textColor = UIColor.white.withAlphaComponent(0.65)
+        lbl.textColor = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 0.55)
         lbl.textAlignment = .center
         lbl.alpha = 0
         lbl.translatesAutoresizingMaskIntoConstraints = false
@@ -90,18 +59,11 @@ class SplashViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Set background color as fallback (same as gradient start)
-        view.backgroundColor = UIColor(red: 0.12, green: 0.05, blue: 0.35, alpha: 1.0)
+        view.backgroundColor = violetBg
         setupUI()
     }
 
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        // Always cover the full screen, including safe areas
-        gradientLayer.frame = view.bounds
-    }
-
-    override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
+    override var preferredStatusBarStyle: UIStatusBarStyle { .darkContent }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
@@ -111,29 +73,44 @@ class SplashViewController: UIViewController {
     // MARK: - Setup
 
     private func setupUI() {
-        view.layer.insertSublayer(gradientLayer, at: 0)
-
         view.addSubview(glowView)
-        view.addSubview(logoImageView)
+        view.addSubview(tomatoContainer)
         view.addSubview(brandLabel)
         view.addSubview(taglineLabel)
 
-        // Adaptive logo size — big and bold, proportional to screen
-        let screenW = UIScreen.main.bounds.width
-        let logoSize: CGFloat = min(screenW * 0.48, 200)
+        // Build tomato icon
+        buildTomatoIcon()
+
+        // Build brand label with styled text
+        let attr = NSMutableAttributedString()
+        let mainFont = UIFont.systemFont(ofSize: 42, weight: .heavy)
+        let violet = violetPrimary
+
+        attr.append(NSAttributedString(string: "F", attributes: [.font: mainFont, .foregroundColor: violet]))
+        // First 'o' – styled red (tomato)
+        attr.append(NSAttributedString(string: "o", attributes: [
+            .font: mainFont, .foregroundColor: UIColor.systemRed
+        ]))
+        attr.append(NSAttributedString(string: "o", attributes: [.font: mainFont, .foregroundColor: violet]))
+        attr.append(NSAttributedString(string: "d", attributes: [.font: mainFont, .foregroundColor: violet]))
+        attr.append(NSAttributedString(string: "e", attributes: [.font: mainFont, .foregroundColor: violet]))
+        attr.append(NSAttributedString(string: "r", attributes: [.font: mainFont, .foregroundColor: violet]))
+        brandLabel.attributedText = attr
+
+        let tomatoSize: CGFloat = 100
 
         NSLayoutConstraint.activate([
             glowView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            glowView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -30),
-            glowView.widthAnchor.constraint(equalToConstant: 220),
-            glowView.heightAnchor.constraint(equalToConstant: 220),
+            glowView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -60),
+            glowView.widthAnchor.constraint(equalToConstant: 180),
+            glowView.heightAnchor.constraint(equalToConstant: 180),
 
-            logoImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            logoImageView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -30),
-            logoImageView.widthAnchor.constraint(equalToConstant: logoSize),
-            logoImageView.heightAnchor.constraint(equalToConstant: logoSize),
+            tomatoContainer.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            tomatoContainer.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -60),
+            tomatoContainer.widthAnchor.constraint(equalToConstant: tomatoSize),
+            tomatoContainer.heightAnchor.constraint(equalToConstant: tomatoSize),
 
-            brandLabel.topAnchor.constraint(equalTo: logoImageView.bottomAnchor, constant: 20),
+            brandLabel.topAnchor.constraint(equalTo: tomatoContainer.bottomAnchor, constant: 18),
             brandLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
 
             taglineLabel.topAnchor.constraint(equalTo: brandLabel.bottomAnchor, constant: 6),
@@ -141,37 +118,82 @@ class SplashViewController: UIViewController {
         ])
 
         // Start invisible + small
-        logoImageView.transform = CGAffineTransform(scaleX: 0.3, y: 0.3)
-        logoImageView.alpha = 0
+        tomatoContainer.transform = CGAffineTransform(scaleX: 0.3, y: 0.3)
+        tomatoContainer.alpha = 0
         glowView.transform = CGAffineTransform(scaleX: 0.5, y: 0.5)
         glowView.alpha = 0
+    }
+
+    private func buildTomatoIcon() {
+        // Red tomato body
+        let body = UIView()
+        body.backgroundColor = UIColor.systemRed
+        body.layer.cornerRadius = 42
+        body.translatesAutoresizingMaskIntoConstraints = false
+        tomatoContainer.addSubview(body)
+
+        // Green leaf (small triangle-ish shape)
+        let leaf = UIView()
+        leaf.backgroundColor = UIColor(red: 0.13, green: 0.72, blue: 0.30, alpha: 1.0)
+        leaf.layer.cornerRadius = 8
+        leaf.transform = CGAffineTransform(rotationAngle: .pi / 4)
+        leaf.translatesAutoresizingMaskIntoConstraints = false
+        tomatoContainer.addSubview(leaf)
+
+        // White "O" letter in center
+        let oLabel = UILabel()
+        oLabel.text = "O"
+        oLabel.font = .systemFont(ofSize: 48, weight: .heavy)
+        oLabel.textColor = .white
+        oLabel.textAlignment = .center
+        oLabel.translatesAutoresizingMaskIntoConstraints = false
+        tomatoContainer.addSubview(oLabel)
+
+        NSLayoutConstraint.activate([
+            body.centerXAnchor.constraint(equalTo: tomatoContainer.centerXAnchor),
+            body.centerYAnchor.constraint(equalTo: tomatoContainer.centerYAnchor, constant: 4),
+            body.widthAnchor.constraint(equalToConstant: 84),
+            body.heightAnchor.constraint(equalToConstant: 84),
+
+            leaf.centerXAnchor.constraint(equalTo: tomatoContainer.centerXAnchor),
+            leaf.bottomAnchor.constraint(equalTo: body.topAnchor, constant: 10),
+            leaf.widthAnchor.constraint(equalToConstant: 20),
+            leaf.heightAnchor.constraint(equalToConstant: 20),
+
+            oLabel.centerXAnchor.constraint(equalTo: body.centerXAnchor),
+            oLabel.centerYAnchor.constraint(equalTo: body.centerYAnchor),
+        ])
+
+        // Subtle shadow on tomato
+        body.layer.shadowColor = UIColor.systemRed.cgColor
+        body.layer.shadowOffset = CGSize(width: 0, height: 6)
+        body.layer.shadowOpacity = 0.3
+        body.layer.shadowRadius = 12
+        body.layer.masksToBounds = false
     }
 
     // MARK: - Breathe-Out Animation
 
     private func runBreatheOutAnimation() {
-        // Phase 1: Logo + glow spring in (0-600ms)
         UIView.animate(
             withDuration: 0.6, delay: 0.15,
             usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5,
             options: .curveEaseOut,
             animations: {
-                self.logoImageView.transform = CGAffineTransform(scaleX: 1.12, y: 1.12)
-                self.logoImageView.alpha = 1
+                self.tomatoContainer.transform = CGAffineTransform(scaleX: 1.12, y: 1.12)
+                self.tomatoContainer.alpha = 1
                 self.glowView.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
                 self.glowView.alpha = 1
             },
             completion: { _ in
-                // Phase 2: Settle + reveal text
                 UIView.animate(withDuration: 0.35, delay: 0,
                     usingSpringWithDamping: 0.8, initialSpringVelocity: 0.3,
                     options: .curveEaseInOut,
                     animations: {
-                        self.logoImageView.transform = .identity
+                        self.tomatoContainer.transform = .identity
                         self.glowView.transform = .identity
                     }, completion: nil)
 
-                // Fade in brand text
                 UIView.animate(withDuration: 0.4, delay: 0.1, options: .curveEaseOut, animations: {
                     self.brandLabel.alpha = 1
                     self.taglineLabel.alpha = 1
@@ -179,20 +201,18 @@ class SplashViewController: UIViewController {
             }
         )
 
-        // Phase 3: Gentle pulse, then fade out and transition
         UIView.animate(
             withDuration: 0.5, delay: 1.3, options: .curveEaseInOut,
             animations: {
-                self.logoImageView.transform = CGAffineTransform(scaleX: 1.06, y: 1.06)
+                self.tomatoContainer.transform = CGAffineTransform(scaleX: 1.06, y: 1.06)
             },
             completion: { _ in
                 UIView.animate(
                     withDuration: 0.35, delay: 0, options: .curveEaseInOut,
                     animations: {
-                        self.logoImageView.transform = .identity
+                        self.tomatoContainer.transform = .identity
                     },
                     completion: { _ in
-                        // Fade out everything
                         UIView.animate(withDuration: 0.3, delay: 0.1, options: .curveEaseIn,
                             animations: { self.view.alpha = 0 },
                             completion: { _ in self.onAnimationComplete?() }

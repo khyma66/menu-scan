@@ -85,6 +85,9 @@ class HealthConditionsViewController: UIViewController {
     // Status
     private let statusLabel = UILabel()
     
+    // MARK: - UI Components (Max plan gate)
+    private let maxGateOverlay = UIView()
+
     // MARK: - Lifecycle
     
     override func viewDidLoad() {
@@ -92,6 +95,12 @@ class HealthConditionsViewController: UIViewController {
         setupUI()
        setupConstraints()
         loadCurrentProfile()
+        setupMaxPlanGate()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        updateMaxPlanGate()
     }
     
     // MARK: - UI Setup
@@ -271,6 +280,116 @@ class HealthConditionsViewController: UIViewController {
         loadingLabel.textColor = .secondaryLabel
         loadingLabel.translatesAutoresizingMaskIntoConstraints = false
         loadingContainer.addSubview(loadingLabel)
+    }
+
+    // MARK: - Max Plan Gate
+
+    private func setupMaxPlanGate() {
+        maxGateOverlay.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.92)
+        maxGateOverlay.isHidden = true
+        maxGateOverlay.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(maxGateOverlay)
+
+        let card = UIView()
+        card.backgroundColor = .white
+        card.layer.cornerRadius = 20
+        card.layer.shadowColor = UIColor.black.cgColor
+        card.layer.shadowOffset = CGSize(width: 0, height: 4)
+        card.layer.shadowOpacity = 0.12
+        card.layer.shadowRadius = 16
+        card.translatesAutoresizingMaskIntoConstraints = false
+        maxGateOverlay.addSubview(card)
+
+        let lockIcon = UIImageView(image: UIImage(systemName: "lock.shield.fill"))
+        lockIcon.tintColor = UIColor(red: 0.85, green: 0.65, blue: 0.13, alpha: 1)
+        lockIcon.contentMode = .scaleAspectFit
+        lockIcon.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(lockIcon)
+
+        let titleLbl = UILabel()
+        titleLbl.text = "Max Plan Feature"
+        titleLbl.font = .systemFont(ofSize: 22, weight: .bold)
+        titleLbl.textColor = UIColor(red: 0.12, green: 0.12, blue: 0.14, alpha: 1)
+        titleLbl.textAlignment = .center
+        titleLbl.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(titleLbl)
+
+        let descLbl = UILabel()
+        descLbl.text = "Health recommendations and diet analysis\nare available exclusively for Max plan users.\n\nUpgrade to Max ($12.99/mo) to unlock\npersonalized health insights."
+        descLbl.font = .systemFont(ofSize: 15, weight: .regular)
+        descLbl.textColor = UIColor(red: 0.45, green: 0.42, blue: 0.55, alpha: 1)
+        descLbl.textAlignment = .center
+        descLbl.numberOfLines = 0
+        descLbl.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(descLbl)
+
+        let upgradeBtn = UIButton(type: .system)
+        upgradeBtn.setTitle("Upgrade to Max", for: .normal)
+        upgradeBtn.setTitleColor(.white, for: .normal)
+        upgradeBtn.titleLabel?.font = .systemFont(ofSize: 16, weight: .bold)
+        upgradeBtn.backgroundColor = UIColor(red: 0.85, green: 0.65, blue: 0.13, alpha: 1)
+        upgradeBtn.layer.cornerRadius = 14
+        upgradeBtn.addTarget(self, action: #selector(upgradeToMaxTapped), for: .touchUpInside)
+        upgradeBtn.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(upgradeBtn)
+
+        let dismissBtn = UIButton(type: .system)
+        dismissBtn.setTitle("Browse Only", for: .normal)
+        dismissBtn.setTitleColor(UIColor(red: 0.45, green: 0.42, blue: 0.55, alpha: 1), for: .normal)
+        dismissBtn.titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
+        dismissBtn.addTarget(self, action: #selector(dismissMaxGate), for: .touchUpInside)
+        dismissBtn.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(dismissBtn)
+
+        NSLayoutConstraint.activate([
+            maxGateOverlay.topAnchor.constraint(equalTo: view.topAnchor),
+            maxGateOverlay.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            maxGateOverlay.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            maxGateOverlay.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            card.centerXAnchor.constraint(equalTo: maxGateOverlay.centerXAnchor),
+            card.centerYAnchor.constraint(equalTo: maxGateOverlay.centerYAnchor, constant: -30),
+            card.widthAnchor.constraint(equalTo: maxGateOverlay.widthAnchor, constant: -48),
+
+            lockIcon.topAnchor.constraint(equalTo: card.topAnchor, constant: 28),
+            lockIcon.centerXAnchor.constraint(equalTo: card.centerXAnchor),
+            lockIcon.widthAnchor.constraint(equalToConstant: 48),
+            lockIcon.heightAnchor.constraint(equalToConstant: 48),
+
+            titleLbl.topAnchor.constraint(equalTo: lockIcon.bottomAnchor, constant: 14),
+            titleLbl.centerXAnchor.constraint(equalTo: card.centerXAnchor),
+
+            descLbl.topAnchor.constraint(equalTo: titleLbl.bottomAnchor, constant: 10),
+            descLbl.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 24),
+            descLbl.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -24),
+
+            upgradeBtn.topAnchor.constraint(equalTo: descLbl.bottomAnchor, constant: 20),
+            upgradeBtn.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 24),
+            upgradeBtn.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -24),
+            upgradeBtn.heightAnchor.constraint(equalToConstant: 50),
+
+            dismissBtn.topAnchor.constraint(equalTo: upgradeBtn.bottomAnchor, constant: 10),
+            dismissBtn.centerXAnchor.constraint(equalTo: card.centerXAnchor),
+            dismissBtn.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -20),
+        ])
+    }
+
+    private func updateMaxPlanGate() {
+        let limiter = ScanLimitManager.shared
+        // Show gate if user is not on Max plan
+        maxGateOverlay.isHidden = (limiter.planName == "max")
+    }
+
+    @objc private func upgradeToMaxTapped() {
+        let paywall = PaywallViewController()
+        paywall.highlightPlan = "max"
+        paywall.modalPresentationStyle = .fullScreen
+        paywall.delegate = self
+        present(paywall, animated: true)
+    }
+
+    @objc private func dismissMaxGate() {
+        maxGateOverlay.isHidden = true
     }
     
     private func setupConstraints() {
@@ -576,4 +695,13 @@ extension ApiService {
         let wrapper = try JSONDecoder().decode(HealthProfileWrapper.self, from: data)
         return wrapper.healthProfile!
     }
+}
+
+// MARK: - PaywallDelegate
+
+extension HealthConditionsViewController: PaywallDelegate {
+    func paywallDidPurchase(plan: String) {
+        updateMaxPlanGate()
+    }
+    func paywallDidDismiss() {}
 }

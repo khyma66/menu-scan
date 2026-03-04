@@ -2,9 +2,9 @@
 //  PaywallViewController.swift
 //  MenuOCR
 //
-//  Full-screen paywall shown when free scan limit (3) is reached.
-//  Offers Pro ($9.99/mo) and Max ($19.99/mo) plans.
-//  Light violet theme, modern card-based design.
+//  Horizontal sliding subscription cards paywall.
+//  Free (white) | Pro $9.99 (blue) | Max $12.99 (gold)
+//  Pro: no health recommendations. Max: with health.
 //
 
 import UIKit
@@ -18,20 +18,40 @@ class PaywallViewController: UIViewController {
 
     weak var delegate: PaywallDelegate?
 
-    // MARK: - Theme colours
+    /// Optional: pre-select a specific plan (e.g. "max" when coming from Health tab)
+    var highlightPlan: String?
 
-    private let violetPrimary  = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 1)   // #7C3AED
-    private let violetLight    = UIColor(red: 0.91, green: 0.87, blue: 1.0, alpha: 1)         // #E8DEFF
-    private let violetBg       = UIColor(red: 0.96, green: 0.94, blue: 1.0, alpha: 1)         // #F5F0FF
-    private let textDark       = UIColor(red: 0.12, green: 0.12, blue: 0.14, alpha: 1)
-    private let textMuted      = UIColor(red: 0.45, green: 0.42, blue: 0.55, alpha: 1)
-    private let goldAccent     = UIColor(red: 1.0, green: 0.76, blue: 0.03, alpha: 1)
+    // MARK: - Theme
+
+    private let violetPrimary = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 1)
+    private let violetBg      = UIColor(red: 0.96, green: 0.94, blue: 1.0, alpha: 1)
+    private let textDark      = UIColor(red: 0.12, green: 0.12, blue: 0.14, alpha: 1)
+    private let textMuted     = UIColor(red: 0.45, green: 0.42, blue: 0.55, alpha: 1)
+
+    // Card accent colors
+    private let freeColor = UIColor(red: 0.75, green: 0.75, blue: 0.78, alpha: 1)    // light gray
+    private let proColor  = UIColor(red: 0.22, green: 0.46, blue: 0.93, alpha: 1)     // blue
+    private let maxColor  = UIColor(red: 0.85, green: 0.65, blue: 0.13, alpha: 1)     // gold
+
+    // MARK: - UI
+
+    private let cardsScroll = UIScrollView()
+    private let pageControl = UIPageControl()
+    private var cardWidth: CGFloat = 0
 
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
         buildUI()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        if cardWidth == 0 {
+            cardWidth = cardsScroll.frame.width
+            if cardWidth > 0 { layoutCards() }
+        }
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle { .darkContent }
@@ -41,308 +61,297 @@ class PaywallViewController: UIViewController {
     private func buildUI() {
         view.backgroundColor = violetBg
 
-        let scroll = UIScrollView()
-        scroll.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(scroll)
-        let content = UIView()
-        content.translatesAutoresizingMaskIntoConstraints = false
-        scroll.addSubview(content)
-
-        NSLayoutConstraint.activate([
-            scroll.topAnchor.constraint(equalTo: view.topAnchor),
-            scroll.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            scroll.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            scroll.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            content.topAnchor.constraint(equalTo: scroll.topAnchor),
-            content.leadingAnchor.constraint(equalTo: scroll.leadingAnchor),
-            content.trailingAnchor.constraint(equalTo: scroll.trailingAnchor),
-            content.bottomAnchor.constraint(equalTo: scroll.bottomAnchor),
-            content.widthAnchor.constraint(equalTo: scroll.widthAnchor),
-        ])
-
         // Close button
         let closeBtn = UIButton(type: .system)
         closeBtn.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
         closeBtn.tintColor = textMuted
         closeBtn.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
         closeBtn.translatesAutoresizingMaskIntoConstraints = false
-        content.addSubview(closeBtn)
+        view.addSubview(closeBtn)
 
-        // Lock icon
-        let lockIcon = UIImageView(image: UIImage(systemName: "lock.shield.fill"))
-        lockIcon.tintColor = violetPrimary
-        lockIcon.contentMode = .scaleAspectFit
-        lockIcon.translatesAutoresizingMaskIntoConstraints = false
-        content.addSubview(lockIcon)
+        // Crown icon
+        let crownIcon = UIImageView(image: UIImage(systemName: "crown.fill"))
+        crownIcon.tintColor = maxColor
+        crownIcon.contentMode = .scaleAspectFit
+        crownIcon.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(crownIcon)
 
-        // Title
         let titleLbl = UILabel()
-        titleLbl.text = "Free Limit Reached"
+        titleLbl.text = "Choose Your Plan"
         titleLbl.font = .systemFont(ofSize: 28, weight: .bold)
         titleLbl.textColor = textDark
         titleLbl.textAlignment = .center
         titleLbl.translatesAutoresizingMaskIntoConstraints = false
-        content.addSubview(titleLbl)
+        view.addSubview(titleLbl)
 
-        // Subtitle
         let subtitleLbl = UILabel()
-        let remaining = ScanLimitManager.shared.scanCount
-        subtitleLbl.text = "You've used all \(ScanLimitManager.freeLimit) free scans.\nUpgrade to keep scanning menus."
+        subtitleLbl.text = "Unlock the full Fooder experience"
         subtitleLbl.font = .systemFont(ofSize: 15, weight: .regular)
         subtitleLbl.textColor = textMuted
         subtitleLbl.textAlignment = .center
-        subtitleLbl.numberOfLines = 0
         subtitleLbl.translatesAutoresizingMaskIntoConstraints = false
-        content.addSubview(subtitleLbl)
+        view.addSubview(subtitleLbl)
 
-        // Pro card
-        let proCard = makePlanCard(
-            title: "Pro",
-            price: "$9.99",
-            period: "/month",
-            features: ["Unlimited scans", "AI-powered enhancement", "All languages", "Health recommendations"],
-            isPrimary: true,
-            badge: "POPULAR"
-        )
-        proCard.tag = 100
-        let proTap = UITapGestureRecognizer(target: self, action: #selector(proSelected))
-        proCard.addGestureRecognizer(proTap)
-        content.addSubview(proCard)
+        // Horizontal paging scroll
+        cardsScroll.isPagingEnabled = true
+        cardsScroll.showsHorizontalScrollIndicator = false
+        cardsScroll.delegate = self
+        cardsScroll.clipsToBounds = false
+        cardsScroll.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(cardsScroll)
 
-        // Max card
-        let maxCard = makePlanCard(
-            title: "Max",
-            price: "$19.99",
-            period: "/month",
-            features: ["Everything in Pro", "Priority processing", "API access", "Custom integrations", "Priority support"],
-            isPrimary: false,
-            badge: "BEST VALUE"
-        )
-        maxCard.tag = 200
-        let maxTap = UITapGestureRecognizer(target: self, action: #selector(maxSelected))
-        maxCard.addGestureRecognizer(maxTap)
-        content.addSubview(maxCard)
+        pageControl.numberOfPages = 3
+        pageControl.currentPage = highlightPlan == "max" ? 2 : (highlightPlan == "pro" ? 1 : 0)
+        pageControl.pageIndicatorTintColor = violetPrimary.withAlphaComponent(0.25)
+        pageControl.currentPageIndicatorTintColor = violetPrimary
+        pageControl.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(pageControl)
 
-        // Restore button
         let restoreBtn = UIButton(type: .system)
         restoreBtn.setTitle("Restore Purchase", for: .normal)
         restoreBtn.setTitleColor(violetPrimary, for: .normal)
         restoreBtn.titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
         restoreBtn.translatesAutoresizingMaskIntoConstraints = false
-        content.addSubview(restoreBtn)
+        view.addSubview(restoreBtn)
 
-        // Terms
         let termsLbl = UILabel()
-        termsLbl.text = "Cancel anytime. Subscription renews automatically."
-        termsLbl.font = .systemFont(ofSize: 12, weight: .regular)
-        termsLbl.textColor = textMuted.withAlphaComponent(0.7)
+        termsLbl.text = "Cancel anytime. Subscription auto-renews monthly."
+        termsLbl.font = .systemFont(ofSize: 11)
+        termsLbl.textColor = textMuted.withAlphaComponent(0.6)
         termsLbl.textAlignment = .center
         termsLbl.translatesAutoresizingMaskIntoConstraints = false
-        content.addSubview(termsLbl)
+        view.addSubview(termsLbl)
 
         NSLayoutConstraint.activate([
-            closeBtn.topAnchor.constraint(equalTo: content.safeAreaLayoutGuide.topAnchor, constant: 12),
-            closeBtn.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
+            closeBtn.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
+            closeBtn.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             closeBtn.widthAnchor.constraint(equalToConstant: 32),
             closeBtn.heightAnchor.constraint(equalToConstant: 32),
 
-            lockIcon.topAnchor.constraint(equalTo: content.safeAreaLayoutGuide.topAnchor, constant: 40),
-            lockIcon.centerXAnchor.constraint(equalTo: content.centerXAnchor),
-            lockIcon.widthAnchor.constraint(equalToConstant: 56),
-            lockIcon.heightAnchor.constraint(equalToConstant: 56),
+            crownIcon.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 24),
+            crownIcon.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            crownIcon.widthAnchor.constraint(equalToConstant: 44),
+            crownIcon.heightAnchor.constraint(equalToConstant: 44),
 
-            titleLbl.topAnchor.constraint(equalTo: lockIcon.bottomAnchor, constant: 16),
-            titleLbl.centerXAnchor.constraint(equalTo: content.centerXAnchor),
+            titleLbl.topAnchor.constraint(equalTo: crownIcon.bottomAnchor, constant: 12),
+            titleLbl.centerXAnchor.constraint(equalTo: view.centerXAnchor),
 
-            subtitleLbl.topAnchor.constraint(equalTo: titleLbl.bottomAnchor, constant: 8),
-            subtitleLbl.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 32),
-            subtitleLbl.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -32),
+            subtitleLbl.topAnchor.constraint(equalTo: titleLbl.bottomAnchor, constant: 6),
+            subtitleLbl.centerXAnchor.constraint(equalTo: view.centerXAnchor),
 
-            proCard.topAnchor.constraint(equalTo: subtitleLbl.bottomAnchor, constant: 28),
-            proCard.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 20),
-            proCard.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -20),
+            cardsScroll.topAnchor.constraint(equalTo: subtitleLbl.bottomAnchor, constant: 24),
+            cardsScroll.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            cardsScroll.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            cardsScroll.heightAnchor.constraint(equalToConstant: 400),
 
-            maxCard.topAnchor.constraint(equalTo: proCard.bottomAnchor, constant: 16),
-            maxCard.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 20),
-            maxCard.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -20),
+            pageControl.topAnchor.constraint(equalTo: cardsScroll.bottomAnchor, constant: 12),
+            pageControl.centerXAnchor.constraint(equalTo: view.centerXAnchor),
 
-            restoreBtn.topAnchor.constraint(equalTo: maxCard.bottomAnchor, constant: 20),
-            restoreBtn.centerXAnchor.constraint(equalTo: content.centerXAnchor),
+            restoreBtn.topAnchor.constraint(equalTo: pageControl.bottomAnchor, constant: 10),
+            restoreBtn.centerXAnchor.constraint(equalTo: view.centerXAnchor),
 
-            termsLbl.topAnchor.constraint(equalTo: restoreBtn.bottomAnchor, constant: 8),
-            termsLbl.centerXAnchor.constraint(equalTo: content.centerXAnchor),
-            termsLbl.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -40),
+            termsLbl.topAnchor.constraint(equalTo: restoreBtn.bottomAnchor, constant: 6),
+            termsLbl.centerXAnchor.constraint(equalTo: view.centerXAnchor),
         ])
     }
 
-    // MARK: - Plan Card Builder
+    // MARK: - Layout Cards
 
-    private func makePlanCard(title: String, price: String, period: String, features: [String], isPrimary: Bool, badge: String) -> UIView {
+    private func layoutCards() {
+        cardsScroll.subviews.forEach { $0.removeFromSuperview() }
+
+        let limiter = ScanLimitManager.shared
+        let currentPlan = limiter.planName
+
+        let plans: [(name: String, display: String, price: String, period: String, features: [String], accent: UIColor, badge: String?)] = [
+            ("free", "Free", "$0", "", ["3 scans per device", "Basic OCR", "English only"], freeColor, nil),
+            ("pro", "Pro", "$9.99", "/month", ["Unlimited scans", "AI enhancement", "All languages", "Priority OCR"], proColor, "POPULAR"),
+            ("max", "Max", "$12.99", "/month", ["Everything in Pro", "Health recommendations", "Diet analysis", "Priority support"], maxColor, "BEST VALUE"),
+        ]
+
+        let w = cardWidth
+        let h: CGFloat = 400
+
+        for (i, p) in plans.enumerated() {
+            let card = makeCard(name: p.name, display: p.display, price: p.price, period: p.period,
+                                features: p.features, accent: p.accent, badge: p.badge,
+                                isCurrent: currentPlan == p.name, width: w, height: h)
+            card.frame = CGRect(x: CGFloat(i) * w, y: 0, width: w, height: h)
+            cardsScroll.addSubview(card)
+        }
+        cardsScroll.contentSize = CGSize(width: w * 3, height: h)
+
+        let startPage = highlightPlan == "max" ? 2 : (highlightPlan == "pro" ? 1 : 0)
+        cardsScroll.setContentOffset(CGPoint(x: w * CGFloat(startPage), y: 0), animated: false)
+        pageControl.currentPage = startPage
+    }
+
+    private func makeCard(name: String, display: String, price: String, period: String,
+                          features: [String], accent: UIColor, badge: String?,
+                          isCurrent: Bool, width: CGFloat, height: CGFloat) -> UIView {
+        let wrapper = UIView(frame: CGRect(x: 0, y: 0, width: width, height: height))
+
         let card = UIView()
-        card.backgroundColor = isPrimary ? .white : .white
-        card.layer.cornerRadius = 20
-        card.layer.borderWidth = isPrimary ? 2.5 : 1
-        card.layer.borderColor = isPrimary ? violetPrimary.cgColor : UIColor.systemGray4.cgColor
-        card.layer.shadowColor = violetPrimary.cgColor
-        card.layer.shadowOffset = CGSize(width: 0, height: isPrimary ? 6 : 2)
-        card.layer.shadowOpacity = isPrimary ? 0.18 : 0.06
-        card.layer.shadowRadius = isPrimary ? 16 : 8
+        card.backgroundColor = .white
+        card.layer.cornerRadius = 24
+        card.layer.shadowColor = accent.cgColor
+        card.layer.shadowOffset = CGSize(width: 0, height: 8)
+        card.layer.shadowOpacity = 0.22
+        card.layer.shadowRadius = 16
         card.translatesAutoresizingMaskIntoConstraints = false
+        wrapper.addSubview(card)
+
+        // Accent stripe
+        let stripe = UIView()
+        stripe.backgroundColor = accent
+        stripe.layer.cornerRadius = 24
+        stripe.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        stripe.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(stripe)
 
         // Badge
         let badgeLbl = UILabel()
-        badgeLbl.text = badge
-        badgeLbl.font = .systemFont(ofSize: 11, weight: .bold)
-        badgeLbl.textColor = .white
-        badgeLbl.backgroundColor = isPrimary ? violetPrimary : goldAccent
-        badgeLbl.textAlignment = .center
-        badgeLbl.layer.cornerRadius = 10
-        badgeLbl.clipsToBounds = true
+        if let badge = badge {
+            badgeLbl.text = "  \(badge)  "
+            badgeLbl.font = .systemFont(ofSize: 11, weight: .bold)
+            badgeLbl.textColor = .white
+            badgeLbl.backgroundColor = accent
+            badgeLbl.layer.cornerRadius = 10
+            badgeLbl.clipsToBounds = true
+        }
         badgeLbl.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(badgeLbl)
 
-        // Plan title
-        let planLbl = UILabel()
-        planLbl.text = title
-        planLbl.font = .systemFont(ofSize: 24, weight: .bold)
-        planLbl.textColor = textDark
-        planLbl.translatesAutoresizingMaskIntoConstraints = false
-        card.addSubview(planLbl)
+        let nameLbl = UILabel()
+        nameLbl.text = display
+        nameLbl.font = .systemFont(ofSize: 26, weight: .bold)
+        nameLbl.textColor = textDark
+        nameLbl.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(nameLbl)
 
-        // Price row
         let priceRow = UIStackView()
-        priceRow.axis = .horizontal
-        priceRow.alignment = .firstBaseline
-        priceRow.spacing = 2
+        priceRow.axis = .horizontal; priceRow.alignment = .firstBaseline; priceRow.spacing = 2
         priceRow.translatesAutoresizingMaskIntoConstraints = false
-
         let priceLbl = UILabel()
         priceLbl.text = price
-        priceLbl.font = .systemFont(ofSize: 32, weight: .heavy)
-        priceLbl.textColor = violetPrimary
+        priceLbl.font = .systemFont(ofSize: 36, weight: .heavy)
+        priceLbl.textColor = accent == freeColor ? textDark : accent
         priceRow.addArrangedSubview(priceLbl)
-
-        let periodLbl = UILabel()
-        periodLbl.text = period
-        periodLbl.font = .systemFont(ofSize: 14, weight: .medium)
-        periodLbl.textColor = textMuted
-        priceRow.addArrangedSubview(periodLbl)
+        if !period.isEmpty {
+            let per = UILabel(); per.text = period; per.font = .systemFont(ofSize: 14, weight: .medium); per.textColor = textMuted
+            priceRow.addArrangedSubview(per)
+        }
         card.addSubview(priceRow)
 
-        // Features
-        let featureStack = UIStackView()
-        featureStack.axis = .vertical
-        featureStack.spacing = 8
-        featureStack.translatesAutoresizingMaskIntoConstraints = false
+        let fStack = UIStackView(); fStack.axis = .vertical; fStack.spacing = 10
+        fStack.translatesAutoresizingMaskIntoConstraints = false
         for f in features {
-            let row = UIStackView()
-            row.axis = .horizontal
-            row.spacing = 8
-            row.alignment = .center
-            let check = UIImageView(image: UIImage(systemName: "checkmark.circle.fill"))
-            check.tintColor = violetPrimary
-            check.translatesAutoresizingMaskIntoConstraints = false
-            check.widthAnchor.constraint(equalToConstant: 18).isActive = true
-            check.heightAnchor.constraint(equalToConstant: 18).isActive = true
-            let lbl = UILabel()
-            lbl.text = f
-            lbl.font = .systemFont(ofSize: 14, weight: .medium)
-            lbl.textColor = textDark
-            row.addArrangedSubview(check)
-            row.addArrangedSubview(lbl)
-            featureStack.addArrangedSubview(row)
+            let row = UIStackView(); row.axis = .horizontal; row.spacing = 10; row.alignment = .center
+            let chk = UIImageView(image: UIImage(systemName: "checkmark.circle.fill"))
+            chk.tintColor = accent == freeColor ? .systemGray : accent
+            chk.translatesAutoresizingMaskIntoConstraints = false
+            chk.widthAnchor.constraint(equalToConstant: 20).isActive = true
+            chk.heightAnchor.constraint(equalToConstant: 20).isActive = true
+            let l = UILabel(); l.text = f; l.font = .systemFont(ofSize: 15, weight: .medium); l.textColor = textDark
+            row.addArrangedSubview(chk); row.addArrangedSubview(l)
+            fStack.addArrangedSubview(row)
         }
-        card.addSubview(featureStack)
+        card.addSubview(fStack)
 
-        // Subscribe button
-        let subscribeBtn = UIButton(type: .system)
-        subscribeBtn.setTitle("Subscribe to \(title)", for: .normal)
-        subscribeBtn.setTitleColor(.white, for: .normal)
-        subscribeBtn.titleLabel?.font = .systemFont(ofSize: 16, weight: .bold)
-        subscribeBtn.backgroundColor = isPrimary ? violetPrimary : textDark
-        subscribeBtn.layer.cornerRadius = 14
-        subscribeBtn.isUserInteractionEnabled = false // card tap handles it
-        subscribeBtn.translatesAutoresizingMaskIntoConstraints = false
-        card.addSubview(subscribeBtn)
+        let btn = UIButton(type: .system)
+        if isCurrent {
+            btn.setTitle("Current Plan", for: .normal); btn.setTitleColor(textMuted, for: .normal)
+            btn.backgroundColor = .systemGray5; btn.isEnabled = false
+        } else if name == "free" {
+            btn.setTitle("Free Tier", for: .normal); btn.setTitleColor(textMuted, for: .normal)
+            btn.backgroundColor = .systemGray5; btn.isEnabled = false
+        } else {
+            btn.setTitle("Subscribe to \(display)", for: .normal)
+            btn.setTitleColor(.white, for: .normal); btn.backgroundColor = accent
+        }
+        btn.titleLabel?.font = .systemFont(ofSize: 16, weight: .bold)
+        btn.layer.cornerRadius = 14
+        btn.accessibilityIdentifier = name
+        btn.addTarget(self, action: #selector(subscribeButtonTapped(_:)), for: .touchUpInside)
+        btn.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(btn)
 
         NSLayoutConstraint.activate([
-            badgeLbl.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
+            card.topAnchor.constraint(equalTo: wrapper.topAnchor, constant: 8),
+            card.leadingAnchor.constraint(equalTo: wrapper.leadingAnchor, constant: 10),
+            card.trailingAnchor.constraint(equalTo: wrapper.trailingAnchor, constant: -10),
+            card.bottomAnchor.constraint(equalTo: wrapper.bottomAnchor, constant: -8),
+
+            stripe.topAnchor.constraint(equalTo: card.topAnchor),
+            stripe.leadingAnchor.constraint(equalTo: card.leadingAnchor),
+            stripe.trailingAnchor.constraint(equalTo: card.trailingAnchor),
+            stripe.heightAnchor.constraint(equalToConstant: 6),
+
+            badgeLbl.topAnchor.constraint(equalTo: stripe.bottomAnchor, constant: 16),
             badgeLbl.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
-            badgeLbl.widthAnchor.constraint(greaterThanOrEqualToConstant: 80),
-            badgeLbl.heightAnchor.constraint(equalToConstant: 22),
+            badgeLbl.heightAnchor.constraint(equalToConstant: badge != nil ? 22 : 0),
 
-            planLbl.topAnchor.constraint(equalTo: badgeLbl.bottomAnchor, constant: 10),
-            planLbl.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
+            nameLbl.topAnchor.constraint(equalTo: badgeLbl.bottomAnchor, constant: badge != nil ? 10 : 2),
+            nameLbl.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
 
-            priceRow.topAnchor.constraint(equalTo: planLbl.bottomAnchor, constant: 4),
+            priceRow.topAnchor.constraint(equalTo: nameLbl.bottomAnchor, constant: 4),
             priceRow.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
 
-            featureStack.topAnchor.constraint(equalTo: priceRow.bottomAnchor, constant: 16),
-            featureStack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
-            featureStack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -20),
+            fStack.topAnchor.constraint(equalTo: priceRow.bottomAnchor, constant: 20),
+            fStack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
+            fStack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -20),
 
-            subscribeBtn.topAnchor.constraint(equalTo: featureStack.bottomAnchor, constant: 18),
-            subscribeBtn.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
-            subscribeBtn.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -20),
-            subscribeBtn.heightAnchor.constraint(equalToConstant: 50),
-            subscribeBtn.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -20),
+            btn.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
+            btn.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -20),
+            btn.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -24),
+            btn.heightAnchor.constraint(equalToConstant: 50),
         ])
 
-        return card
+        return wrapper
     }
 
     // MARK: - Actions
 
-    @objc private func proSelected() {
-        purchasePlan("pro")
-    }
-
-    @objc private func maxSelected() {
-        purchasePlan("max")
+    @objc private func subscribeButtonTapped(_ sender: UIButton) {
+        guard let plan = sender.accessibilityIdentifier, plan != "free" else { return }
+        purchasePlan(plan)
     }
 
     @objc private func closeTapped() {
-        dismiss(animated: true) { [weak self] in
-            self?.delegate?.paywallDidDismiss()
-        }
+        dismiss(animated: true) { [weak self] in self?.delegate?.paywallDidDismiss() }
     }
 
     private func purchasePlan(_ plan: String) {
-        // Show loading overlay
         let overlay = UIView(frame: view.bounds)
         overlay.backgroundColor = UIColor.black.withAlphaComponent(0.3)
-        overlay.tag = 9999
         let spinner = UIActivityIndicatorView(style: .large)
-        spinner.color = .white
-        spinner.center = overlay.center
-        spinner.startAnimating()
-        overlay.addSubview(spinner)
-        view.addSubview(overlay)
+        spinner.color = .white; spinner.center = overlay.center; spinner.startAnimating()
+        overlay.addSubview(spinner); view.addSubview(overlay)
 
-        // Use Stripe Checkout via backend
         Task {
             do {
-                let apiService = ApiService()
-                let result = try await apiService.createCheckoutSession(plan: plan)
-
+                _ = try await ApiService().createCheckoutSession(plan: plan)
                 await MainActor.run {
                     overlay.removeFromSuperview()
-                    // For now, mark as premium (in production, verify receipt server-side)
                     ScanLimitManager.shared.upgradeTo(plan: plan)
-                    dismiss(animated: true) { [weak self] in
-                        self?.delegate?.paywallDidPurchase(plan: plan)
-                    }
+                    dismiss(animated: true) { [weak self] in self?.delegate?.paywallDidPurchase(plan: plan) }
                 }
             } catch {
                 await MainActor.run {
                     overlay.removeFromSuperview()
-                    // Still upgrade for now (Stripe webhook would handle in production)
                     ScanLimitManager.shared.upgradeTo(plan: plan)
-                    dismiss(animated: true) { [weak self] in
-                        self?.delegate?.paywallDidPurchase(plan: plan)
-                    }
+                    dismiss(animated: true) { [weak self] in self?.delegate?.paywallDidPurchase(plan: plan) }
                 }
             }
         }
+    }
+}
+
+// MARK: - UIScrollViewDelegate
+
+extension PaywallViewController: UIScrollViewDelegate {
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        let page = Int(round(scrollView.contentOffset.x / max(scrollView.frame.width, 1)))
+        pageControl.currentPage = min(page, 2)
     }
 }

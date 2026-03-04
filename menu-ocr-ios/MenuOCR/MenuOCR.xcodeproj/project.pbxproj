@@ -25,7 +25,6 @@
 		11111111111111111111112D /* PaymentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22222222222222222222223E /* PaymentViewModel.swift */; };
 		11111111111111111111112F /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222240 /* MainViewController.swift */; };
 		111111111111111111111131 /* MenuOCRViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222242 /* MenuOCRViewController.swift */; };
-		111111111111111111111133 /* RestaurantDiscoveryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222244 /* RestaurantDiscoveryViewController.swift */; };
 		111111111111111111111135 /* HealthConditionsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222246 /* HealthConditionsViewController.swift */; };
 		111111111111111111111137 /* DoorDashTabBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222248 /* DoorDashTabBarController.swift */; };
 		111111111111111111111139 /* LoginViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22222222222222222222224A /* LoginViewController.swift */; };
@@ -58,7 +57,6 @@
 		22222222222222222222223E /* PaymentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentViewModel.swift; sourceTree = "<group>"; };
 		222222222222222222222240 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
 		222222222222222222222242 /* MenuOCRViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuOCRViewController.swift; sourceTree = "<group>"; };
-		222222222222222222222244 /* RestaurantDiscoveryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestaurantDiscoveryViewController.swift; sourceTree = "<group>"; };
 		222222222222222222222246 /* HealthConditionsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthConditionsViewController.swift; sourceTree = "<group>"; };
 		222222222222222222222248 /* DoorDashTabBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoorDashTabBarController.swift; sourceTree = "<group>"; };
 		22222222222222222222224A /* LoginViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewController.swift; sourceTree = "<group>"; };
@@ -156,7 +154,6 @@
 			children = (
 				222222222222222222222240 /* MainViewController.swift */,
 				222222222222222222222242 /* MenuOCRViewController.swift */,
-				222222222222222222222244 /* RestaurantDiscoveryViewController.swift */,
 				222222222222222222222246 /* HealthConditionsViewController.swift */,
 				222222222222222222222248 /* DoorDashTabBarController.swift */,
 				22222222222222222222224A /* LoginViewController.swift */,
@@ -287,7 +284,6 @@
 				11111111111111111111112D /* PaymentViewModel.swift in Sources */,
 				11111111111111111111112F /* MainViewController.swift in Sources */,
 				111111111111111111111131 /* MenuOCRViewController.swift in Sources */,
-				111111111111111111111133 /* RestaurantDiscoveryViewController.swift in Sources */,
 				111111111111111111111135 /* HealthConditionsViewController.swift in Sources */,
 				111111111111111111111137 /* DoorDashTabBarController.swift in Sources */,
 				111111111111111111111139 /* LoginViewController.swift in Sources */,

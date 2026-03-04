@@ -81,6 +81,12 @@ async function route(path, method, req, url, env) {
   if (path === '/user/change-password' && method === 'POST') return handleChangePassword(req, env);
   if (path.startsWith('/user/referral')) return handleReferral(path, method, req, env);
 
+  // ─── Notifications & Recent Scans ──────────
+  if (path === '/user/notifications' && method === 'GET') return handleNotificationsGet(req, env);
+  if (path === '/user/notifications' && method === 'POST') return handleNotificationsCreate(req, env);
+  if (path === '/user/recent-scans' && method === 'GET') return handleRecentScansGet(req, env);
+  if (path === '/user/recent-scans' && method === 'POST') return handleRecentScansCreate(req, env);
+
   // ─── Stripe / Checkout ─────────────────────
   if (path === '/stripe/create-checkout-session' && method === 'POST') return handleStripeCheckout(req, env);
   if (path === '/stripe/webhook' && method === 'POST') return handleStripeWebhook(req, env);
@@ -927,8 +933,8 @@ async function handleSubscriptionPlans(req, env) {
   return json({
     plans: [
       { name: 'free', display_name: 'Free', price: 0, currency: 'USD', features: ['3 scans per device', 'Basic OCR', 'English only'], limits: { scans_total: 3 } },
-      { name: 'pro', display_name: 'Pro', price: 9.99, currency: 'USD', features: ['Unlimited scans', 'AI Enhancement', 'All languages', 'Health recommendations'], limits: { scans_total: -1 } },
-      { name: 'max', display_name: 'Max', price: 19.99, currency: 'USD', features: ['Everything in Pro', 'Priority processing', 'API access', 'Custom integrations', 'Priority support'], limits: { scans_total: -1 } },
+      { name: 'pro', display_name: 'Pro', price: 9.99, currency: 'USD', features: ['Unlimited scans', 'AI Enhancement', 'All languages', 'Priority OCR'], limits: { scans_total: -1 } },
+      { name: 'max', display_name: 'Max', price: 12.99, currency: 'USD', features: ['Everything in Pro', 'Health recommendations', 'Diet analysis', 'Priority support'], limits: { scans_total: -1 } },
     ]
   });
 }
@@ -956,7 +962,7 @@ async function handleSubscriptionSelect(req, env) {
 
 const STRIPE_PLANS = {
   pro:  { price_cents: 999,  name: 'Fooder Pro' },
-  max:  { price_cents: 1999, name: 'Fooder Max' },
+  max:  { price_cents: 1299, name: 'Fooder Max' },
 };
 
 async function handleStripeCheckout(req, env) {
@@ -1093,6 +1099,61 @@ async function handleReferral(path, method, req, env) {
     return json({ message: `Referral code ${body.referral_code} applied` });
   }
   return json({ error: 'Not found' }, 404);
+}
+
+
+// ─── Notifications & Recent Scans ────────────────────────────
+
+async function handleNotificationsGet(req, env) {
+  const user = await requireUser(req, env);
+  const notifications = await sb(env, `/user_notifications?user_id=eq.${user.id}&select=*&order=created_at.desc&limit=50`, { defaultVal: [] });
+  return json({ notifications: notifications || [] });
+}
+
+async function handleNotificationsCreate(req, env) {
+  const user = await requireUser(req, env);
+  const body = await req.json();
+  const record = {
+    user_id: user.id,
+    type: body.type || 'info',
+    title: body.title || 'Notification',
+    message: body.message || '',
+    read: false,
+  };
+  const result = await sb(env, '/user_notifications', { method: 'POST', body: record });
+  return json(result?.[0] || record);
+}
+
+async function handleRecentScansGet(req, env) {
+  const user = await requireUser(req, env);
+  const scans = await sb(env, `/scan_history?user_id=eq.${user.id}&select=*&order=created_at.desc&limit=50`, { defaultVal: [] });
+  return json({ scans: scans || [] });
+}
+
+async function handleRecentScansCreate(req, env) {
+  const user = await requireUser(req, env);
+  const body = await req.json();
+  const record = {
+    user_id: user.id,
+    image_key: body.image_key || '',
+    dish_count: body.dish_count || 0,
+    status: body.status || 'completed',
+  };
+  const result = await sb(env, '/scan_history', { method: 'POST', body: record });
+
+  // Also create a notification for this scan
+  await sb(env, '/user_notifications', {
+    method: 'POST',
+    body: {
+      user_id: user.id,
+      type: 'scan',
+      title: 'Scan Complete',
+      message: `Menu scanned with ${record.dish_count} dish${record.dish_count !== 1 ? 'es' : ''} detected.`,
+      read: false,
+    },
+  });
+
+  return json(result?.[0] || record);
 }
 
 
