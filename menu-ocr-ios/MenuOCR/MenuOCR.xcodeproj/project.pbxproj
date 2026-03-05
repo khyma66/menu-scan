@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		AA0000000000000000000001 /* fooder_logo.jpg in Resources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000002 /* fooder_logo.jpg */; };
+		BB0000000000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BB0000000000000000000002 /* Assets.xcassets */; };
 		111111111111111111111111 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222222 /* AppDelegate.swift */; };
 		111111111111111111111113 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222224 /* SceneDelegate.swift */; };
 		111111111111111111111115 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222226 /* ViewController.swift */; };
@@ -17,8 +18,6 @@
 		11111111111111111111111D /* PaymentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22222222222222222222222E /* PaymentService.swift */; };
 		11111111111111111111111F /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222230 /* SupabaseService.swift */; };
 		111111111111111111111121 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222232 /* AppConfig.swift */; };
-		111111111111111111111123 /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222234 /* LocationService.swift */; };
-		111111111111111111111125 /* OverpassApiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222236 /* OverpassApiService.swift */; };
 		111111111111111111111127 /* RetryHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222222222222222222222238 /* RetryHelper.swift */; };
 		111111111111111111111129 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22222222222222222222223A /* AuthViewModel.swift */; };
 		11111111111111111111112B /* MenuViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22222222222222222222223C /* MenuViewModel.swift */; };
@@ -49,9 +48,8 @@
 		22222222222222222222222E /* PaymentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentService.swift; sourceTree = "<group>"; };
 		222222222222222222222230 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
 		222222222222222222222232 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
-		222222222222222222222234 /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationService.swift; sourceTree = "<group>"; };
-		222222222222222222222236 /* OverpassApiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverpassApiService.swift; sourceTree = "<group>"; };
 		222222222222222222222238 /* RetryHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetryHelper.swift; sourceTree = "<group>"; };
+		BB0000000000000000000002 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		22222222222222222222223A /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
 		22222222222222222222223C /* MenuViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuViewModel.swift; sourceTree = "<group>"; };
 		22222222222222222222223E /* PaymentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentViewModel.swift; sourceTree = "<group>"; };
@@ -97,6 +95,7 @@
 				666666666666666666666665 /* ViewModels */,
 				666666666666666666666666 /* Views */,
 				666666666666666666666667 /* Resources */,
+				BB0000000000000000000002 /* Assets.xcassets */,
 			);
 			path = MenuOCR;
 			sourceTree = "<group>";
@@ -124,8 +123,6 @@
 				22222222222222222222222C /* OcrService.swift */,
 				22222222222222222222222E /* PaymentService.swift */,
 				222222222222222222222230 /* SupabaseService.swift */,
-				222222222222222222222234 /* LocationService.swift */,
-				222222222222222222222236 /* OverpassApiService.swift */,
 				222222222222222222222254 /* ScanLimitManager.swift */,
 			);
 			path = Services;
@@ -257,6 +254,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA0000000000000000000001 /* fooder_logo.jpg in Resources */,
+				BB0000000000000000000001 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -276,8 +274,6 @@
 				11111111111111111111111D /* PaymentService.swift in Sources */,
 				11111111111111111111111F /* SupabaseService.swift in Sources */,
 				111111111111111111111121 /* AppConfig.swift in Sources */,
-				111111111111111111111123 /* LocationService.swift in Sources */,
-				111111111111111111111125 /* OverpassApiService.swift in Sources */,
 				111111111111111111111127 /* RetryHelper.swift in Sources */,
 				111111111111111111111129 /* AuthViewModel.swift in Sources */,
 				11111111111111111111112B /* MenuViewModel.swift in Sources */,
@@ -351,6 +347,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -406,6 +403,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
@@ -418,16 +416,17 @@
 		FFFFFFFFFFFFFFFFFFFFF001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Fooder;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is required to capture menu images for OCR processing.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Photo library access is required to select menu images for OCR processing.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location access is required to find nearby restaurants.";
-				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Location access is required to find nearby restaurants.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location access helps find nearby restaurants.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
@@ -447,16 +446,17 @@
 		FFFFFFFFFFFFFFFFFFFFF002 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Fooder;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is required to capture menu images for OCR processing.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Photo library access is required to select menu images for OCR processing.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location access is required to find nearby restaurants.";
-				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Location access is required to find nearby restaurants.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location access helps find nearby restaurants.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;

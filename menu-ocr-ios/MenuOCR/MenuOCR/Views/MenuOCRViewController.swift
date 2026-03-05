@@ -975,16 +975,16 @@ class MenuOCRViewController: UIViewController {
             ingredients = inferIngredients(name: name, desc: desc)
         }
 
-        let taste = isEmptyLike(item.taste) ? inferTaste(name: name, desc: desc) : item.taste!
+        let taste = isEmptyLike(item.taste) ? inferTaste(name: name, desc: desc) : (item.taste ?? "")
         let similar = inferSimilarDishes(name: name, desc: desc)
-        let s1 = isEmptyLike(item.similarDish1) ? similar.0 : item.similarDish1!
-        let s2 = isEmptyLike(item.similarDish2) ? similar.1 : item.similarDish2!
-        let rec = isEmptyLike(item.recommendation) ? "Recommended" : item.recommendation!
-        let recReason = isEmptyLike(item.recommendation_reason) ? "Balanced choice based on dish profile." : item.recommendation_reason!
+        let s1 = isEmptyLike(item.similarDish1) ? similar.0 : (item.similarDish1 ?? "")
+        let s2 = isEmptyLike(item.similarDish2) ? similar.1 : (item.similarDish2 ?? "")
+        let rec = isEmptyLike(item.recommendation) ? "Recommended" : (item.recommendation ?? "Recommended")
+        let recReason = isEmptyLike(item.recommendation_reason) ? "Balanced choice based on dish profile." : (item.recommendation_reason ?? "")
         let allergens: [String]
         if let a = item.allergens, !a.isEmpty { allergens = a } else { allergens = ["Not specified"] }
-        let spice = isEmptyLike(item.spiciness_level) ? inferSpiciness(name: name, desc: desc) : item.spiciness_level!
-        let prep = isEmptyLike(item.preparation_method) ? inferPreparation(name: name, desc: desc) : item.preparation_method!
+        let spice = isEmptyLike(item.spiciness_level) ? inferSpiciness(name: name, desc: desc) : (item.spiciness_level ?? "Medium")
+        let prep = isEmptyLike(item.preparation_method) ? inferPreparation(name: name, desc: desc) : (item.preparation_method ?? "")
 
         return MenuItem(
             name: name,

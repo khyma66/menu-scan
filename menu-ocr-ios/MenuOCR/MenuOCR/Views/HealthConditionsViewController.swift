@@ -693,7 +693,10 @@ extension ApiService {
         }
         
         let wrapper = try JSONDecoder().decode(HealthProfileWrapper.self, from: data)
-        return wrapper.healthProfile!
+        guard let profile = wrapper.healthProfile else {
+            throw ApiError.invalidResponse
+        }
+        return profile
     }
 }
 

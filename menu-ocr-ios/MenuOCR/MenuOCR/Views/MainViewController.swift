@@ -522,7 +522,9 @@ extension MainViewController: UITableViewDataSource, UITableViewDelegate {
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "DishCell", for: indexPath) as! DishTableViewCell
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: "DishCell", for: indexPath) as? DishTableViewCell else {
+            return UITableViewCell()
+        }
         if let dish = currentMenu?.dishes[indexPath.row] {
             cell.configure(with: dish)
         }

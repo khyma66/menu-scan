@@ -375,7 +375,9 @@ class ProfileViewController: UIViewController {
                     emailLabel.text = profile.email ?? emailLabel.text
                 }
             } catch {
+                #if DEBUG
                 print("Profile load error: \(error.localizedDescription)")
+                #endif
             }
         }
     }
