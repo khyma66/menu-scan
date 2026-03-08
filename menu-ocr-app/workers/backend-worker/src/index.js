@@ -87,6 +87,13 @@ async function route(path, method, req, url, env) {
   if (path === '/user/recent-scans' && method === 'GET') return handleRecentScansGet(req, env);
   if (path === '/user/recent-scans' && method === 'POST') return handleRecentScansCreate(req, env);
 
+  // ─── Auth Proxy (replaces direct anon-key calls from clients) ──
+  if (path === '/proxy/auth/signup' && method === 'POST') return handleProxyAuthSignup(req, env);
+  if (path === '/proxy/auth/signin' && method === 'POST') return handleProxyAuthSignin(req, env);
+  if (path === '/proxy/auth/apple' && method === 'POST') return handleProxyAuthApple(req, env);
+  if (path === '/proxy/auth/signout' && method === 'POST') return handleProxyAuthSignout(req, env);
+  if (path === '/proxy/auth/recover' && method === 'POST') return handleProxyAuthRecover(req, env);
+
   // ─── Stripe / Checkout ─────────────────────
   if (path === '/stripe/create-checkout-session' && method === 'POST') return handleStripeCheckout(req, env);
   if (path === '/stripe/webhook' && method === 'POST') return handleStripeWebhook(req, env);
@@ -145,7 +152,7 @@ async function getUser(req, env) {
   const token = auth.replace('Bearer ', '');
   try {
     const r = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
-      headers: { Authorization: `Bearer ${token}`, apikey: env.SUPABASE_ANON_KEY }
+      headers: { Authorization: `Bearer ${token}`, apikey: env.SUPABASE_SERVICE_KEY }
     });
     if (!r.ok) return null;
     const u = await r.json();
@@ -669,7 +676,7 @@ async function handleAuthProfileUpdate(req, env) {
   const token = req.headers.get('Authorization')?.replace('Bearer ', '');
   await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
     method: 'PUT',
-    headers: { Authorization: `Bearer ${token}`, apikey: env.SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${token}`, apikey: env.SUPABASE_SERVICE_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({ data: { full_name: body.full_name, phone: body.phone } }),
   });
   return json({ message: 'Profile updated' });
@@ -1082,7 +1089,7 @@ async function handleChangePassword(req, env) {
   const body = await req.json();
   const res = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
     method: 'PUT',
-    headers: { Authorization: `Bearer ${token}`, apikey: env.SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${token}`, apikey: env.SUPABASE_SERVICE_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({ password: body.new_password }),
   });
   if (!res.ok) return json({ error: 'Password change failed' }, 400);
@@ -1154,6 +1161,70 @@ async function handleRecentScansCreate(req, env) {
   });
 
   return json(result?.[0] || record);
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// AUTH PROXY — so clients never need the anon/service key directly
+// Uses SUPABASE_SERVICE_KEY server-side for all GoTrue calls
+// ═══════════════════════════════════════════════════════════════
+
+async function handleProxyAuthSignup(req, env) {
+  const body = await req.json();
+  const res = await fetch(`${env.SUPABASE_URL}/auth/v1/signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: env.SUPABASE_SERVICE_KEY },
+    body: JSON.stringify({ email: body.email, password: body.password }),
+  });
+  const data = await res.json();
+  return json(data, res.status);
+}
+
+async function handleProxyAuthSignin(req, env) {
+  const body = await req.json();
+  const res = await fetch(`${env.SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: env.SUPABASE_SERVICE_KEY },
+    body: JSON.stringify({ email: body.email, password: body.password }),
+  });
+  const data = await res.json();
+  return json(data, res.status);
+}
+
+async function handleProxyAuthApple(req, env) {
+  const body = await req.json();
+  const res = await fetch(`${env.SUPABASE_URL}/auth/v1/token?grant_type=apple`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: env.SUPABASE_SERVICE_KEY },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  return json(data, res.status);
+}
+
+async function handleProxyAuthSignout(req, env) {
+  const token = req.headers.get('Authorization')?.replace('Bearer ', '');
+  if (!token) return json({ error: 'No token' }, 401);
+  const res = await fetch(`${env.SUPABASE_URL}/auth/v1/logout`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      apikey: env.SUPABASE_SERVICE_KEY,
+    },
+  });
+  return json({ message: 'Signed out' }, res.ok ? 200 : res.status);
+}
+
+async function handleProxyAuthRecover(req, env) {
+  const body = await req.json();
+  const res = await fetch(`${env.SUPABASE_URL}/auth/v1/recover`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: env.SUPABASE_SERVICE_KEY },
+    body: JSON.stringify({ email: body.email }),
+  });
+  const data = await res.text();
+  return new Response(data, { status: res.status, headers: { 'Content-Type': 'application/json' } });
 }
 
 

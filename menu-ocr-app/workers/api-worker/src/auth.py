@@ -5,7 +5,7 @@ from fastapi import Header, HTTPException
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
-SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 DEV_BYPASS_AUTH = os.getenv("DEV_BYPASS_AUTH", "false").lower() == "true"
 DEV_BYPASS_USER_ID = os.getenv("DEV_BYPASS_USER_ID", "00000000-0000-0000-0000-000000000001")
 DEV_BYPASS_EMAIL = os.getenv("DEV_BYPASS_EMAIL", "dev-bypass@example.com")
@@ -35,7 +35,7 @@ async def get_user(authorization: str = Header(default="")):
         except jwt.PyJWTError:
             raise HTTPException(status_code=401, detail="Invalid token")
 
-    if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
         raise HTTPException(status_code=500, detail="Supabase auth not configured")
 
     async with httpx.AsyncClient(timeout=10) as client:
@@ -43,7 +43,7 @@ async def get_user(authorization: str = Header(default="")):
             f"{SUPABASE_URL}/auth/v1/user",
             headers={
                 "Authorization": f"Bearer {token}",
-                "apikey": SUPABASE_ANON_KEY,
+                "apikey": SUPABASE_SERVICE_ROLE_KEY,
             },
         )
         if resp.status_code != 200:

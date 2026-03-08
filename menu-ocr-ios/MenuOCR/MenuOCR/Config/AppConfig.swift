@@ -6,12 +6,10 @@ enum AppConfig {
     
     // MARK: - Supabase Configuration
     enum Supabase {
-        // Supabase project URL
+        // Supabase project URL (used only for Apple Sign In OAuth redirect)
         static let url = "https://jlfqzcaospvspmzbvbxd.supabase.co"
-        
-        // Supabase anon/public key - safe for client apps
-        // Get from: https://supabase.com/dashboard/project/_/settings/api
-        static let anonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsZnF6Y2Fvc3B2c3BtemJ2YnhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNzAzMzYsImV4cCI6MjA3Njk0NjMzNn0.5xdkvyJSsza79Iz3kiASMEE22WhNbBktQD6QBb2UgBY"
+        // NOTE: Anon key removed — all auth now proxied via the CF Worker backend.
+        // This avoids the Supabase April 2026 anon-key deprecation for auth endpoints.
     }
     
     // MARK: - Menu OCR API Configuration (Cloudflare Workers)

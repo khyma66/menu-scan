@@ -12,8 +12,8 @@ class SupabaseService: NSObject {
     static let shared = SupabaseService()
     
     private var session: URLSession!
-    private let supabaseURL: URL
-    private let supabaseKey: String
+    /// All auth is proxied through the CF Worker backend
+    private let authBaseURL: String
     
     private var currentUser: User?
     private var accessToken: String?
@@ -22,8 +22,9 @@ class SupabaseService: NSObject {
     private var appleSignInCompletion: ((Result<User, Error>) -> Void)?
     
     private override init() {
-        supabaseURL = URL(string: AppConfig.Supabase.url)!
-        supabaseKey = AppConfig.Supabase.anonKey
+        authBaseURL = AppConfig.MenuOcrApi.useLocal
+            ? AppConfig.MenuOcrApi.localBaseURL
+            : AppConfig.MenuOcrApi.baseURL
         super.init()
         
         // Configure URLSession with proper SSL handling
@@ -71,11 +72,10 @@ class SupabaseService: NSObject {
     // MARK: - Authentication methods
     
     func signInWithEmail(email: String, password: String) async throws -> User {
-        let url = URL(string: "\(supabaseURL.absoluteString)/auth/v1/token?grant_type=password")!
+        let url = URL(string: "\(authBaseURL)/proxy/auth/signin")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(supabaseKey, forHTTPHeaderField: "apikey")
         
         let body: [String: String] = [
             "email": email,
@@ -110,11 +110,10 @@ class SupabaseService: NSObject {
     }
 
     func signUpWithEmail(email: String, password: String) async throws -> User {
-        let url = URL(string: "\(supabaseURL.absoluteString)/auth/v1/signup")!
+        let url = URL(string: "\(authBaseURL)/proxy/auth/signup")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(supabaseKey, forHTTPHeaderField: "apikey")
         
         let body: [String: String] = [
             "email": email,
@@ -219,11 +218,10 @@ class SupabaseService: NSObject {
     }
     
     private func signInWithAppleToken(token: String, credential: ASAuthorizationAppleIDCredential) async throws -> User {
-        let url = URL(string: "\(supabaseURL.absoluteString)/auth/v1/token?grant_type=apple")!
+        let url = URL(string: "\(authBaseURL)/proxy/auth/apple")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(supabaseKey, forHTTPHeaderField: "apikey")
         
         var body: [String: Any] = [
             "identity_token": token
@@ -277,12 +275,11 @@ class SupabaseService: NSObject {
     }
 
     func signOut() async throws {
-        let url = URL(string: "\(supabaseURL.absoluteString)/auth/v1/logout")!
+        let url = URL(string: "\(authBaseURL)/proxy/auth/signout")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(accessToken ?? "")", forHTTPHeaderField: "Authorization")
-        request.setValue(supabaseKey, forHTTPHeaderField: "apikey")
         
         _ = try? await session.data(for: request)
         clearSession()
@@ -301,11 +298,10 @@ class SupabaseService: NSObject {
     }
     
     func resetPassword(email: String) async throws {
-        let url = URL(string: "\(supabaseURL.absoluteString)/auth/v1/recover")!
+        let url = URL(string: "\(authBaseURL)/proxy/auth/recover")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(supabaseKey, forHTTPHeaderField: "apikey")
         
         let body: [String: String] = ["email": email]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -333,8 +329,9 @@ extension SupabaseService: URLSessionDelegate {
                 return
             }
             
-            // For Supabase URLs, perform default validation
-            if challenge.protectionSpace.host.hasSuffix("supabase.co") {
+            // For Supabase & Workers URLs, perform default validation
+            if challenge.protectionSpace.host.hasSuffix("supabase.co")
+                || challenge.protectionSpace.host.hasSuffix("workers.dev") {
                 let credential = URLCredential(trust: serverTrust)
                 completionHandler(.useCredential, credential)
             } else {
