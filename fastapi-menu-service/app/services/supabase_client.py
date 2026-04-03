@@ -88,6 +88,44 @@ class SupabaseClient:
             logger.error(f"Error saving enhanced OCR result: {e}")
             return False
     
+    async def record_scan(
+        self,
+        user_id: str,
+        source: Optional[str] = None,
+        image_name: Optional[str] = None,
+        detected_language: Optional[str] = None,
+        output_language: Optional[str] = None,
+        dish_count: Optional[int] = None,
+        processing_status: str = "completed",
+        processing_time_ms: Optional[int] = None,
+        pipeline: Optional[str] = None,
+        ocr_result_id: Optional[str] = None,
+    ) -> bool:
+        """Record a scan in user_recent_scans for profile scan history."""
+        if not self.client or not user_id:
+            return False
+        try:
+            payload = {
+                "user_id": user_id,
+                "source": source,
+                "image_name": image_name,
+                "detected_language": detected_language,
+                "output_language": output_language,
+                "dish_count": dish_count,
+                "processing_status": processing_status,
+                "processing_time_ms": processing_time_ms,
+                "pipeline": pipeline,
+                "ocr_result_id": ocr_result_id,
+            }
+            # Remove None values to let DB defaults apply
+            payload = {k: v for k, v in payload.items() if v is not None}
+            self.client.table("user_recent_scans").insert(payload).execute()
+            logger.info(f"Recorded scan for user {user_id}: {dish_count} dishes via {pipeline}")
+            return True
+        except Exception as e:
+            logger.error(f"Error recording scan: {e}")
+            return False
+
     async def upload_image(self, image_data: bytes, filename: str) -> Optional[str]:
         """Upload image to Supabase storage."""
         if not self.client:

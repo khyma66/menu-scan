@@ -145,6 +145,20 @@ async def process_enhanced_image_upload(
                 fake_url = f"enhanced_upload://{image.filename}"
                 await supabase.save_ocr_result(fake_url, serializable_data)
                 logger.info("OCR result saved to Supabase")
+
+                # Record scan to user_recent_scans
+                enh_user_id = current_user.get("id") if hasattr(current_user, "get") else None
+                if enh_user_id:
+                    await supabase.record_scan(
+                        user_id=enh_user_id,
+                        source="enhanced_upload",
+                        image_name=image.filename,
+                        detected_language=response_data.get("metadata", {}).get("detected_language"),
+                        dish_count=len(response_data.get("menu_items", [])),
+                        processing_status="completed",
+                        processing_time_ms=response_data.get("processing_time_ms"),
+                        pipeline="enhanced_ocr",
+                    )
             except Exception as e:
                 logger.warning(f"Failed to save to Supabase: {e}")
         
@@ -262,6 +276,19 @@ async def process_enhanced_image_url(
                 ]
                 await supabase.save_ocr_result(image_url, serializable_data)
                 logger.info("OCR result saved to Supabase")
+
+                # Record scan to user_recent_scans
+                url_user_id = current_user.get("id") if hasattr(current_user, "get") else None
+                if url_user_id:
+                    await supabase.record_scan(
+                        user_id=url_user_id,
+                        source=image_url[:120],
+                        detected_language=response_data.get("metadata", {}).get("detected_language"),
+                        dish_count=len(response_data.get("menu_items", [])),
+                        processing_status="completed",
+                        processing_time_ms=response_data.get("processing_time_ms"),
+                        pipeline="enhanced_ocr_url",
+                    )
             except Exception as e:
                 logger.warning(f"Failed to save to Supabase: {e}")
         

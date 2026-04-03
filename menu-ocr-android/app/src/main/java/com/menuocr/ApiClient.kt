@@ -1,6 +1,5 @@
 package com.menuocr
 
-import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -24,7 +23,7 @@ object ApiClient {
      */
     private fun createOkHttpClient(): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.NONE
+            level = HttpLoggingInterceptor.Level.BASIC
         }
         
         val authInterceptor = Interceptor { chain ->
@@ -38,9 +37,9 @@ object ApiClient {
                 requestBuilder.header("Authorization", "Bearer $token")
             }
             
-            // Add common headers
+            // Add common headers — do NOT set Content-Type here; OkHttp sets it
+            // correctly per request (e.g. multipart/form-data for @Multipart endpoints).
             requestBuilder
-                .header("Content-Type", "application/json")
                 .header("Accept", "application/json")
             
             chain.proceed(requestBuilder.build())
@@ -93,21 +92,27 @@ object ApiClient {
     }
     
     /**
-     * Get authentication token from Supabase
-     * This should be called from a coroutine context
+     * Get authentication token from cache.
+     * The token is set by [updateAuthToken] from a coroutine context after
+     * sign-in / session-restore so the interceptor never needs to block.
      */
     private fun getAuthToken(): String? {
         val now = System.currentTimeMillis()
         if (cachedToken != null && now - tokenCachedAtMs < TOKEN_CACHE_TTL_MS) {
             return cachedToken
         }
+        cachedToken = null
+        return null
+    }
 
-        return runBlocking {
-            val token = SupabaseClient.getAccessToken()
-            cachedToken = token
-            tokenCachedAtMs = System.currentTimeMillis()
-            token
-        }
+    /**
+     * Update the cached auth token. Call from a coroutine after sign-in
+     * or session restore so the OkHttp interceptor can use it synchronously.
+     */
+    suspend fun updateAuthToken() {
+        val token = SupabaseClient.getAccessToken()
+        cachedToken = token
+        tokenCachedAtMs = System.currentTimeMillis()
     }
     
     /**

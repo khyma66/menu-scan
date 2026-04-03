@@ -1,0 +1,18 @@
+# ── Build outputs ────────────────────────────────────────────────────────────
+build/
+.gradle/
+.idea/
+*.iml
+local.properties
+
+# ── Signing secrets (NEVER commit these) ─────────────────────────────────────
+keystore.properties
+*.jks
+*.keystore
+
+# ── Firebase config (contains API keys) ──────────────────────────────────────
+app/google-services.json
+
+# ── OS artefacts ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

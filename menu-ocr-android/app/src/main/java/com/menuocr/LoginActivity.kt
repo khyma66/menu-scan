@@ -1,5 +1,6 @@
 package com.menuocr
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -9,6 +10,8 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.browser.customtabs.CustomTabColorSchemeParams
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
@@ -44,8 +47,10 @@ class LoginActivity : AppCompatActivity() {
 
         initViews()
         setupListeners()
+        // Handle OAuth deep-link if this Activity was opened by an auth callback.
+        // Session routing (login vs main) is handled exclusively by SplashActivity
+        // to avoid double-checks and stale in-memory session races.
         handleOAuthCallback(intent)
-        checkExistingSession()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -56,17 +61,52 @@ class LoginActivity : AppCompatActivity() {
 
     private fun handleOAuthCallback(intent: Intent?) {
         val data = intent?.data ?: return
+
+        // Handle subscription result deep-link (menuocr://subscription-result?status=...)
+        // This fires after user returns from web checkout — just navigate to main
+        // and let the Profile tab refresh subscription status on resume.
+        if (data.scheme == "fooder" && data.host == "subscription-result") {
+            val status = data.getQueryParameter("status") ?: "unknown"
+            Log.i(TAG, "Subscription result deep-link received: status=$status")
+            val msg = if (status == "success") "Subscription activated!" else "Checkout cancelled"
+            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+            navigateToMain()
+            return
+        }
+
         if (data.scheme != "com.menuocr" || data.host != "auth-callback") return
 
+        // SupabaseClient.handleOAuthCallback handles both token formats:
+        //   fragment:  com.menuocr://auth-callback#access_token=...
+        //   query:     com.menuocr://auth-callback?access_token=...
+        // Do NOT guard on encodedFragment here — fall through to SupabaseClient.
+        val hasData = !data.encodedFragment.isNullOrBlank() || !data.encodedQuery.isNullOrBlank()
+        if (!hasData) {
+            Log.w(TAG, "OAuth callback received but no token data in URI")
+            return
+        }
+
+        showLoading(true)
         lifecycleScope.launch {
             try {
-                val session = SupabaseClient.getCurrentSession()
-                if (session != null) {
-                    Toast.makeText(this@LoginActivity, "Authentication successful!", Toast.LENGTH_SHORT).show()
-                    navigateToMain()
-                }
+                val result = SupabaseClient.handleOAuthCallback(data)
+                showLoading(false)
+                result.fold(
+                    onSuccess = {
+                        Toast.makeText(this@LoginActivity, "Authentication successful!", Toast.LENGTH_SHORT).show()
+                        // Persist OAuth session tokens
+                        val prefs = getSharedPreferences("fooder_auth", Context.MODE_PRIVATE)
+                        SupabaseClient.saveSession(prefs)
+                        navigateToMain()
+                    },
+                    onFailure = { error ->
+                        showError(getErrorMessage(error))
+                    }
+                )
             } catch (e: Exception) {
-                Log.w(TAG, "OAuth callback received but session unavailable: ${e.message}")
+                showLoading(false)
+                Log.w(TAG, "OAuth callback failed: ${e.message}")
+                showError(getErrorMessage(e))
             }
         }
     }
@@ -123,8 +163,10 @@ class LoginActivity : AppCompatActivity() {
 
     private fun switchToLoginMode() {
         isLoginMode = true
-        loginTab.setTextColor(getColor(R.color.brand_primary))
-        signupTab.setTextColor(getColor(R.color.gray_text))
+        loginTab.setTextColor(android.graphics.Color.parseColor("#222222"))
+        loginTab.setBackgroundColor(android.graphics.Color.WHITE)
+        signupTab.setTextColor(android.graphics.Color.parseColor("#999999"))
+        signupTab.setBackgroundColor(android.graphics.Color.parseColor("#F3F4F6"))
         confirmPasswordLayout.visibility = View.GONE
         forgotPasswordText.visibility = View.VISIBLE
         submitButton.text = "Login"
@@ -133,26 +175,14 @@ class LoginActivity : AppCompatActivity() {
 
     private fun switchToSignupMode() {
         isLoginMode = false
-        signupTab.setTextColor(getColor(R.color.brand_primary))
-        loginTab.setTextColor(getColor(R.color.gray_text))
+        signupTab.setTextColor(android.graphics.Color.parseColor("#222222"))
+        signupTab.setBackgroundColor(android.graphics.Color.WHITE)
+        loginTab.setTextColor(android.graphics.Color.parseColor("#999999"))
+        loginTab.setBackgroundColor(android.graphics.Color.parseColor("#F3F4F6"))
         confirmPasswordLayout.visibility = View.VISIBLE
         forgotPasswordText.visibility = View.GONE
         submitButton.text = "Sign Up"
         hideError()
-    }
-
-    private fun checkExistingSession() {
-        lifecycleScope.launch {
-            try {
-                val session = SupabaseClient.getCurrentSession()
-                if (session != null) {
-                    // User already logged in, go to main
-                    navigateToMain()
-                }
-            } catch (e: Exception) {
-                // No existing session, stay on login
-            }
-        }
     }
 
     private fun handleLogin() {
@@ -172,6 +202,10 @@ class LoginActivity : AppCompatActivity() {
                 result.fold(
                     onSuccess = {
                         Toast.makeText(this@LoginActivity, "Login successful!", Toast.LENGTH_SHORT).show()
+                        // Persist session so the user stays logged-in after restart
+                        val prefs = getSharedPreferences("fooder_auth", Context.MODE_PRIVATE)
+                        SupabaseClient.saveSession(prefs)
+                        ApiClient.updateAuthToken()
                         navigateToMain()
                     },
                     onFailure = { error ->
@@ -202,9 +236,9 @@ class LoginActivity : AppCompatActivity() {
 
                 result.fold(
                     onSuccess = {
-                        Toast.makeText(this@LoginActivity, "Account created! Please check your email to verify.", Toast.LENGTH_LONG).show()
-                        // Switch to login mode after signup
-                        switchToLoginMode()
+                        // Signup succeeded — Supabase sends the 6-digit OTP to
+                        // the user's email using the Fooder confirmation template.
+                        showOtpVerificationDialog(email)
                     },
                     onFailure = { error ->
                         showError(getErrorMessage(error))
@@ -215,6 +249,76 @@ class LoginActivity : AppCompatActivity() {
                 showError(getErrorMessage(e))
             }
         }
+    }
+
+    /**
+     * Shows a dialog asking the user to enter the 6-digit OTP sent to their
+     * email by Fooder after sign-up. On success the user is taken straight
+     * into the app without needing to click any browser link.
+     */
+    private fun showOtpVerificationDialog(email: String) {
+        val otpInput = EditText(this).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            hint = "6-digit code"
+            maxLines = 1
+            filters = arrayOf(android.text.InputFilter.LengthFilter(6))
+            setPadding(48, 32, 48, 32)
+        }
+
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Verify your email")
+            .setMessage("We sent a 6-digit code to\n$email\n\nEnter it below to activate your Fooder account.")
+            .setView(otpInput)
+            .setPositiveButton("Verify") { _, _ ->
+                val code = otpInput.text?.toString()?.trim().orEmpty()
+                if (code.length != 6) {
+                    showError("Please enter the full 6-digit code")
+                    showOtpVerificationDialog(email)
+                    return@setPositiveButton
+                }
+                showLoading(true)
+                hideError()
+                lifecycleScope.launch {
+                    try {
+                        val result = SupabaseClient.verifyEmailOtp(email, code)
+                        showLoading(false)
+                        result.fold(
+                            onSuccess = {
+                                Toast.makeText(
+                                    this@LoginActivity,
+                                    "Email verified! Welcome to Fooder.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                // Persist session after OTP verification
+                                val prefs = getSharedPreferences("fooder_auth", Context.MODE_PRIVATE)
+                                SupabaseClient.saveSession(prefs)
+                                navigateToMain()
+                            },
+                            onFailure = { error ->
+                                showError(getErrorMessage(error))
+                                showOtpVerificationDialog(email)
+                            }
+                        )
+                    } catch (e: Exception) {
+                        showLoading(false)
+                        showError(getErrorMessage(e))
+                        showOtpVerificationDialog(email)
+                    }
+                }
+            }
+            .setNeutralButton("Resend code") { _, _ ->
+                lifecycleScope.launch {
+                    SupabaseClient.signUp(email, passwordInput.text.toString())
+                    Toast.makeText(
+                        this@LoginActivity,
+                        "New code sent to $email",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    showOtpVerificationDialog(email)
+                }
+            }
+            .setCancelable(false)
+            .show()
     }
 
     private fun handleForgotPassword() {
@@ -303,7 +407,13 @@ class LoginActivity : AppCompatActivity() {
             message.contains("User already registered", ignoreCase = true) -> 
                 "An account with this email already exists"
             message.contains("Email not confirmed", ignoreCase = true) -> 
-                "Please check your email and verify your account"
+                "Check your email for the 6-digit code, then tap Sign Up to verify"
+            message.contains("Token has expired", ignoreCase = true) ||
+            message.contains("OTP has expired", ignoreCase = true) ->
+                "The code has expired — tap Resend code to get a new one"
+            message.contains("Invalid OTP", ignoreCase = true) ||
+            message.contains("otp_expired", ignoreCase = true) ->
+                "Incorrect or expired code. Check the email or tap Resend code"
             message.contains("Password should be", ignoreCase = true) -> 
                 "Password must be at least 6 characters"
             message.contains("Unable to resolve host", ignoreCase = true) ||
@@ -333,33 +443,20 @@ class LoginActivity : AppCompatActivity() {
 
     private fun navigateToMain() {
         val intent = Intent(this, DoorDashMainActivity::class.java)
+        // FLAG_ACTIVITY_CLEAR_TASK already destroys all activities in the task
+        // and finishes this one — calling finish() explicitly would cause a
+        // duplicate-finish and corrupt the back stack.
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
-        finish()
     }
     
     private fun handleGoogleSignIn() {
-        showLoading(true)
         hideError()
-
-        lifecycleScope.launch {
-            try {
-                val result = SupabaseClient.signInWithGoogle()
-                showLoading(false)
-
-                result.fold(
-                    onSuccess = {
-                        Toast.makeText(this@LoginActivity, "Google sign-in successful!", Toast.LENGTH_SHORT).show()
-                        navigateToMain()
-                    },
-                    onFailure = { error ->
-                        showError(getErrorMessage(error))
-                    }
-                )
-            } catch (e: Exception) {
-                showLoading(false)
-                showError(getErrorMessage(e))
-            }
+        try {
+            val url = SupabaseClient.getGoogleOAuthUrl()
+            launchBrandedTab(url)
+        } catch (e: Exception) {
+            showError(getErrorMessage(e))
         }
     }
 
@@ -367,10 +464,23 @@ class LoginActivity : AppCompatActivity() {
         hideError()
         try {
             val url = SupabaseClient.getAppleOAuthUrl()
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-            Toast.makeText(this, "Continue Apple sign-in in browser", Toast.LENGTH_SHORT).show()
+            launchBrandedTab(url)
         } catch (e: Exception) {
             showError(getErrorMessage(e))
         }
+    }
+
+    private fun launchBrandedTab(url: String) {
+        val toolbarColor = android.graphics.Color.parseColor("#222222")
+        val colorParams = CustomTabColorSchemeParams.Builder()
+            .setToolbarColor(toolbarColor)
+            .setNavigationBarColor(toolbarColor)
+            .build()
+        val customTabsIntent = CustomTabsIntent.Builder()
+            .setDefaultColorSchemeParams(colorParams)
+            .setShowTitle(true)
+            .setUrlBarHidingEnabled(true)
+            .build()
+        customTabsIntent.launchUrl(this, Uri.parse(url))
     }
 }

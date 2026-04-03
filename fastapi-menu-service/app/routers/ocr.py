@@ -506,6 +506,19 @@ async def process_image(
                 for item in response_data["menu_items"]
             ]
             await supabase.save_ocr_result(request.image_url, serializable_data)
+
+            # Record scan to user_recent_scans for profile history
+            user_id = current_user.get("id")
+            if user_id:
+                await supabase.record_scan(
+                    user_id=user_id,
+                    source=request.image_url[:120] if request.image_url else None,
+                    detected_language=metadata.get("detected_language"),
+                    dish_count=len(menu_items),
+                    processing_status="completed",
+                    processing_time_ms=processing_time_ms,
+                    pipeline="qwen" if qwen_used else ("llm" if enhanced else "tesseract"),
+                )
         
         return OCRResponse(**response_data)
     
@@ -997,6 +1010,21 @@ async def process_image_upload(
                 for item in response_data["menu_items"]
             ]
             await supabase.save_ocr_result(fake_url, serializable_data)
+
+            # Record scan to user_recent_scans for profile history
+            upload_user_id = current_user.get("id") if hasattr(current_user, "get") else None
+            if upload_user_id:
+                await supabase.record_scan(
+                    user_id=upload_user_id,
+                    source="upload",
+                    image_name=image.filename,
+                    detected_language=metadata.get("detected_language"),
+                    output_language=metadata.get("output_language"),
+                    dish_count=len(menu_items),
+                    processing_status="completed",
+                    processing_time_ms=processing_time_ms,
+                    pipeline=metadata.get("pipeline", "gemini_groq"),
+                )
         
         return OCRResponse(**response_data)
     

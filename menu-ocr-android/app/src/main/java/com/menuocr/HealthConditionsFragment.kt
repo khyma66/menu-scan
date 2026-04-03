@@ -1,5 +1,6 @@
 package com.menuocr
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -30,6 +31,8 @@ class HealthConditionsFragment : Fragment() {
     private lateinit var loadingProgress: LinearLayout
     private lateinit var statusMessage: TextView
     private lateinit var currentConditionsCard: LinearLayout
+    private lateinit var inputsCard: View
+    private var btnHealthLogin: Button? = null
 
     private var apiService: ApiService? = null
     private val uiScope = CoroutineScope(Dispatchers.Main)
@@ -56,8 +59,19 @@ class HealthConditionsFragment : Fragment() {
         statusMessage = view.findViewById(R.id.status_message)
         currentConditionsCard = view.findViewById(R.id.current_conditions_card)
 
+        inputsCard = view.findViewById(R.id.inputs_card)
+        btnHealthLogin = view.findViewById(R.id.btn_health_login)
+        btnHealthLogin?.setOnClickListener {
+            startActivity(Intent(requireContext(), LoginActivity::class.java))
+        }
+
         setupApiService()
         setupClickListeners()
+        loadCurrentProfile()
+    }
+
+    override fun onResume() {
+        super.onResume()
         loadCurrentProfile()
     }
 
@@ -73,6 +87,28 @@ class HealthConditionsFragment : Fragment() {
 
     private fun loadCurrentProfile() {
         uiScope.launch {
+            // Show loading state while checking auth
+            statusMessage.text = "⏳ Checking your account…"
+            statusMessage.setTextColor(requireContext().getColor(R.color.gray_600))
+            statusMessage.visibility = View.VISIBLE
+            btnHealthLogin?.visibility = View.GONE
+            inputsCard.visibility = View.GONE
+            currentConditionsCard.visibility = View.GONE
+
+            // Check authentication first
+            val authenticated = try { SupabaseClient.isAuthenticated() } catch (e: Exception) { false }
+            if (!authenticated) {
+                updateStatus("🔐 Please login to view and save your health options.", false)
+                btnHealthLogin?.visibility = View.VISIBLE
+                inputsCard.visibility = View.GONE
+                currentConditionsCard.visibility = View.GONE
+                return@launch
+            }
+            btnHealthLogin?.visibility = View.GONE
+            inputsCard.visibility = View.VISIBLE
+            currentConditionsCard.visibility = View.VISIBLE
+            updateStatus("⏳ Loading your health profile…", true)
+
             try {
                 val response = apiService?.getHealthProfile()
                 if (response?.isSuccessful == true && response.body() != null) {

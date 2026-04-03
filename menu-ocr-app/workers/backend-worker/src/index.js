@@ -102,6 +102,9 @@ async function route(path, method, req, url, env) {
   if (path === '/llm/status' && method === 'GET') return json({ provider: 'gemini', configured: true, model: env.GEMINI_MODEL, api_key_configured: !!env.GEMINI_API_KEY });
   if (path === '/llm/providers' && method === 'GET') return json({ current_provider: 'gemini', providers: ['gemini', 'groq'] });
 
+  // ─── Debug: Test Gemini key directly ──────
+  if (path === '/ocr/test-gemini' && method === 'GET') return handleTestGemini(env);
+
   return json({ error: 'Not Found', path }, 404);
 }
 
@@ -311,6 +314,28 @@ async function handleOcrProcess(req, env) {
   return json({ success: true, menu_items: items, raw_text: '', processing_time_ms: Date.now() - start, enhanced: false, cached: false });
 }
 
+
+// ─── Debug: Test Gemini API Key ───────────────────────────────
+async function handleTestGemini(env) {
+  const model = env.GEMINI_MODEL || 'gemini-2.0-flash';
+  const key = env.GEMINI_API_KEY;
+  if (!key) return json({ ok: false, error: 'GEMINI_API_KEY not set' });
+
+  const payload = {
+    contents: [{ role: 'user', parts: [{ text: 'Say "ok" in JSON: {"result":"ok"}' }] }],
+    generationConfig: { temperature: 0.0, response_mime_type: 'application/json' },
+  };
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }
+    );
+    const body = await res.text();
+    return json({ ok: res.ok, status: res.status, model, body_preview: body.slice(0, 500) });
+  } catch (e) {
+    return json({ ok: false, error: e.message });
+  }
+}
 
 // ─── Gemini API Calls ─────────────────────────────────────────
 

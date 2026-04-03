@@ -9,9 +9,11 @@ import org.maplibre.android.WellKnownTileServer
 class MenuApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-        // Initialize MapLibre for map functionality - required before creating MapView
+
+        // ── MapLibre ──────────────────────────────────────────────────────────
         MapLibre.getInstance(this, null, WellKnownTileServer.MapLibre)
 
+        // ── Security provider ─────────────────────────────────────────────────
         try {
             ProviderInstaller.installIfNeeded(this)
         } catch (e: Exception) {

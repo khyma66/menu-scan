@@ -24,7 +24,7 @@ class MainViewController: UIViewController, UIImagePickerControllerDelegate, UIN
 
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.text = "Menu OCR - Test Version"
+        label.text = "Fooder"
         label.font = .systemFont(ofSize: 24, weight: .bold)
         label.textAlignment = .center
         return label
@@ -32,8 +32,8 @@ class MainViewController: UIViewController, UIImagePickerControllerDelegate, UIN
 
     private let apiStatusLabel: UILabel = {
         let label = UILabel()
-        let baseURL = AppConfig.MenuOcrApi.useLocal ? AppConfig.MenuOcrApi.localBaseURL : AppConfig.MenuOcrApi.baseURL
-        label.text = "FastAPI Backend: \(baseURL)\nStatus: Testing Connection..."
+        label.text = ""
+        label.isHidden = true   // Debug-only label — hidden in all builds
         label.font = .systemFont(ofSize: 14)
         label.textAlignment = .center
         label.numberOfLines = 0
@@ -43,7 +43,7 @@ class MainViewController: UIViewController, UIImagePickerControllerDelegate, UIN
 
     private let statusLabel: UILabel = {
         let label = UILabel()
-        label.text = "Ready to test OCR functionality"
+        label.text = "Point your camera at a menu to get started"
         label.font = .systemFont(ofSize: 16, weight: .medium)
         label.textAlignment = .center
         label.numberOfLines = 0
@@ -85,11 +85,12 @@ class MainViewController: UIViewController, UIImagePickerControllerDelegate, UIN
 
     private let testApiButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle("🧪 Test API Connection", for: .normal)
+        button.setTitle("Check Connection", for: .normal)
         button.backgroundColor = .systemOrange
         button.setTitleColor(.white, for: .normal)
         button.layer.cornerRadius = 8
         button.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+        button.isHidden = true   // Internal diagnostic — not shown to App Store reviewers
         return button
     }()
 

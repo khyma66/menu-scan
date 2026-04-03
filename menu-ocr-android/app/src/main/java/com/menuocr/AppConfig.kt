@@ -13,6 +13,9 @@ object AppConfig {
         // Get your anon/public key from: https://supabase.com/dashboard/project/jlfqzcaospvspmzbvbxd/settings/api
         // This is a PUBLIC key - safe to use in client apps
         const val ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsZnF6Y2Fvc3B2c3BtemJ2YnhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzNzAzMzYsImV4cCI6MjA3Njk0NjMzNn0.cTI-Zo2NXeIZQDiQ4mcLia3slwRMyvMLpLj_-4BtviA"
+        // Deep-link scheme for auth callback — MUST match the redirect URL
+        // registered in Supabase Dashboard → Authentication → URL Configuration
+        // (currently registered as com.menuocr://auth-callback)
         const val AUTH_REDIRECT_URL = "com.menuocr://auth-callback"
     }
     
@@ -56,6 +59,17 @@ object AppConfig {
     object Stripe {
         // Replace with your actual Stripe publishable key
         const val PUBLISHABLE_KEY = "pk_test_51SWk8N1HFXSHAnudIASPucwXm6GPQdWk52CfSUXVC71R5rVLjQ3TFySSfJr6NNg1azeJ54PpVAhJog0QXdE2vPjI00tTJMuDZD"
+    }
+
+    // Web base URL — subscription purchases happen here (no App Store/Play Store commission)
+    object Web {
+        const val BASE_URL = "https://menuocr.com"
+        const val PRICING_PATH = "/pricing"
+        // Full URL to open for subscription; append ?token=<access_token>&refresh=<refresh_token>
+        fun pricingUrl(accessToken: String, refreshToken: String): String =
+            "$BASE_URL$PRICING_PATH?token=${accessToken}&refresh=${refreshToken}"
+        // Stripe customer portal for manage / cancel / update payment method
+        const val MANAGE_SUB_PATH = "/account"
     }
     
     // Feature Flags

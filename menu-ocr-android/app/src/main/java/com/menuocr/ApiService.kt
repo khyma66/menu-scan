@@ -8,11 +8,13 @@ import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.Field
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Part
+import retrofit2.http.Query
 import okhttp3.MediaType.Companion.toMediaType
 
 interface ApiService {
@@ -55,6 +57,7 @@ interface ApiService {
     @POST("/ocr/process")
     suspend fun processOcr(@Body request: OcrRequest): Response<MenuResponse>
 
+    @Multipart
     @POST("/ocr/process-upload")
     suspend fun processOcrUpload(
         
@@ -117,17 +120,17 @@ interface ApiService {
     @PUT("/user/app-profile")
     suspend fun updateAppProfile(@Body request: AppProfileDetailsRequest): Response<AppProfileDetails>
 
-    @GET("/user/discovery-preferences")
-    suspend fun getDiscoveryPreferences(): Response<DiscoveryPreferences>
-
-    @PUT("/user/discovery-preferences")
-    suspend fun updateDiscoveryPreferences(@Body request: DiscoveryPreferencesRequest): Response<DiscoveryPreferences>
-
     @GET("/user/profile-preferences")
     suspend fun getProfilePreferences(): Response<ProfilePreferences>
 
     @PUT("/user/profile-preferences")
     suspend fun updateProfilePreferences(@Body request: ProfilePreferencesRequest): Response<ProfilePreferences>
+
+    @GET("/user/recent-scans")
+    suspend fun getRecentScans(@Query("days") days: Int = 30, @Query("limit") limit: Int = 50): Response<RecentScansListResponse>
+
+    @GET("/user/recent-scans/daily")
+    suspend fun getDailyScans(@Query("days") days: Int = 7): Response<DailyScansListResponse>
 
     @GET("/user/saved-cards")
     suspend fun getSavedCards(): Response<SavedCardsResponse>
@@ -146,6 +149,14 @@ interface ApiService {
 
     @PUT("/user/subscription/select")
     suspend fun selectSubscriptionPlan(@Body request: SelectSubscriptionPlanRequest): Response<UserSubscriptionStatus>
+
+    /** Get Stripe Customer Portal URL — open in browser to manage/cancel subscription */
+    @POST("/subscriptions/customer-portal")
+    suspend fun getCustomerPortal(@Header("Authorization") token: String): Response<CustomerPortalResponse>
+
+    /** Get current subscription status from the new commission-free endpoint */
+    @GET("/subscriptions/status")
+    suspend fun getSubscriptionStatus(@Header("Authorization") token: String): Response<SubscriptionStatusResponse>
 }
 
 data class ScanMenuResponse(
@@ -379,31 +390,10 @@ data class AppProfileDetails(
     val updated_at: String? = null
 )
 
-data class DiscoveryPreferencesRequest(
-    val search_radius_miles: Int = 10,
-    val selected_cuisines: List<String> = emptyList(),
-    val location_label: String? = null,
-    val latitude: Double? = null,
-    val longitude: Double? = null
-)
-
-data class DiscoveryPreferences(
-    val user_id: String,
-    val search_radius_miles: Int = 10,
-    val selected_cuisines: List<String> = emptyList(),
-    val location_label: String? = null,
-    val latitude: Double? = null,
-    val longitude: Double? = null,
-    val updated_at: String? = null
-)
-
 data class ProfilePreferencesRequest(
     val notifications_enabled: Boolean = true,
     val push_notifications: Boolean = true,
     val email_notifications: Boolean = false,
-    val profile_visibility: String = "private",
-    val analytics_opt_in: Boolean = true,
-    val marketing_opt_in: Boolean = false,
     val language: String? = null,
     val timezone: String? = null
 )
@@ -413,12 +403,38 @@ data class ProfilePreferences(
     val notifications_enabled: Boolean = true,
     val push_notifications: Boolean = true,
     val email_notifications: Boolean = false,
-    val profile_visibility: String = "private",
-    val analytics_opt_in: Boolean = true,
-    val marketing_opt_in: Boolean = false,
     val language: String? = null,
     val timezone: String? = null,
     val updated_at: String? = null
+)
+
+data class RecentScan(
+    val id: String,
+    val scanned_at: String,
+    val source: String? = null,
+    val image_name: String? = null,
+    val detected_language: String? = null,
+    val output_language: String? = null,
+    val dish_count: Int? = null,
+    val processing_status: String = "completed",
+    val processing_time_ms: Int? = null,
+    val pipeline: String? = null
+)
+
+data class RecentScansListResponse(
+    val scans: List<RecentScan>,
+    val total_count: Int = 0
+)
+
+data class DailyScanGroup(
+    val date: String,
+    val scans: List<RecentScan>,
+    val count: Int = 0
+)
+
+data class DailyScansListResponse(
+    val days: List<DailyScanGroup>,
+    val total_count: Int = 0
 )
 
 data class SaveCardRequest(
@@ -461,11 +477,23 @@ data class UserPaymentHistoryResponse(
 
 data class SubscriptionPlan(
     val name: String,
-    val price_display: String,
-    val billing_period: String,
-    val description: String,
-    val features: List<String>
-)
+    val price: Double? = null,
+    val price_display: String? = null,
+    val display_name: String? = null,
+    val billing_period: String? = null,
+    val currency: String? = null,
+    val description: String? = null,
+    val features: List<String>? = null
+) {
+    /** Resolve display price: prefer price_display string, else format from price number */
+    fun resolvedPriceDisplay(): String? {
+        if (!price_display.isNullOrBlank()) return price_display
+        if (price != null) {
+            return if (price == 0.0) "$0" else "$${String.format("%.2f", price)}"
+        }
+        return null
+    }
+}
 
 data class SubscriptionPlansResponse(
     val plans: List<SubscriptionPlan>
@@ -481,4 +509,20 @@ data class UserSubscriptionStatus(
     val status: String,
     val current_period_end: String? = null,
     val cancel_at_period_end: Boolean = false
+)
+
+data class CustomerPortalResponse(
+    val portal_url: String
+)
+
+data class SubscriptionStatusResponse(
+    val plan_id: String,
+    val plan_name: String,
+    val status: String,
+    val is_effective: Boolean,
+    val scan_limit_monthly: Int,
+    val features: List<String>,
+    val current_period_end: String? = null,
+    val cancel_at_period_end: Boolean = false,
+    val billing_cycle: String? = null
 )

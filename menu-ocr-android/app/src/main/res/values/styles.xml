@@ -11,4 +11,13 @@
         <item name="android:background">@color/gray_200</item>
         <item name="android:textColor">@color/gray_700</item>
     </style>
+
+    <!-- Applied to BottomNavigationView via android:theme.
+         Makes the M3 active-indicator pill transparent — safe replacement for
+         app:itemActiveIndicatorStyle="@null" which crashes the inflater.
+         colorOnSecondaryContainer drives the selected-icon tint within M3. -->
+    <style name="BottomNavThemeOverlay" parent="ThemeOverlay.Material3.Light">
+        <item name="colorSecondaryContainer">@color/transparent</item>
+        <item name="colorOnSecondaryContainer">@color/brand_primary</item>
+    </style>
 </resources>

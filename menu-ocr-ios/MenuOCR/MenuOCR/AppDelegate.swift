@@ -6,12 +6,31 @@
 //
 
 import UIKit
+import AppTrackingTransparency
+import AdSupport
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Request App Tracking Transparency permission.
+        // Must be called after the first screen has rendered (iOS 14.5+).
+        // NSUserTrackingUsageDescription in Info.plist is required or the app
+        // will crash at this call. AppConfig.Features.enableAnalytics gates
+        // actual data collection — ATT just requests the OS-level permission.
+        if AppConfig.Features.enableAnalytics {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                ATTrackingManager.requestTrackingAuthorization { status in
+                    // status == .authorized  → IDFA available, analytics active
+                    // status == .denied      → use anonymous session ID only
+                    // status == .restricted  → device-level restriction in place
+                    // status == .notDetermined → should not happen here
+                    #if DEBUG
+                    print("[ATT] Authorization status: \(status.rawValue)")
+                    #endif
+                }
+            }
+        }
         return true
     }
 

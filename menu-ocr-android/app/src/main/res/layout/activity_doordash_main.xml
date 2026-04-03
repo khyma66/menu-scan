@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/gray_50"
     android:orientation="vertical">
 
+    <!-- App header — always visible, updates username after login -->
     <LinearLayout
         android:id="@+id/header_layout"
         android:layout_width="match_parent"
@@ -17,25 +19,26 @@
         android:paddingLeft="16dp"
         android:paddingTop="12dp"
         android:paddingRight="16dp"
-        android:paddingBottom="12dp"
-        android:visibility="gone">
+        android:paddingBottom="12dp">
 
         <TextView
             android:id="@+id/title_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Discover"
+            android:text="Scan"
             android:textColor="@color/gray_900"
             android:textSize="20sp"
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/user_greeting_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
-            android:text="Fooder"
+            android:text=""
             android:textColor="@color/gray_700"
-            android:textSize="12sp" />
+            android:textSize="12sp"
+            android:visibility="gone" />
     </LinearLayout>
 
     <FrameLayout
@@ -50,7 +53,6 @@
         android:layout_height="wrap_content"
         android:background="@drawable/bottom_nav_background"
         android:elevation="8dp"
-        app:itemActiveIndicatorStyle="@null"
         app:itemIconSize="26dp"
         app:itemIconTint="@color/bottom_nav_item_tint"
         app:itemTextColor="@color/bottom_nav_item_tint"

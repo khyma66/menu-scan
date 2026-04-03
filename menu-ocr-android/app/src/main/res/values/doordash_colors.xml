@@ -105,6 +105,9 @@
     <color name="black">#000000</color>
     <color name="transparent">#00000000</color>
     
+    <!-- Splash screen -->
+    <color name="splash_bg">#F3F0FF</color>
+    
     <!-- App palette -->
     <color name="brand_primary">#FA3D2E</color>
     <color name="brand_primary_dark">#E02E1F</color>
@@ -114,6 +117,21 @@
     <color name="doordash_red">#FA3D2E</color>
     <color name="doordash_dark_red">#E02E1F</color>
     
+    <!-- Subscription Plan Colors -->
+    <color name="plan_free_border">#D1D5DB</color>
+    <color name="plan_free_price">#6B7280</color>
+    <color name="plan_free_check">#6B7280</color>
+    <color name="plan_pro_border">#93C5FD</color>
+    <color name="plan_pro_price">#2563EB</color>
+    <color name="plan_pro_badge_bg">#DBEAFE</color>
+    <color name="plan_pro_badge_text">#1D4ED8</color>
+    <color name="plan_pro_check">#1D4ED8</color>
+    <color name="plan_max_border">#C4B5FD</color>
+    <color name="plan_max_price">#7C3AED</color>
+    <color name="plan_max_badge_bg">#EDE9FE</color>
+    <color name="plan_max_badge_text">#6D28D9</color>
+    <color name="plan_max_check">#6D28D9</color>
+
     <!-- Additional UI Colors -->
     <color name="background_light">#FFFFFF</color>
     <color name="background_dark">#1a1a1a</color>

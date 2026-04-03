@@ -12,8 +12,6 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -49,7 +47,7 @@ class MenuOcrFragment : Fragment() {
     private lateinit var ocrResults: TextView
     private lateinit var geminiDishLinksContainer: LinearLayout
     private lateinit var qwenDetailCard: LinearLayout
-    private lateinit var btnBackToDishes: Button
+    private lateinit var btnBackToDishes: ImageButton
     private lateinit var detailDishName: TextView
     private lateinit var detailPrice: TextView
     private lateinit var detailDescription: TextView
@@ -60,12 +58,11 @@ class MenuOcrFragment : Fragment() {
     private lateinit var detailAllergens: TextView
     private lateinit var detailSpiciness: TextView
     private lateinit var detailPreparation: TextView
-    private lateinit var actionButtons: LinearLayout
     private lateinit var scanLimitText: TextView
-    private lateinit var switchTranslate: Switch
-    private lateinit var spinnerTranslateLanguage: Spinner
     private lateinit var btnResetResults: Button
     private lateinit var btnAddMoreResults: Button
+    private var currentDetailIndex: Int = -1
+    private var currentDetailItem: MenuItem? = null
 
     private var selectedBitmaps: MutableList<Bitmap> = mutableListOf()
     private var apiService: ApiService? = null
@@ -75,22 +72,9 @@ class MenuOcrFragment : Fragment() {
     private var accumulatedMenuItems: MutableList<MenuItem> = mutableListOf()
     private var originalEnglishMenuItems: MutableList<MenuItem> = mutableListOf()
     private var accumulatedGeminiItems: MutableList<MenuItem> = mutableListOf()
-    private val translatedItemsCache: MutableMap<String, List<MenuItem>> = mutableMapOf()
     private var showRecommendationColumn: Boolean = false
     private var qwenEnhancementRunning: Boolean = false
     private var processingCancelled: Boolean = false
-
-    private val languageCodeByLabel = linkedMapOf(
-        "Spanish" to "es",
-        "French" to "fr",
-        "German" to "de",
-        "Italian" to "it",
-        "Hindi" to "hi",
-        "Telugu" to "te",
-        "Tamil" to "ta",
-        "Japanese" to "ja",
-        "Chinese" to "zh"
-    )
 
     private val emptyLikeTokens = setOf("null", "none", "n/a", "na", "unknown", "-", "--", "nil")
     
@@ -152,14 +136,10 @@ class MenuOcrFragment : Fragment() {
         detailAllergens = view.findViewById(R.id.detail_allergens)
         detailSpiciness = view.findViewById(R.id.detail_spiciness)
         detailPreparation = view.findViewById(R.id.detail_preparation)
-        actionButtons = view.findViewById(R.id.action_buttons)
-        switchTranslate = view.findViewById(R.id.switch_translate)
-        spinnerTranslateLanguage = view.findViewById(R.id.spinner_translate_language)
         btnResetResults = view.findViewById(R.id.btn_reset_results)
         btnAddMoreResults = view.findViewById(R.id.btn_add_more_results)
 
         setupApiService()
-        setupTranslationControls()
         setupClickListeners()
         checkPermissions()
         syncPlanTierFromBackend()
@@ -321,8 +301,15 @@ class MenuOcrFragment : Fragment() {
             return
         }
 
-        // Check scan limits before processing
+        // Check authentication before scanning
         uiScope.launch {
+            val isLoggedIn = try { SupabaseClient.isAuthenticated() } catch (e: Exception) { false }
+            if (!isLoggedIn) {
+                showLoginToScanDialog()
+                return@launch
+            }
+
+            // Check scan limits before processing
             val canScan = try {
                 ScanLimitManager.canScan(requireContext())
             } catch (e: Exception) {
@@ -342,6 +329,20 @@ class MenuOcrFragment : Fragment() {
         }
     }
     
+    /**
+     * Show dialog prompting user to login before scanning
+     */
+    private fun showLoginToScanDialog() {
+        android.app.AlertDialog.Builder(requireContext())
+            .setTitle("Login Required")
+            .setMessage("Please login or sign up to scan menus. Your scans are saved to your account.")
+            .setPositiveButton("Login / Sign Up") { _, _ ->
+                startActivity(Intent(requireContext(), LoginActivity::class.java))
+            }
+            .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss() }
+            .show()
+    }
+
     /**
      * Show dialog prompting user to login when scan limit is reached
      */
@@ -421,12 +422,9 @@ class MenuOcrFragment : Fragment() {
         accumulatedMenuItems.clear()
         originalEnglishMenuItems.clear()
         accumulatedGeminiItems.clear()
-        translatedItemsCache.clear()
         showRecommendationColumn = false
         qwenEnhancementRunning = false
         processingCancelled = false
-        switchTranslate.isChecked = false
-        spinnerTranslateLanguage.visibility = View.GONE
 
         loadingProgress.visibility = View.VISIBLE
         loadingProgress.alpha = 1f
@@ -440,7 +438,6 @@ class MenuOcrFragment : Fragment() {
             updateLoadingStatus("Cancelling...")
         }
         resultsCard.visibility = View.GONE
-        actionButtons.visibility = View.GONE
 
         uiScope.launch {
             try {
@@ -541,7 +538,7 @@ class MenuOcrFragment : Fragment() {
                 loadingProgress.alpha = 1f
 
                 imageBytesList.forEachIndexed { index, imageBytes ->
-                    updateLoadingStatus("Loading additional details (image ${index + 1}/${imageBytesList.size})...")
+                    updateLoadingStatus("Enriching details (image ${index + 1}/${imageBytesList.size})...")
                     val imagePart = bytesToMultipart(imageBytes, "enhance_${index + 1}.jpg")
                     val useLlmEnhancement = "true".toRequestBody("text/plain".toMediaType())
                     val useQwenVision = "false".toRequestBody("text/plain".toMediaType())
@@ -587,13 +584,7 @@ class MenuOcrFragment : Fragment() {
                         accumulatedMenuItems.addAll(merged)
                         originalEnglishMenuItems.clear()
                         originalEnglishMenuItems.addAll(merged)
-                        if (switchTranslate.isChecked) {
-                            val selectedLabel = spinnerTranslateLanguage.selectedItem?.toString()
-                            val targetLanguage = languageCodeByLabel[selectedLabel] ?: "es"
-                            requestTranslation(targetLanguage)
-                        } else {
-                            refreshResultsDisplay()
-                        }
+                        refreshResultsDisplay()
                     }
                 }
 
@@ -854,9 +845,6 @@ class MenuOcrFragment : Fragment() {
     private fun refreshResultsDisplay() {
         val resultBuilder = StringBuilder()
         val currentTier = ScanLimitManager.getPlanTier(requireContext())
-        if (qwenEnhancementRunning) {
-            resultBuilder.append("Loading additional details...\n")
-        }
         val baseItems = if (accumulatedMenuItems.isNotEmpty()) {
             accumulatedMenuItems.toList()
         } else {
@@ -999,21 +987,38 @@ class MenuOcrFragment : Fragment() {
 
         ocrResults.text = resultBuilder.toString()
         resultsCard.visibility = View.VISIBLE
-        actionButtons.visibility = View.VISIBLE
+    }
+
+    /** Returns a SpannableStringBuilder with [label] in bold followed by [content] in normal weight. */
+    private fun makeBoldLabel(label: String, content: String): android.text.SpannableStringBuilder {
+        val full = "$label$content"
+        val spannable = android.text.SpannableStringBuilder(full)
+        spannable.setSpan(
+            android.text.style.StyleSpan(android.graphics.Typeface.BOLD),
+            0, label.length,
+            android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
+        return spannable
     }
 
     private fun showQwenDishDetails(index: Int, selectedItem: MenuItem) {
+        currentDetailIndex = index
+        currentDetailItem = selectedItem
+
         if (!ScanLimitManager.canUseAdditionalDetails(requireContext())) {
-            detailDishName.text = pickText(selectedItem.name, "Unknown dish") ?: "Unknown dish"
-            detailPrice.text = "Price: ${pickText(selectedItem.price, "-") ?: "-"}"
-            detailDescription.text = "Description: ${pickText(selectedItem.description, "Description unavailable") ?: "Description unavailable"}"
-            detailIngredients.text = "Ingredients:\nUpgrade to Pro or Max to view"
-            detailTaste.text = "Taste: ${pickText(selectedItem.taste, "-") ?: "-"}"
-            detailSimilar.text = "Similar Dishes:\nUpgrade to Pro to view"
-            detailRecommendation.text = "Health Recommendation: Upgrade to Max to view"
-            detailAllergens.text = "Allergens: Upgrade to Pro or Max to view"
-            detailSpiciness.text = "Spiciness: Upgrade to Pro or Max to view"
-            detailPreparation.text = "Preparation: Upgrade to Pro or Max to view"
+            detailDishName.text = pickText(selectedItem.name, "Unknown Dish") ?: "Unknown Dish"
+            val freePriceVal = pickText(selectedItem.price, null)
+            detailPrice.text = makeBoldLabel("💰 Price: ", if (!freePriceVal.isNullOrBlank() && freePriceVal != "-") freePriceVal else "Not Available")
+            detailPrice.visibility = View.VISIBLE
+            val descText = pickText(selectedItem.description, null)
+            detailDescription.text = makeBoldLabel("📝 General Description:\n", if (!descText.isNullOrBlank()) descText else "Based on the dish name, this appears to be a popular menu item. Please ask the chef for more details.")
+            detailIngredients.text = makeBoldLabel("🧾 Ingredients:\n", "  Upgrade to Pro or Max to view")
+            detailTaste.text = makeBoldLabel("😋 Taste: ", pickText(selectedItem.taste, "-") ?: "-")
+            detailSimilar.text = makeBoldLabel("🌍 Similar Dishes:\n", "  Upgrade to Pro to view")
+            detailRecommendation.text = makeBoldLabel("💊 Recommendation:\n", "  Upgrade to Max to view")
+            detailAllergens.text = makeBoldLabel("⚠️ Allergens: ", "Upgrade to Pro or Max to view")
+            detailSpiciness.text = makeBoldLabel("🌶️ Spiciness: ", "Upgrade to Pro or Max to view")
+            detailPreparation.text = makeBoldLabel("👨‍🍳 Preparation: ", "Upgrade to Pro or Max to view")
 
             geminiDishLinksContainer.visibility = View.GONE
             qwenDetailCard.visibility = View.VISIBLE
@@ -1024,9 +1029,13 @@ class MenuOcrFragment : Fragment() {
         val qwenItem = sanitizeMenuItem(findQwenItemForGemini(index, geminiItem) ?: geminiItem)
         val detailItem = buildDisplayDetails(geminiItem, qwenItem)
 
-        detailDishName.text = detailItem.name ?: "Unknown dish"
-        detailPrice.text = detailItem.price ?: "-"
-        detailDescription.text = detailItem.description ?: "Description unavailable"
+        detailDishName.text = detailItem.name ?: "Unknown Dish"
+        val priceVal = detailItem.price?.takeIf { it != "-" && it.isNotBlank() }
+            ?: selectedItem.price?.takeIf { it != "-" && it.isNotBlank() }
+        detailPrice.text = makeBoldLabel("💰 Price: ", priceVal ?: "Not Available")
+        detailPrice.visibility = View.VISIBLE
+        val descText = detailItem.description?.takeIf { it != "Description unavailable" && it.isNotBlank() }
+        detailDescription.text = makeBoldLabel("📝 General Description:\n", if (!descText.isNullOrBlank()) descText else "Based on the dish name, this appears to be a popular menu item. Please ask the chef for more details.")
 
         val canUseIngredients = ScanLimitManager.canUseIngredients(requireContext())
         val canUseSimilar = ScanLimitManager.canUseSimilarDishes(requireContext())
@@ -1035,18 +1044,18 @@ class MenuOcrFragment : Fragment() {
         val ingredientsText = if (!cleanList(detailItem.ingredients).isNullOrEmpty()) {
             cleanList(detailItem.ingredients).joinToString("\n") { "  • $it" }
         } else {
-            "  Not available"
+            "  Not Available"
         }
         detailIngredients.text = if (canUseIngredients) {
-            "🧾 Ingredients\n$ingredientsText"
+            makeBoldLabel("🧾 Ingredients:\n", ingredientsText)
         } else {
-            "🧾 Ingredients\n  Upgrade to Pro or Max to view"
+            makeBoldLabel("🧾 Ingredients:\n", "  Upgrade to Pro or Max to view")
         }
-        detailTaste.text = "😋 Taste: ${pickText(detailItem.taste, "Not available") ?: "Not available"}"
+        detailTaste.text = makeBoldLabel("😋 Taste: ", pickText(detailItem.taste, "Not Available") ?: "Not Available")
         detailSimilar.text = if (canUseSimilar) {
-            "🌍 Similar Dishes\n  • ${pickText(detailItem.similarDish1, "Not available") ?: "Not available"}\n  • ${pickText(detailItem.similarDish2, "Not available") ?: "Not available"}"
+            makeBoldLabel("🌍 Similar Dishes:\n", "  • ${pickText(detailItem.similarDish1, "Not Available") ?: "Not Available"}\n  • ${pickText(detailItem.similarDish2, "Not Available") ?: "Not Available"}")
         } else {
-            "🌍 Similar Dishes\n  Upgrade to Pro to view"
+            makeBoldLabel("🌍 Similar Dishes:\n", "  Upgrade to Pro to view")
         }
 
         val recommendationValue = if (showRecommendationColumn) {
@@ -1055,14 +1064,14 @@ class MenuOcrFragment : Fragment() {
             pickText(detailItem.recommendation, "Recommended") ?: "Recommended"
         }
         detailRecommendation.text = if (canUseRecommendations) {
-            "💊 Recommendation\n  ${pickText(recommendationValue, "Not available") ?: "Not available"}"
+            makeBoldLabel("💊 Recommendation:\n", "  ${pickText(recommendationValue, "Not Available") ?: "Not Available"}\n\n  ⚕️ Please consult your doctor for personalized dietary recommendations.")
         } else {
-            "💊 Recommendation\n  Upgrade to Max to view"
+            makeBoldLabel("💊 Recommendation:\n", "  Upgrade to Max to view")
         }
-        val allergensText = if (!cleanList(detailItem.allergens).isNullOrEmpty()) cleanList(detailItem.allergens).joinToString(", ") else "Not specified"
-        detailAllergens.text = if (canUseIngredients) "⚠️ Allergens: $allergensText" else "⚠️ Allergens: Upgrade to Pro or Max"
-        detailSpiciness.text = if (canUseIngredients) "🌶️ Spiciness: ${pickText(detailItem.spiciness_level, "Not available") ?: "Not available"}" else "🌶️ Spiciness: Upgrade to Pro or Max"
-        detailPreparation.text = if (canUseIngredients) "👨‍🍳 Preparation: ${pickText(detailItem.preparation_method, "Not available") ?: "Not available"}" else "👨‍🍳 Preparation: Upgrade to Pro or Max"
+        val allergensText = if (!cleanList(detailItem.allergens).isNullOrEmpty()) cleanList(detailItem.allergens).joinToString(", ") else "Not Specified"
+        detailAllergens.text = if (canUseIngredients) makeBoldLabel("⚠️ Allergens: ", allergensText) else makeBoldLabel("⚠️ Allergens: ", "Upgrade to Pro or Max")
+        detailSpiciness.text = if (canUseIngredients) makeBoldLabel("🌶️ Spiciness: ", pickText(detailItem.spiciness_level, "Not Available") ?: "Not Available") else makeBoldLabel("🌶️ Spiciness: ", "Upgrade to Pro or Max")
+        detailPreparation.text = if (canUseIngredients) makeBoldLabel("👨‍🍳 Preparation: ", pickText(detailItem.preparation_method, "Not Available") ?: "Not Available") else makeBoldLabel("👨‍🍳 Preparation: ", "Upgrade to Pro or Max")
 
         geminiDishLinksContainer.visibility = View.GONE
         qwenDetailCard.visibility = View.VISIBLE
@@ -1182,105 +1191,54 @@ class MenuOcrFragment : Fragment() {
         }
     }
 
-    private fun setupTranslationControls() {
-        val labels = languageCodeByLabel.keys.toList()
-        spinnerTranslateLanguage.adapter = ArrayAdapter(
-            requireContext(),
-            android.R.layout.simple_spinner_dropdown_item,
-            labels
-        )
+    private fun populateDetailFields(item: MenuItem) {
+        detailDishName.text = item.name ?: "Unknown Dish"
+        val priceVal = item.price?.takeIf { it != "-" && it.isNotBlank() }
+        detailPrice.text = makeBoldLabel("💰 Price: ", priceVal ?: "Not Available")
 
-        val translationAllowed = ScanLimitManager.canUseTranslation(requireContext())
-        switchTranslate.isEnabled = translationAllowed
-        switchTranslate.text = if (translationAllowed) "Translate Output" else "Translate Output (Unavailable on Max)"
+        val descText = item.description?.takeIf { it != "Description unavailable" && it.isNotBlank() }
+        detailDescription.text = makeBoldLabel("📝 General Description:\n", if (!descText.isNullOrBlank()) descText else "Based on the dish name, this appears to be a popular menu item. Please ask the chef for more details.")
 
-        switchTranslate.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked && !ScanLimitManager.canUseTranslation(requireContext())) {
-                switchTranslate.isChecked = false
-                Toast.makeText(requireContext(), "Translation is available on Free and Pro plans.", Toast.LENGTH_SHORT).show()
-                return@setOnCheckedChangeListener
-            }
-            spinnerTranslateLanguage.visibility = if (isChecked) View.VISIBLE else View.GONE
-            if (!isChecked) {
-                accumulatedMenuItems.clear()
-                accumulatedMenuItems.addAll(originalEnglishMenuItems)
-                refreshResultsDisplay()
-            } else {
-                val selectedLabel = spinnerTranslateLanguage.selectedItem?.toString()
-                val targetLanguage = languageCodeByLabel[selectedLabel] ?: "es"
-                requestTranslation(targetLanguage)
-            }
+        val canUseIngredients = ScanLimitManager.canUseIngredients(requireContext())
+        val canUseSimilar = ScanLimitManager.canUseSimilarDishes(requireContext())
+        val canUseRecommendations = ScanLimitManager.canUseRecommendations(requireContext())
+
+        val ingredientsText = if (!cleanList(item.ingredients).isNullOrEmpty()) {
+            cleanList(item.ingredients).joinToString("\n") { "  • $it" }
+        } else {
+            "  Not Available"
         }
-
-        spinnerTranslateLanguage.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                if (!switchTranslate.isChecked) return
-                val selectedLabel = parent.getItemAtPosition(position)?.toString()
-                val targetLanguage = languageCodeByLabel[selectedLabel] ?: return
-                requestTranslation(targetLanguage)
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+        detailIngredients.text = if (canUseIngredients) makeBoldLabel("🧾 Ingredients:\n", ingredientsText) else makeBoldLabel("🧾 Ingredients:\n", "  Upgrade to Pro or Max to view")
+        detailTaste.text = makeBoldLabel("😋 Taste: ", pickText(item.taste, "Not Available") ?: "Not Available")
+        detailSimilar.text = if (canUseSimilar) {
+            makeBoldLabel("🌍 Similar Dishes:\n", "  • ${pickText(item.similarDish1, "Not Available") ?: "Not Available"}\n  • ${pickText(item.similarDish2, "Not Available") ?: "Not Available"}")
+        } else {
+            makeBoldLabel("🌍 Similar Dishes:\n", "  Upgrade to Pro to view")
         }
+        detailRecommendation.text = if (canUseRecommendations) {
+            makeBoldLabel("💊 Recommendation:\n", "  ${pickText(item.recommendation, "Not Available") ?: "Not Available"}\n\n  ⚕️ Please consult your doctor for personalized dietary recommendations.")
+        } else {
+            makeBoldLabel("💊 Recommendation:\n", "  Upgrade to Max to view")
+        }
+        val allergensText = if (!cleanList(item.allergens).isNullOrEmpty()) cleanList(item.allergens).joinToString(", ") else "Not Specified"
+        detailAllergens.text = if (canUseIngredients) makeBoldLabel("⚠️ Allergens: ", allergensText) else makeBoldLabel("⚠️ Allergens: ", "Upgrade to Pro or Max")
+        detailSpiciness.text = if (canUseIngredients) makeBoldLabel("🌶️ Spiciness: ", pickText(item.spiciness_level, "Not Available") ?: "Not Available") else makeBoldLabel("🌶️ Spiciness: ", "Upgrade to Pro or Max")
+        detailPreparation.text = if (canUseIngredients) makeBoldLabel("👨‍🍳 Preparation: ", pickText(item.preparation_method, "Not Available") ?: "Not Available") else makeBoldLabel("👨‍🍳 Preparation: ", "Upgrade to Pro or Max")
     }
 
     private fun clearResultsTable() {
         accumulatedMenuItems.clear()
         originalEnglishMenuItems.clear()
         accumulatedGeminiItems.clear()
-        translatedItemsCache.clear()
         showRecommendationColumn = false
         qwenEnhancementRunning = false
-        switchTranslate.isChecked = false
-        spinnerTranslateLanguage.visibility = View.GONE
         geminiDishLinksContainer.removeAllViews()
         qwenDetailCard.visibility = View.GONE
         ocrResults.text = ""
         resultsCard.visibility = View.GONE
-        actionButtons.visibility = View.GONE
-        // Also clear images and hide preview
         selectedBitmaps.clear()
         imagesPreviewCard.visibility = View.GONE
         btnProcessOcr.visibility = View.GONE
-    }
-
-    private fun requestTranslation(targetLanguage: String) {
-        if (originalEnglishMenuItems.isEmpty()) return
-
-        val cached = translatedItemsCache[targetLanguage]
-        if (cached != null) {
-            accumulatedMenuItems.clear()
-            accumulatedMenuItems.addAll(cached)
-            refreshResultsDisplay()
-            return
-        }
-
-        uiScope.launch {
-            try {
-                updateLoadingStatus("Translating menu...")
-                loadingProgress.visibility = View.VISIBLE
-                val response = apiService?.translateMenuItems(
-                    MenuItemsTranslationRequest(
-                        menu_items = originalEnglishMenuItems,
-                        target_language = targetLanguage,
-                    )
-                )
-
-                if (response?.isSuccessful == true && response.body() != null) {
-                    val translated = response.body()!!.menu_items.map { sanitizeMenuItem(it) }
-                    translatedItemsCache[targetLanguage] = translated
-                    accumulatedMenuItems.clear()
-                    accumulatedMenuItems.addAll(translated)
-                    refreshResultsDisplay()
-                } else {
-                    Toast.makeText(requireContext(), "Translation failed: ${response?.message()}", Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Translation error: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
-            } finally {
-                loadingProgress.visibility = View.GONE
-            }
-        }
     }
 
     private fun animateContent() {

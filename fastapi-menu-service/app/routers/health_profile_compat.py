@@ -1,4 +1,4 @@
-"""Compatibility endpoints for legacy Android health profile paths."""
+"""Compatibility endpoints for legacy Android health profile and menus paths."""
 
 from __future__ import annotations
 
@@ -153,3 +153,62 @@ async def update_health_profile_compat(
         )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to save health profile: {str(exc)}")
+
+
+# ──────────────────────────────────────────────────
+# Legacy /v1/user/menus endpoint for Profile → Scans tab
+# ──────────────────────────────────────────────────
+
+class UserMenuEntry(BaseModel):
+    id: str
+    restaurant_name: Optional[str] = None
+    region: Optional[str] = None
+    cuisine_type: Optional[str] = None
+    created_at: Optional[str] = None
+
+
+class UserMenusListResponse(BaseModel):
+    menus: List[UserMenuEntry]
+
+
+@router.get("/menus", response_model=UserMenusListResponse)
+async def get_user_menus(current_user: dict = Depends(get_current_user)):
+    """
+    Return scan history for the authenticated user.
+    Reads from user_recent_scans table and maps to the legacy UserMenu format
+    expected by the Android app.
+    """
+    user_id = current_user.get("id") if current_user else None
+    if not user_id:
+        raise HTTPException(status_code=401, detail="User not authenticated")
+
+    supabase = SupabaseClient()
+    if not supabase.client:
+        raise HTTPException(status_code=500, detail="Supabase unavailable")
+
+    try:
+        response = (
+            supabase.client.table("user_recent_scans")
+            .select("id,source,image_name,detected_language,pipeline,scanned_at,dish_count")
+            .eq("user_id", user_id)
+            .order("scanned_at", desc=True)
+            .limit(50)
+            .execute()
+        )
+
+        scans = response.data or []
+
+        menus = [
+            UserMenuEntry(
+                id=row.get("id", ""),
+                restaurant_name=row.get("source") or row.get("image_name") or "Menu Scan",
+                region=row.get("detected_language"),
+                cuisine_type=row.get("pipeline"),
+                created_at=row.get("scanned_at"),
+            )
+            for row in scans
+        ]
+
+        return UserMenusListResponse(menus=menus)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch menus: {str(exc)}")

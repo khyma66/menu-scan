@@ -136,9 +136,9 @@ class ProfilePreferencesRequest(BaseModel):
     notifications_enabled: Optional[bool] = True
     push_notifications: Optional[bool] = True
     email_notifications: Optional[bool] = False
-    profile_visibility: Optional[str] = "private"
-    analytics_opt_in: Optional[bool] = True
-    marketing_opt_in: Optional[bool] = False
+    profile_visibility: Optional[str] = "private"  # kept for backward compat, Privacy tab removed from UI
+    analytics_opt_in: Optional[bool] = True  # kept for backward compat
+    marketing_opt_in: Optional[bool] = False  # kept for backward compat
     language: Optional[str] = None
     timezone: Optional[str] = None
 
@@ -154,6 +154,53 @@ class ProfilePreferencesResponse(BaseModel):
     language: Optional[str] = None
     timezone: Optional[str] = None
     updated_at: Optional[str] = None
+
+
+class RecentScanResponse(BaseModel):
+    """Response model for a single recent scan."""
+    id: str
+    scanned_at: str
+    source: Optional[str] = None
+    image_name: Optional[str] = None
+    detected_language: Optional[str] = None
+    output_language: Optional[str] = None
+    dish_count: Optional[int] = None
+    processing_status: str = "completed"
+    processing_time_ms: Optional[int] = None
+    pipeline: Optional[str] = None
+
+
+class RecentScansListResponse(BaseModel):
+    """Response model for recent scans list."""
+    scans: List[RecentScanResponse]
+    total_count: int = 0
+
+
+class DailyScansResponse(BaseModel):
+    """Response model for scans grouped by day."""
+    date: str
+    scans: List[RecentScanResponse]
+    count: int = 0
+
+
+class DailyScansListResponse(BaseModel):
+    """Response model for daily-grouped scans."""
+    days: List[DailyScansResponse]
+    total_count: int = 0
+
+
+class UserMenuResponse(BaseModel):
+    """Response model for a user menu (legacy compat)."""
+    id: str
+    restaurant_name: Optional[str] = None
+    region: Optional[str] = None
+    cuisine_type: Optional[str] = None
+    created_at: Optional[str] = None
+
+
+class UserMenusListResponse(BaseModel):
+    """Response model for user menus list."""
+    menus: List[UserMenuResponse]
 
 
 class SavedCardRequest(BaseModel):
@@ -328,7 +375,7 @@ async def update_discovery_preferences(
 
 @router.get("/profile-preferences", response_model=ProfilePreferencesResponse)
 async def get_profile_preferences(current_user: dict = Depends(get_current_user)):
-    """Get profile preferences for notifications and privacy subtabs."""
+    """Get profile preferences for notifications subtab."""
     try:
         supabase = get_supabase_client()
         user_id = current_user.get("id")
@@ -358,7 +405,7 @@ async def update_profile_preferences(
     preferences: ProfilePreferencesRequest,
     current_user: dict = Depends(get_current_user),
 ):
-    """Update profile preferences for notifications and privacy subtabs."""
+    """Update profile preferences for notifications subtab."""
     try:
         supabase = get_supabase_client()
         user_id = current_user.get("id")
@@ -494,8 +541,8 @@ async def get_subscription_plans(current_user: dict = Depends(get_current_user))
             return SubscriptionPlansResponse(
                 plans=[
                     SubscriptionPlanInfo(name="Free", price_display="$0", billing_period="mo", description="3 scans + translation", features=["basic_scan", "translation"]),
-                    SubscriptionPlanInfo(name="Pro", price_display="$6.99", billing_period="mo", description="Unlimited + similar dishes + ingredients", features=["unlimited_scan", "similar_dishes", "ingredients"]),
-                    SubscriptionPlanInfo(name="Max", price_display="$9.99", billing_period="mo", description="Pro + personalized recommendations", features=["unlimited_scan", "recommendations", "premium_support"]),
+                    SubscriptionPlanInfo(name="Pro", price_display="$9.99", billing_period="mo", description="Unlimited + similar dishes + ingredients", features=["unlimited_scan", "similar_dishes", "ingredients"]),
+                    SubscriptionPlanInfo(name="Max", price_display="$12.99", billing_period="mo", description="Pro + personalized recommendations", features=["unlimited_scan", "recommendations", "premium_support"]),
                 ]
             )
 
@@ -850,4 +897,119 @@ async def join_with_referral(
         return {"message": "Referral code applied successfully! You and your referrer will receive benefits."}
     except Exception as e:
         logger.error(f"Error applying referral: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ──────────────────────────────────────────────────
+# Recent Scans endpoints
+# ──────────────────────────────────────────────────
+
+@router.get("/recent-scans", response_model=RecentScansListResponse)
+async def get_recent_scans(
+    days: int = Query(30, ge=1, le=365, description="Number of days to look back"),
+    limit: int = Query(50, ge=1, le=200, description="Maximum number of scans"),
+    current_user: dict = Depends(get_current_user),
+):
+    """Get recent scans for the current user."""
+    try:
+        supabase = get_supabase_client()
+        user_id = current_user.get("id")
+
+        since = (datetime.utcnow() - timedelta(days=days)).isoformat()
+
+        response = (
+            supabase.table("user_recent_scans")
+            .select("id,scanned_at,source,image_name,detected_language,output_language,dish_count,processing_status,processing_time_ms,pipeline")
+            .eq("user_id", user_id)
+            .gte("scanned_at", since)
+            .order("scanned_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+
+        scans = response.data or []
+        return RecentScansListResponse(
+            scans=[
+                RecentScanResponse(
+                    id=row.get("id", ""),
+                    scanned_at=row.get("scanned_at", ""),
+                    source=row.get("source"),
+                    image_name=row.get("image_name"),
+                    detected_language=row.get("detected_language"),
+                    output_language=row.get("output_language"),
+                    dish_count=row.get("dish_count"),
+                    processing_status=row.get("processing_status", "completed"),
+                    processing_time_ms=row.get("processing_time_ms"),
+                    pipeline=row.get("pipeline"),
+                )
+                for row in scans
+            ],
+            total_count=len(scans),
+        )
+    except Exception as e:
+        logger.error(f"Error getting recent scans: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/recent-scans/daily", response_model=DailyScansListResponse)
+async def get_daily_scans(
+    days: int = Query(7, ge=1, le=90, description="Number of days to look back"),
+    current_user: dict = Depends(get_current_user),
+):
+    """Get recent scans grouped by day for the current user's account."""
+    try:
+        supabase = get_supabase_client()
+        user_id = current_user.get("id")
+
+        since = (datetime.utcnow() - timedelta(days=days)).isoformat()
+
+        response = (
+            supabase.table("user_recent_scans")
+            .select("id,scanned_at,source,image_name,detected_language,output_language,dish_count,processing_status,processing_time_ms,pipeline")
+            .eq("user_id", user_id)
+            .gte("scanned_at", since)
+            .order("scanned_at", desc=True)
+            .execute()
+        )
+
+        scans = response.data or []
+
+        # Group scans by date
+        daily_map: Dict[str, list] = {}
+        for row in scans:
+            scanned_at = row.get("scanned_at", "")
+            date_key = scanned_at[:10] if scanned_at else "unknown"
+            if date_key not in daily_map:
+                daily_map[date_key] = []
+            daily_map[date_key].append(
+                RecentScanResponse(
+                    id=row.get("id", ""),
+                    scanned_at=scanned_at,
+                    source=row.get("source"),
+                    image_name=row.get("image_name"),
+                    detected_language=row.get("detected_language"),
+                    output_language=row.get("output_language"),
+                    dish_count=row.get("dish_count"),
+                    processing_status=row.get("processing_status", "completed"),
+                    processing_time_ms=row.get("processing_time_ms"),
+                    pipeline=row.get("pipeline"),
+                )
+            )
+
+        # Sort by date descending
+        sorted_days = sorted(daily_map.keys(), reverse=True)
+
+        return DailyScansListResponse(
+            days=[
+                DailyScansResponse(
+                    date=d,
+                    scans=daily_map[d],
+                    count=len(daily_map[d]),
+                )
+                for d in sorted_days
+            ],
+            total_count=len(scans),
+        )
+    except Exception as e:
+        logger.error(f"Error getting daily scans: {e}")
         raise HTTPException(status_code=500, detail=str(e))

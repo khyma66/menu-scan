@@ -1,18 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Person icon — head at (12,8) r=3.5 gives generous space before body arc -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="28"
-    android:viewportHeight="28">
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- head circle: centred at (12,8), radius 3.5 — uncongested top area -->
     <path
         android:fillColor="#00000000"
-        android:pathData="M14,14.1c2.3,0 4.2,-1.9 4.2,-4.2S16.3,5.7 14,5.7s-4.2,1.9 -4.2,4.2 1.9,4.2 4.2,4.2z"
+        android:pathData="M12,8m-3.5,0a3.5,3.5 0,1 1,7 0a3.5,3.5 0,1 1,-7 0"
         android:strokeColor="#FF000000"
-        android:strokeWidth="2.1" />
+        android:strokeWidth="1.8" />
+    <!-- shoulder / body arc -->
     <path
         android:fillColor="#00000000"
-        android:pathData="M6.8,23.2c1.2,-3.1 4,-5 7.2,-5s6,1.9 7.2,5"
+        android:pathData="M5,20c0,-3.87 3.13,-7 7,-7s7,3.13 7,7"
         android:strokeColor="#FF000000"
         android:strokeLineCap="round"
-        android:strokeWidth="2.1" />
+        android:strokeWidth="1.8" />
 </vector>

@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- External storage (gallery picks) -->
     <external-path name="external_files" path="."/>
+    <!-- Internal app cache — ImagePicker 2.x stores camera temp files here -->
+    <cache-path name="cache_files" path="."/>
+    <!-- External cache — some ImagePicker versions use this -->
+    <external-cache-path name="external_cache_files" path="."/>
+    <!-- Internal files dir -->
+    <files-path name="internal_files" path="."/>
 </paths>

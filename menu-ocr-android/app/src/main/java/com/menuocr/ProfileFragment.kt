@@ -1,5 +1,7 @@
 package com.menuocr
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -12,6 +14,8 @@ import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import androidx.browser.customtabs.CustomTabColorSchemeParams
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -22,10 +26,10 @@ class ProfileFragment : Fragment() {
     private enum class ProfileTab {
         PROFILE,
         PAYMENT,
+        RECENT_PAYMENTS,
         SCANS,
         SUBSCRIPTION,
-        NOTIFICATIONS,
-        PRIVACY
+        NOTIFICATIONS
     }
 
     private lateinit var apiService: ApiService
@@ -33,17 +37,17 @@ class ProfileFragment : Fragment() {
 
     private lateinit var btnTabProfile: Button
     private lateinit var btnTabPayment: Button
+    private var btnTabRecentPayments: Button? = null
     private lateinit var btnTabScans: Button
     private lateinit var btnTabSubscription: Button
     private lateinit var btnTabNotifications: Button
-    private lateinit var btnTabPrivacy: Button
 
     private lateinit var sectionProfile: View
     private lateinit var sectionPayment: View
+    private var sectionRecentPayments: View? = null
     private lateinit var sectionScans: View
     private lateinit var sectionSubscription: View
     private lateinit var sectionNotifications: View
-    private lateinit var sectionPrivacy: View
 
     private lateinit var loadingProgress: LinearLayout
     private lateinit var loadingText: TextView
@@ -51,16 +55,19 @@ class ProfileFragment : Fragment() {
     private lateinit var profileNameHeader: TextView
     private lateinit var profileEmailHeader: TextView
     private lateinit var premiumBadge: TextView
+    private var btnHeaderAuth: Button? = null
     private lateinit var statScans: TextView
     private lateinit var statPlan: TextView
     private lateinit var statStatus: TextView
+
+    private var tvSignInProvider: TextView? = null
+    private var btnSignOut: Button? = null
+    private var btnManageSubscription: Button? = null
 
     private lateinit var inputName: EditText
     private lateinit var inputEmail: EditText
     private lateinit var inputContact: EditText
     private lateinit var inputCountry: EditText
-    private lateinit var inputLanguage: EditText
-    private lateinit var inputTimezone: EditText
     private lateinit var btnSaveProfile: Button
 
     private lateinit var inputCardHolder: EditText
@@ -70,6 +77,7 @@ class ProfileFragment : Fragment() {
     private lateinit var btnSaveCard: Button
     private lateinit var cardInfoText: TextView
     private lateinit var paymentHistoryText: TextView
+    private var recentPaymentsText: TextView? = null
 
     private lateinit var scansSummary: TextView
     private lateinit var scanHistoryText: TextView
@@ -78,16 +86,14 @@ class ProfileFragment : Fragment() {
     private lateinit var btnPlanFree: Button
     private lateinit var btnPlanPro: Button
     private lateinit var btnPlanMax: Button
+    private lateinit var tvPriceFree: TextView
+    private lateinit var tvPricePro: TextView
+    private lateinit var tvPriceMax: TextView
 
     private lateinit var checkNotificationsEnabled: CheckBox
     private lateinit var checkNotificationsPush: CheckBox
     private lateinit var checkNotificationsEmail: CheckBox
     private lateinit var btnSaveNotifications: Button
-
-    private lateinit var spinnerProfileVisibility: Spinner
-    private lateinit var checkAnalyticsOptIn: CheckBox
-    private lateinit var checkMarketingOptIn: CheckBox
-    private lateinit var btnSavePrivacy: Button
 
     private var currentPlanName: String = "FREE"
 
@@ -112,17 +118,17 @@ class ProfileFragment : Fragment() {
     private fun setupUI(view: View) {
         btnTabProfile = view.findViewById(R.id.btn_tab_profile)
         btnTabPayment = view.findViewById(R.id.btn_tab_payment)
+        btnTabRecentPayments = view.findViewById(R.id.btn_tab_recent_payments)
         btnTabScans = view.findViewById(R.id.btn_tab_scans)
         btnTabSubscription = view.findViewById(R.id.btn_tab_subscription)
         btnTabNotifications = view.findViewById(R.id.btn_tab_notifications)
-        btnTabPrivacy = view.findViewById(R.id.btn_tab_privacy)
 
         sectionProfile = view.findViewById(R.id.section_profile)
         sectionPayment = view.findViewById(R.id.section_payment)
+        sectionRecentPayments = view.findViewById(R.id.section_recent_payments)
         sectionScans = view.findViewById(R.id.section_scans)
         sectionSubscription = view.findViewById(R.id.section_subscription)
         sectionNotifications = view.findViewById(R.id.section_notifications)
-        sectionPrivacy = view.findViewById(R.id.section_privacy)
 
         loadingProgress = view.findViewById(R.id.loading_progress)
         loadingText = view.findViewById(R.id.loading_text)
@@ -130,6 +136,7 @@ class ProfileFragment : Fragment() {
         profileNameHeader = view.findViewById(R.id.profile_name_header)
         profileEmailHeader = view.findViewById(R.id.profile_email_header)
         premiumBadge = view.findViewById(R.id.premium_badge)
+        btnHeaderAuth = view.findViewById(R.id.btn_header_auth)
         statScans = view.findViewById(R.id.stat_scans)
         statPlan = view.findViewById(R.id.stat_plan)
         statStatus = view.findViewById(R.id.stat_status)
@@ -138,9 +145,9 @@ class ProfileFragment : Fragment() {
         inputEmail = view.findViewById(R.id.input_email)
         inputContact = view.findViewById(R.id.input_contact)
         inputCountry = view.findViewById(R.id.input_country)
-        inputLanguage = view.findViewById(R.id.input_language)
-        inputTimezone = view.findViewById(R.id.input_timezone)
         btnSaveProfile = view.findViewById(R.id.btn_save_profile)
+        btnSignOut = view.findViewById(R.id.btn_sign_out)
+        btnManageSubscription = view.findViewById(R.id.btn_manage_subscription)
 
         inputCardHolder = view.findViewById(R.id.input_card_holder)
         inputCardNumber = view.findViewById(R.id.input_card_number)
@@ -149,6 +156,7 @@ class ProfileFragment : Fragment() {
         btnSaveCard = view.findViewById(R.id.btn_save_card)
         cardInfoText = view.findViewById(R.id.card_info_text)
         paymentHistoryText = view.findViewById(R.id.payment_history_text)
+        recentPaymentsText = view.findViewById(R.id.recent_payments_text)
 
         scansSummary = view.findViewById(R.id.scans_summary)
         scanHistoryText = view.findViewById(R.id.scan_history_text)
@@ -157,37 +165,30 @@ class ProfileFragment : Fragment() {
         btnPlanFree = view.findViewById(R.id.btn_plan_free)
         btnPlanPro = view.findViewById(R.id.btn_plan_pro)
         btnPlanMax = view.findViewById(R.id.btn_plan_max)
+        tvPriceFree = view.findViewById(R.id.tv_price_free)
+        tvPricePro = view.findViewById(R.id.tv_price_pro)
+        tvPriceMax = view.findViewById(R.id.tv_price_max)
 
         checkNotificationsEnabled = view.findViewById(R.id.check_notifications_enabled)
         checkNotificationsPush = view.findViewById(R.id.check_notifications_push)
         checkNotificationsEmail = view.findViewById(R.id.check_notifications_email)
         btnSaveNotifications = view.findViewById(R.id.btn_save_notifications)
 
-        spinnerProfileVisibility = view.findViewById(R.id.spinner_profile_visibility)
-        checkAnalyticsOptIn = view.findViewById(R.id.check_analytics_opt_in)
-        checkMarketingOptIn = view.findViewById(R.id.check_marketing_opt_in)
-        btnSavePrivacy = view.findViewById(R.id.btn_save_privacy)
-
-        val visibilityOptions = listOf("private", "friends", "public")
-        spinnerProfileVisibility.adapter = ArrayAdapter(
-            requireContext(),
-            android.R.layout.simple_spinner_dropdown_item,
-            visibilityOptions
-        )
     }
 
     private fun setupListeners() {
         btnTabProfile.setOnClickListener { selectTab(ProfileTab.PROFILE) }
         btnTabPayment.setOnClickListener { selectTab(ProfileTab.PAYMENT) }
+        btnTabRecentPayments?.setOnClickListener { selectTab(ProfileTab.RECENT_PAYMENTS) }
         btnTabScans.setOnClickListener { selectTab(ProfileTab.SCANS) }
         btnTabSubscription.setOnClickListener { selectTab(ProfileTab.SUBSCRIPTION) }
         btnTabNotifications.setOnClickListener { selectTab(ProfileTab.NOTIFICATIONS) }
-        btnTabPrivacy.setOnClickListener { selectTab(ProfileTab.PRIVACY) }
 
         btnSaveProfile.setOnClickListener { saveProfile() }
         btnSaveCard.setOnClickListener { saveCard() }
         btnSaveNotifications.setOnClickListener { savePreferences() }
-        btnSavePrivacy.setOnClickListener { savePreferences() }
+        btnSignOut?.setOnClickListener { handleLogout() }
+        btnManageSubscription?.setOnClickListener { openManageSubscription() }
 
         btnPlanFree.setOnClickListener { selectPlan("FREE") }
         btnPlanPro.setOnClickListener { selectPlan("PRO") }
@@ -199,17 +200,17 @@ class ProfileFragment : Fragment() {
 
         sectionProfile.isVisible = tab == ProfileTab.PROFILE
         sectionPayment.isVisible = tab == ProfileTab.PAYMENT
+        sectionRecentPayments?.isVisible = tab == ProfileTab.RECENT_PAYMENTS
         sectionScans.isVisible = tab == ProfileTab.SCANS
         sectionSubscription.isVisible = tab == ProfileTab.SUBSCRIPTION
         sectionNotifications.isVisible = tab == ProfileTab.NOTIFICATIONS
-        sectionPrivacy.isVisible = tab == ProfileTab.PRIVACY
 
         setTabState(btnTabProfile, tab == ProfileTab.PROFILE)
         setTabState(btnTabPayment, tab == ProfileTab.PAYMENT)
+        btnTabRecentPayments?.let { setTabState(it, tab == ProfileTab.RECENT_PAYMENTS) }
         setTabState(btnTabScans, tab == ProfileTab.SCANS)
         setTabState(btnTabSubscription, tab == ProfileTab.SUBSCRIPTION)
         setTabState(btnTabNotifications, tab == ProfileTab.NOTIFICATIONS)
-        setTabState(btnTabPrivacy, tab == ProfileTab.PRIVACY)
     }
 
     private fun setTabState(button: Button, selected: Boolean) {
@@ -227,6 +228,71 @@ class ProfileFragment : Fragment() {
         loadingText.text = text
     }
 
+    override fun onResume() {
+        super.onResume()
+        viewLifecycleOwner.lifecycleScope.launch {
+            refreshAuthHeader()
+            // Reload profile data so form fields populate after login
+            loadAllProfileData()
+        }
+    }
+
+    private suspend fun refreshAuthHeader() {
+        val user = try { SupabaseClient.getCurrentUser() } catch (e: Exception) { null }
+        if (user != null) {
+            // Prefer OAuth display name from metadata (Google/Apple provide 'name')
+            val displayName = user.userMetadata?.get("name")?.toString()?.trim('"')
+                ?: user.userMetadata?.get("full_name")?.toString()?.trim('"')
+                ?: user.email?.substringBefore("@")?.replaceFirstChar { it.uppercase() }
+                ?: "User"
+            val provider = user.appMetadata?.get("provider")?.toString()?.trim('"')
+                ?.replaceFirstChar { it.uppercase() } ?: "Email"
+            profileNameHeader.text = displayName
+            profileEmailHeader.text = user.email ?: ""
+            tvSignInProvider?.text = provider
+            // Hide the header auth button — show Sign Out in the profile section instead
+            btnHeaderAuth?.visibility = View.GONE
+            btnSignOut?.visibility = View.VISIBLE
+        } else {
+            profileNameHeader.text = "Guest"
+            profileEmailHeader.text = "Sign in to access your profile"
+            tvSignInProvider?.text = "Not signed in"
+            btnHeaderAuth?.visibility = View.VISIBLE
+            btnHeaderAuth?.text = "Login / Sign Up"
+            btnHeaderAuth?.setOnClickListener { openLogin() }
+            btnSignOut?.visibility = View.GONE
+        }
+    }
+
+    private fun openLogin() {
+        startActivity(Intent(requireContext(), LoginActivity::class.java))
+    }
+
+    private fun handleLogout() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                SupabaseClient.signOut()
+                // Clear persisted tokens so user doesn't auto-login on next app start
+                val prefs = requireActivity().getSharedPreferences("fooder_auth", android.content.Context.MODE_PRIVATE)
+                SupabaseClient.clearSession(prefs)
+                Toast.makeText(requireContext(), "Signed out", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Sign out failed", Toast.LENGTH_SHORT).show()
+            }
+            profileNameHeader.text = "Guest"
+            profileEmailHeader.text = "Sign in to access your profile"
+            tvSignInProvider?.text = "Not signed in"
+            inputName.setText("")
+            inputEmail.setText("")
+            inputContact.setText("")
+            inputCountry.setText("")
+            btnSignOut?.visibility = View.GONE
+            btnHeaderAuth?.visibility = View.VISIBLE
+            btnHeaderAuth?.text = "Login / Sign Up"
+            btnHeaderAuth?.setOnClickListener { openLogin() }
+        }
+    }
+
     private fun loadAllProfileData() {
         viewLifecycleOwner.lifecycleScope.launch {
             setLoading(true, "Loading profile...")
@@ -237,7 +303,7 @@ class ProfileFragment : Fragment() {
                 loadPaymentHistory()
                 loadScans()
                 loadSubscription()
-                loadPlans()
+                try { loadPlans() } catch (_: Exception) { /* plans fallback to XML defaults */ }
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Failed to load profile: ${e.message}", Toast.LENGTH_SHORT).show()
             } finally {
@@ -247,19 +313,68 @@ class ProfileFragment : Fragment() {
     }
 
     private suspend fun loadProfile() {
-        val response = apiService.getAppProfile()
-        if (!response.isSuccessful || response.body() == null) return
+        // Check auth and update header button
+        val user = try { SupabaseClient.getCurrentUser() } catch (e: Exception) { null }
+        if (user == null) {
+            profileNameHeader.text = "Guest"
+            profileEmailHeader.text = "Sign in to access your profile"
+            tvSignInProvider?.text = "Not signed in"
+            btnHeaderAuth?.visibility = View.VISIBLE
+            btnHeaderAuth?.text = "Login / Sign Up"
+            btnHeaderAuth?.setOnClickListener { openLogin() }
+            btnSignOut?.visibility = View.GONE
+            return
+        }
+        btnHeaderAuth?.visibility = View.GONE
+        btnSignOut?.visibility = View.VISIBLE
+
+        val provider = user.appMetadata?.get("provider")?.toString()?.trim('"')
+            ?.replaceFirstChar { it.uppercase() } ?: "Email"
+        tvSignInProvider?.text = provider
+        // Email is read-only for OAuth users
+        if (provider != "Email") {
+            inputEmail.isEnabled = false
+            inputEmail.alpha = 0.6f
+        } else {
+            inputEmail.isEnabled = true
+            inputEmail.alpha = 1f
+        }
+
+        val response = try { apiService.getAppProfile() } catch (e: Exception) {
+            // API failed but user is authenticated — show data from Supabase auth
+            val metaName = user.userMetadata?.get("name")?.toString()?.trim('"')
+                ?: user.userMetadata?.get("full_name")?.toString()?.trim('"')
+                ?: user.email?.substringBefore("@")?.replaceFirstChar { it.uppercase() } ?: "User"
+            profileNameHeader.text = metaName
+            profileEmailHeader.text = user.email ?: ""
+            inputName.setText(metaName)
+            inputEmail.setText(user.email ?: "")
+            return
+        }
+        if (!response.isSuccessful || response.body() == null) {
+            val metaName = user.userMetadata?.get("name")?.toString()?.trim('"')
+                ?: user.userMetadata?.get("full_name")?.toString()?.trim('"')
+                ?: user.email?.substringBefore("@")?.replaceFirstChar { it.uppercase() } ?: "User"
+            profileNameHeader.text = metaName
+            profileEmailHeader.text = user.email ?: ""
+            inputName.setText(metaName)
+            inputEmail.setText(user.email ?: "")
+            return
+        }
 
         val profile = response.body()!!
-        val user = SupabaseClient.getCurrentUser()
-        val userEmail = user?.email
-
-        val name = profile.full_name ?: "User"
-        val email = profile.email ?: userEmail ?: ""
-        profileNameHeader.text = name
+        val email = profile.email ?: user.email ?: ""
+        // Prefer OAuth metadata name, then saved profile name, then email prefix
+        val metaName = user.userMetadata?.get("name")?.toString()?.trim('"')
+            ?: user.userMetadata?.get("full_name")?.toString()?.trim('"')
+        val displayName = profile.full_name?.takeIf { it.isNotBlank() }
+            ?: metaName?.takeIf { it.isNotBlank() }
+            ?: user.email?.substringBefore("@")?.replaceFirstChar { it.uppercase() }
+            ?: "User"
+        profileNameHeader.text = displayName
         profileEmailHeader.text = email
 
-        inputName.setText(profile.full_name ?: "")
+        inputName.setText(displayName)
         inputEmail.setText(email)
         inputContact.setText(profile.contact ?: profile.phone ?: "")
         inputCountry.setText(profile.country ?: "")
@@ -273,14 +388,6 @@ class ProfileFragment : Fragment() {
         checkNotificationsEnabled.isChecked = prefs.notifications_enabled
         checkNotificationsPush.isChecked = prefs.push_notifications
         checkNotificationsEmail.isChecked = prefs.email_notifications
-        checkAnalyticsOptIn.isChecked = prefs.analytics_opt_in
-        checkMarketingOptIn.isChecked = prefs.marketing_opt_in
-        inputLanguage.setText(prefs.language ?: "")
-        inputTimezone.setText(prefs.timezone ?: "")
-
-        val options = listOf("private", "friends", "public")
-        val selectedIndex = options.indexOf(prefs.profile_visibility.lowercase()).coerceAtLeast(0)
-        spinnerProfileVisibility.setSelection(selectedIndex)
     }
 
     private suspend fun loadSavedCards() {
@@ -289,11 +396,12 @@ class ProfileFragment : Fragment() {
 
         val cards = response.body()!!.cards
         if (cards.isEmpty()) {
-            cardInfoText.text = "Card: Not stored"
+            cardInfoText.visibility = android.view.View.GONE
             return
         }
 
         val defaultCard = cards.firstOrNull { it.is_default } ?: cards.first()
+        cardInfoText.visibility = android.view.View.VISIBLE
         cardInfoText.text = "Card: ${defaultCard.card_brand.uppercase()} •••• ${defaultCard.card_last_four} (exp ${defaultCard.card_exp_month}/${defaultCard.card_exp_year})"
     }
 
@@ -303,15 +411,16 @@ class ProfileFragment : Fragment() {
 
         val payments = response.body()!!.payments
         if (payments.isEmpty()) {
-            paymentHistoryText.text = "No payments yet"
+            btnTabRecentPayments?.visibility = android.view.View.GONE
             return
         }
 
+        btnTabRecentPayments?.visibility = android.view.View.VISIBLE
         val latest = payments.take(3)
             .joinToString("\n") { p ->
                 "• ${p.transaction_type} ${p.amount_cents / 100.0} ${p.currency.uppercase()} (${p.status})"
             }
-        paymentHistoryText.text = latest
+        recentPaymentsText?.text = latest
     }
 
     private suspend fun loadScans() {
@@ -323,10 +432,11 @@ class ProfileFragment : Fragment() {
         scansSummary.text = "Total scans: ${scans.size}"
 
         if (scans.isEmpty()) {
-            scanHistoryText.text = "No scans yet"
+            scanHistoryText.visibility = android.view.View.GONE
             return
         }
 
+        scanHistoryText.visibility = android.view.View.VISIBLE
         scanHistoryText.text = scans.take(5)
             .joinToString("\n") { menu ->
                 "• ${menu.restaurant_name ?: "Unknown restaurant"} (${menu.created_at ?: "n/a"})"
@@ -343,6 +453,7 @@ class ProfileFragment : Fragment() {
         statStatus.text = subscription.status.replaceFirstChar { it.uppercase() }
         subscriptionText.text = "Current: ${subscription.plan_name} (${subscription.status})"
         premiumBadge.isVisible = currentPlanName == "PRO" || currentPlanName == "MAX"
+        btnManageSubscription?.visibility = if (currentPlanName != "FREE") View.VISIBLE else View.GONE
     }
 
     private suspend fun loadPlans() {
@@ -351,11 +462,20 @@ class ProfileFragment : Fragment() {
 
         val plans = response.body()!!.plans
         plans.forEach { plan ->
-            val label = "${plan.name} • ${plan.price_display}/${plan.billing_period} • ${plan.description}"
+            val priceText = plan.resolvedPriceDisplay()
             when (plan.name.uppercase()) {
-                "FREE" -> btnPlanFree.text = label
-                "PRO" -> btnPlanPro.text = label
-                "MAX" -> btnPlanMax.text = label
+                "FREE" -> {
+                    if (!priceText.isNullOrBlank()) tvPriceFree.text = priceText
+                    if (currentPlanName == "FREE") btnPlanFree.text = "Current Plan" else btnPlanFree.text = "Select Free"
+                }
+                "PRO" -> {
+                    if (!priceText.isNullOrBlank()) tvPricePro.text = priceText
+                    if (currentPlanName == "PRO") btnPlanPro.text = "Current Plan" else btnPlanPro.text = "Upgrade to Pro"
+                }
+                "MAX" -> {
+                    if (!priceText.isNullOrBlank()) tvPriceMax.text = priceText
+                    if (currentPlanName == "MAX") btnPlanMax.text = "Current Plan" else btnPlanMax.text = "Upgrade to Max"
+                }
             }
         }
     }
@@ -429,6 +549,7 @@ class ProfileFragment : Fragment() {
 
                 if (response.isSuccessful && response.body() != null) {
                     val card = response.body()!!
+                    cardInfoText.visibility = android.view.View.VISIBLE
                     cardInfoText.text = "Card: ${card.card_brand.uppercase()} •••• ${card.card_last_four} (exp ${card.card_exp_month}/${card.card_exp_year})"
                     inputCardNumber.text?.clear()
                     inputCardCvv.text?.clear()
@@ -444,44 +565,96 @@ class ProfileFragment : Fragment() {
         }
     }
 
-    private fun selectPlan(planName: String) {
+    /**
+     * Open the web pricing page in the system browser.
+     *
+     * We do NOT use in-app purchases (Play Billing) here to avoid the
+     * 30% Google Play commission. Payment goes directly through Stripe
+     * on our web domain. After checkout the web page issues a deep-link
+     * (menuocr://subscription-result?status=success) which LoginActivity
+     * receives and triggers a subscription status refresh.
+     */
+    private fun openWebCheckout(planId: String = "") {
         viewLifecycleOwner.lifecycleScope.launch {
-            setLoading(true, "Updating subscription...")
             try {
-                val response = apiService.selectSubscriptionPlan(SelectSubscriptionPlanRequest(plan_name = planName))
-                if (response.isSuccessful && response.body() != null) {
-                    val sub = response.body()!!
-                    currentPlanName = sub.plan_name.uppercase()
-                    statPlan.text = currentPlanName
-                    statStatus.text = sub.status.replaceFirstChar { it.uppercase() }
-                    subscriptionText.text = "Current: ${sub.plan_name} (${sub.status})"
-                    premiumBadge.isVisible = currentPlanName == "PRO" || currentPlanName == "MAX"
-                    Toast.makeText(requireContext(), "Plan switched to ${sub.plan_name}", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(requireContext(), "Failed to switch plan", Toast.LENGTH_SHORT).show()
-                }
+                val user = SupabaseClient.getCurrentUser()
+                // Build URL with Supabase tokens so the web page auto-authenticates
+                val session = SupabaseClient.getCurrentSession()
+                val accessToken  = session?.accessToken  ?: ""
+                val refreshToken = session?.refreshToken ?: ""
+
+                val baseUrl = AppConfig.Web.pricingUrl(accessToken, refreshToken)
+                val url = if (planId.isNotBlank()) "$baseUrl&plan=$planId" else baseUrl
+
+                launchBrandedTab(url)
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Failed to switch plan: ${e.message}", Toast.LENGTH_SHORT).show()
-            } finally {
-                setLoading(false)
+                // Fallback: just open pricing page without auth token
+                val fallback = "${AppConfig.Web.BASE_URL}${AppConfig.Web.PRICING_PATH}"
+                launchBrandedTab(fallback)
             }
         }
+    }
+
+    private fun openManageSubscription() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val session = SupabaseClient.getCurrentSession()
+                val accessToken  = session?.accessToken  ?: ""
+                val refreshToken = session?.refreshToken ?: ""
+                // Request portal URL from our API then open it
+                val bearerToken = "Bearer $accessToken"
+                val res = try { apiService.getCustomerPortal(bearerToken) } catch (_: Exception) { null }
+                val portalUrl = res?.body()?.portal_url
+                val url = if (!portalUrl.isNullOrBlank()) portalUrl
+                          else "${AppConfig.Web.BASE_URL}${AppConfig.Web.MANAGE_SUB_PATH}?token=$accessToken&refresh=$refreshToken"
+                launchBrandedTab(url)
+            } catch (e: Exception) {
+                val fallback = "${AppConfig.Web.BASE_URL}${AppConfig.Web.MANAGE_SUB_PATH}"
+                launchBrandedTab(fallback)
+            }
+        }
+    }
+
+    private fun launchBrandedTab(url: String) {
+        val toolbarColor = android.graphics.Color.parseColor("#222222")
+        val colorParams = CustomTabColorSchemeParams.Builder()
+            .setToolbarColor(toolbarColor)
+            .setNavigationBarColor(toolbarColor)
+            .build()
+        val customTabsIntent = CustomTabsIntent.Builder()
+            .setDefaultColorSchemeParams(colorParams)
+            .setShowTitle(true)
+            .setUrlBarHidingEnabled(true)
+            .build()
+        customTabsIntent.launchUrl(requireContext(), Uri.parse(url))
+    }
+
+    private fun selectPlan(planName: String) {
+        // FREE downgrade: no payment needed, just call API
+        if (planName == "FREE") {
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    apiService.selectSubscriptionPlan(SelectSubscriptionPlanRequest(plan_name = planName))
+                    Toast.makeText(requireContext(), "Switched to Free plan", Toast.LENGTH_SHORT).show()
+                    loadAllProfileData()
+                } catch (_: Exception) {}
+            }
+            return
+        }
+        // PRO / MAX: open web checkout — bypasses store commission entirely
+        openWebCheckout(planId = planName.lowercase())
     }
 
     private fun savePreferences() {
         viewLifecycleOwner.lifecycleScope.launch {
             setLoading(true, "Saving preferences...")
             try {
-                val visibility = spinnerProfileVisibility.selectedItem?.toString() ?: "private"
                 val request = ProfilePreferencesRequest(
                     notifications_enabled = checkNotificationsEnabled.isChecked,
                     push_notifications = checkNotificationsPush.isChecked,
                     email_notifications = checkNotificationsEmail.isChecked,
-                    profile_visibility = visibility,
-                    analytics_opt_in = checkAnalyticsOptIn.isChecked,
-                    marketing_opt_in = checkMarketingOptIn.isChecked,
-                    language = inputLanguage.text.toString().trim().ifEmpty { null },
-                    timezone = inputTimezone.text.toString().trim().ifEmpty { null }
+                    language = null,
+                    timezone = null
                 )
 
                 val response = apiService.updateProfilePreferences(request)

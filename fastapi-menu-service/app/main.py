@@ -15,7 +15,7 @@ from typing import Callable
 import uuid
 
 from app.config import settings
-from app.routers import ocr, auth, user_preferences, table_extraction, new_health_router, dishes, user_management, menu_enrichment, enhanced_ocr_router, llm_provider, health_profile_compat
+from app.routers import ocr, auth, user_preferences, table_extraction, new_health_router, dishes, user_management, menu_enrichment, enhanced_ocr_router, llm_provider, health_profile_compat, subscriptions
 
 # Configure logging
 logging.basicConfig(
@@ -239,6 +239,7 @@ app.include_router(user_management.router)
 app.include_router(menu_enrichment.router)
 app.include_router(enhanced_ocr_router.router)
 app.include_router(llm_provider.router)
+app.include_router(subscriptions.router)
 
 # Root endpoint
 @app.get("/")

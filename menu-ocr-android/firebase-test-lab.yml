@@ -1,0 +1,87 @@
+# =============================================================================
+# Firebase Test Lab – Robo Test Configuration
+# =============================================================================
+# This file is used by `gcloud firebase test android run` to automatically
+# exercise the app on a matrix of real devices hosted in Google's data centres.
+#
+# HOW TO RUN (one-time setup):
+#   1. Install the Google Cloud SDK: https://cloud.google.com/sdk/docs/install
+#   2. Authenticate:  gcloud auth login
+#   3. Set project:   gcloud config set project YOUR_FIREBASE_PROJECT_ID
+#   4. Run:           gcloud firebase test android run firebase-test-lab.yml:robo-smoke
+#
+# Devices listed below are the most popular Android models on the Play Store.
+# =============================================================================
+
+robo-smoke:
+  type: robo
+  # ── Build artefacts ──────────────────────────────────────────────────────────
+  # Build a debug APK first:
+  #   ./gradlew assembleDebug
+  app: app/build/outputs/apk/debug/app-debug.apk
+
+  # ── Robo directives ──────────────────────────────────────────────────────────
+  # Teach the Robo crawler how to proceed past login screens so it can explore
+  # the deeper parts of the app automatically.
+  robo-directives:
+    input.email_field:    test@menuocr-test.com
+    input.password_field: TestPass123!
+    click:login_button:   ""
+
+  # ── Device matrix ────────────────────────────────────────────────────────────
+  device:
+    # Samsung Galaxy S23 – Android 13 (most common flagship)
+    - model: b0q
+      version: 33
+      locale: en
+      orientation: portrait
+
+    # Samsung Galaxy A54 – Android 14 (popular mid-range)
+    - model: a54xnsxx
+      version: 34
+      locale: en
+      orientation: portrait
+
+    # Google Pixel 7 – Android 13 (pure AOSP reference)
+    - model: panther
+      version: 33
+      locale: en
+      orientation: portrait
+
+    # Xiaomi Redmi Note 12 – Android 12 (large market share in Asia)
+    - model: sunstone
+      version: 32
+      locale: en
+      orientation: portrait
+
+  # ── Timeouts & results ───────────────────────────────────────────────────────
+  timeout: 5m
+  results-bucket: gs://YOUR_FIREBASE_PROJECT_ID-test-results
+  results-dir:    robo-smoke-{date}
+
+  # ── Reporting ────────────────────────────────────────────────────────────────
+  # Fails the CI job if any crash is detected during the robo crawl.
+  fail-fast: true
+
+# =============================================================================
+# Instrumented (Espresso) test run – used in CI after robo passes
+# =============================================================================
+instrumented:
+  type: instrumentation
+  app:       app/build/outputs/apk/debug/app-debug.apk
+  test-apk:  app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+
+  device:
+    - model: b0q
+      version: 33
+      locale: en
+      orientation: portrait
+    - model: panther
+      version: 33
+      locale: en
+      orientation: portrait
+
+  timeout: 10m
+  results-bucket: gs://YOUR_FIREBASE_PROJECT_ID-test-results
+  results-dir:    instrumented-{date}
+  fail-fast: true

@@ -6,7 +6,7 @@
     <string name="nav_home">Home</string>
     <string name="nav_search">Search</string>
     <string name="nav_orders">Orders</string>
-    <string name="nav_profile">Profile</string>
+    <string name="nav_profile">Account</string>
     
     <!-- Search and Content -->
     <string name="search_restaurants">Search restaurants or dishes...</string>
@@ -40,7 +40,7 @@
     <string name="confirm">Confirm</string>
     
     <!-- Profile -->
-    <string name="profile_title">Profile</string>
+    <string name="profile_title">Account</string>
     <string name="profile_name">Name</string>
     <string name="profile_email">Email</string>
     <string name="profile_phone">Phone Number</string>

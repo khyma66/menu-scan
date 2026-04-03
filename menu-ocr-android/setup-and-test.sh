@@ -85,7 +85,7 @@ echo -e "${YELLOW}Step 6: Launching app...${NC}"
 read -p "Do you want to launch the app now? (y/n): " launch_choice
 
 if [ "$launch_choice" = "y" ] || [ "$launch_choice" = "Y" ]; then
-    adb shell am start -n com.menuocr/.MainActivity
+    adb shell am start -n com.menuocr/.SplashActivity
     echo -e "${GREEN}✓ App launched!${NC}"
 fi
 
