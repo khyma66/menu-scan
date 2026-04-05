@@ -12,34 +12,34 @@ import AdSupport
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
+
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Request App Tracking Transparency permission.
-        // Must be called after the first screen has rendered (iOS 14.5+).
-        // NSUserTrackingUsageDescription in Info.plist is required or the app
-        // will crash at this call. AppConfig.Features.enableAnalytics gates
-        // actual data collection — ATT just requests the OS-level permission.
-//        window = UIWindow()
-//
-//        // Show splash screen first with breathe-out animation
-//        let splashVC = SplashViewController()
-//        splashVC.onAnimationComplete = { [weak self] in
-//            guard let self = self else { return }
-//            // Transition to the main tab bar controller
-//            let tabBarController = DoorDashTabBarController()
-//            self.window?.rootViewController = tabBarController
-//            self.window?.makeKeyAndVisible()
-//        }
-//
-//        window?.rootViewController = splashVC
-//        window?.makeKeyAndVisible()
-        
+
+        // Fallback window setup — if scene delegate is not called (e.g. iOS
+        // cannot resolve the scene manifest), this guarantees the app shows UI.
+        if #available(iOS 13, *) {
+            // Scene-based apps should set up window in SceneDelegate.
+            // But if something goes wrong, we set up here after a short delay.
+            DispatchQueue.main.async {
+                if self.window?.rootViewController == nil {
+                    print("[AppDelegate] SceneDelegate did not set rootViewController — using fallback")
+                    let window = UIWindow(frame: UIScreen.main.bounds)
+                    let splashVC = SplashViewController()
+                    splashVC.onAnimationComplete = {
+                        let tabBarController = DoorDashTabBarController()
+                        window.rootViewController = tabBarController
+                        window.makeKeyAndVisible()
+                    }
+                    window.rootViewController = splashVC
+                    window.makeKeyAndVisible()
+                    self.window = window
+                }
+            }
+        }
+
         if AppConfig.Features.enableAnalytics {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                 ATTrackingManager.requestTrackingAuthorization { status in
-                    // status == .authorized  → IDFA available, analytics active
-                    // status == .denied      → use anonymous session ID only
-                    // status == .restricted  → device-level restriction in place
-                    // status == .notDetermined → should not happen here
                     #if DEBUG
                     print("[ATT] Authorization status: \(status.rawValue)")
                     #endif
@@ -52,6 +52,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     // MARK: UISceneSession Lifecycle
 
     func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {
+        print("[AppDelegate] configurationForConnecting called")
         let config = UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
         config.delegateClass = SceneDelegate.self
         return config
