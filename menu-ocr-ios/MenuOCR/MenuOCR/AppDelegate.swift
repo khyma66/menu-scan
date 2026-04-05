@@ -11,13 +11,28 @@ import AdSupport
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
-
+    var window: UIWindow?
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Request App Tracking Transparency permission.
         // Must be called after the first screen has rendered (iOS 14.5+).
         // NSUserTrackingUsageDescription in Info.plist is required or the app
         // will crash at this call. AppConfig.Features.enableAnalytics gates
         // actual data collection — ATT just requests the OS-level permission.
+//        window = UIWindow()
+//
+//        // Show splash screen first with breathe-out animation
+//        let splashVC = SplashViewController()
+//        splashVC.onAnimationComplete = { [weak self] in
+//            guard let self = self else { return }
+//            // Transition to the main tab bar controller
+//            let tabBarController = DoorDashTabBarController()
+//            self.window?.rootViewController = tabBarController
+//            self.window?.makeKeyAndVisible()
+//        }
+//
+//        window?.rootViewController = splashVC
+//        window?.makeKeyAndVisible()
+        
         if AppConfig.Features.enableAnalytics {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                 ATTrackingManager.requestTrackingAuthorization { status in
@@ -37,9 +52,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     // MARK: UISceneSession Lifecycle
 
     func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {
-        // Called when a new scene session is being created.
-        // Use this method to select a configuration to create the new scene with.
-        return UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
+        let config = UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
+        config.delegateClass = SceneDelegate.self
+        return config
     }
 
     func application(_ application: UIApplication, didDiscardSceneSessions sceneSessions: Set<UISceneSession>) {
