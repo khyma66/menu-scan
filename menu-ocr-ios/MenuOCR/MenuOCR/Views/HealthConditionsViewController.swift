@@ -611,19 +611,11 @@ extension HealthConditionsViewController: UITextViewDelegate {
     }
 }
 
-// MARK: - PaywallViewControllerDelegate
-
-extension HealthConditionsViewController: PaywallViewControllerDelegate {
-    func paywallDidComplete(plan: String) {
-        ScanLimitManager.shared.upgradeTo(plan: plan)
-        updateMaxPlanGate()
-    }
-}
-
 // MARK: - PaywallDelegate
 
 extension HealthConditionsViewController: PaywallDelegate {
     func paywallDidPurchase(plan: String) {
+        ScanLimitManager.shared.upgradeTo(plan: plan)
         updateMaxPlanGate()
     }
     func paywallDidDismiss() {}

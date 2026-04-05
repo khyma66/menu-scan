@@ -76,7 +76,7 @@
                 <!-- via a build-time script; production traffic is HTTPS only -->
             </dict>
         </dict>
-    </key>
+    </dict>
 
     <!-- ============================================================ -->
     <!-- Scene & UI                                                   -->
