@@ -33,15 +33,18 @@ class MenuOCRViewController: UIViewController {
     private var tableHeightConstraint: NSLayoutConstraint?
 
     // MARK: - Brand colours
-    private let brandViolet = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 1) // #7C3AED
-    private let brandVioletLight = UIColor(red: 0.91, green: 0.87, blue: 1.0, alpha: 1) // #E8DEFF
-    private let brandVioletBg = UIColor(red: 0.96, green: 0.94, blue: 1.0, alpha: 1) // #F5F0FF
+    // Android: Scan header gradient #3B5BDB → #2563EB
+    private let brandBlue = UIColor(red: 0.231, green: 0.357, blue: 0.859, alpha: 1) // #3B5BDB
+    private let brandBlueEnd = UIColor(red: 0.145, green: 0.388, blue: 0.922, alpha: 1) // #2563EB
+    private let brandViolet = UIColor(red: 0.231, green: 0.357, blue: 0.859, alpha: 1) // #3B5BDB (alias)
+    private let brandVioletLight = UIColor(red: 0.86, green: 0.91, blue: 0.98, alpha: 1) // #DBEAFE (Android info_bg)
+    private let brandVioletBg = UIColor(red: 0.94, green: 0.96, blue: 1.0, alpha: 1) // #EFF6FF (Android blue_50)
     // Legacy alias kept for button highlight
-    private let brandRed = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 1) // now violet
-    private let scanPurple = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 1) // #7C3AED
+    private let brandRed = UIColor(red: 0.231, green: 0.357, blue: 0.859, alpha: 1) // now blue
+    private let scanPurple = UIColor(red: 0.231, green: 0.357, blue: 0.859, alpha: 1) // #3B5BDB
     // UX playbook: off-black for text (not pure #000)
-    private let textPrimary = UIColor(red: 0.12, green: 0.12, blue: 0.14, alpha: 1) // #1F1F24
-    private let textSecondary = UIColor(red: 0.4, green: 0.4, blue: 0.45, alpha: 1) // #666673
+    private let textPrimary = UIColor(red: 0.012, green: 0.008, blue: 0.075, alpha: 1) // #030213 (Android gray_900)
+    private let textSecondary = UIColor(red: 0.443, green: 0.443, blue: 0.51, alpha: 1) // #717182 (Android gray_500)
 
     // MARK: - UI Components
 
@@ -114,7 +117,7 @@ class MenuOCRViewController: UIViewController {
     // MARK: - UI Setup
 
     private func setupUI() {
-        view.backgroundColor = UIColor(red: 0.96, green: 0.94, blue: 1.0, alpha: 1) // light violet bg
+        view.backgroundColor = brandVioletBg
 
         // Status bar bg
         let statusBarBg = UIView()
@@ -344,7 +347,7 @@ class MenuOCRViewController: UIViewController {
         resultsHeaderLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(resultsHeaderLabel)
 
-        resultsCard.backgroundColor = UIColor(red: 0.96, green: 0.94, blue: 1.0, alpha: 1) // light violet bg
+        resultsCard.backgroundColor = brandVioletBg
         resultsCard.layer.cornerRadius = 16
         resultsCard.isHidden = true
         resultsCard.translatesAutoresizingMaskIntoConstraints = false

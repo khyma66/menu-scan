@@ -23,10 +23,10 @@ class PaywallViewController: UIViewController {
 
     // MARK: - Theme
 
-    private let violetPrimary = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 1)
-    private let violetBg      = UIColor(red: 0.96, green: 0.94, blue: 1.0, alpha: 1)
-    private let textDark      = UIColor(red: 0.12, green: 0.12, blue: 0.14, alpha: 1)
-    private let textMuted     = UIColor(red: 0.45, green: 0.42, blue: 0.55, alpha: 1)
+    private let violetPrimary = UIColor(red: 0.231, green: 0.357, blue: 0.859, alpha: 1) // #3B5BDB
+    private let violetBg      = UIColor(red: 0.94, green: 0.96, blue: 1.0, alpha: 1)     // #EFF6FF
+    private let textDark      = UIColor(red: 0.012, green: 0.008, blue: 0.075, alpha: 1) // #030213
+    private let textMuted     = UIColor(red: 0.443, green: 0.443, blue: 0.51, alpha: 1)  // #717182
 
     // Card accent colors
     private let freeColor = UIColor(red: 0.75, green: 0.75, blue: 0.78, alpha: 1)    // light gray

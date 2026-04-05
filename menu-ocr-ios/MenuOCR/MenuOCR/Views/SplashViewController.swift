@@ -13,15 +13,15 @@ class SplashViewController: UIViewController {
     var onAnimationComplete: (() -> Void)?
 
     // MARK: - Theme
-    private let violetPrimary = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 1.0)
-    private let violetBg      = UIColor(red: 0.96, green: 0.94, blue: 1.0, alpha: 1.0)
+    private let violetPrimary = UIColor(red: 0.98, green: 0.239, blue: 0.18, alpha: 1.0) // #FA3D2E
+    private let violetBg      = UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0) // white
 
     // MARK: - UI Components
 
     /// Soft radial glow behind logo
     private let glowView: UIView = {
         let v = UIView()
-        v.backgroundColor = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 0.08)
+        v.backgroundColor = UIColor(red: 0.98, green: 0.239, blue: 0.18, alpha: 0.08)
         v.layer.cornerRadius = 90
         v.translatesAutoresizingMaskIntoConstraints = false
         return v
@@ -48,7 +48,7 @@ class SplashViewController: UIViewController {
         let lbl = UILabel()
         lbl.text = "Scan menus. Eat smarter."
         lbl.font = .systemFont(ofSize: 16, weight: .medium)
-        lbl.textColor = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 0.55)
+        lbl.textColor = UIColor(red: 0.443, green: 0.443, blue: 0.51, alpha: 1.0) // #717182
         lbl.textAlignment = .center
         lbl.alpha = 0
         lbl.translatesAutoresizingMaskIntoConstraints = false

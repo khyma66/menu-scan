@@ -2,7 +2,7 @@
 //  DoorDashTabBarController.swift
 //  MenuOCR
 //
-//  Main tab bar controller – 3 tabs: Scan, Health+, Profile
+//  Main tab bar controller – 3 tabs: Health+, Scan, Account
 //
 
 import UIKit
@@ -19,6 +19,7 @@ class DoorDashTabBarController: UITabBarController {
         super.viewDidLoad()
         setupAppearance()
         setupViewControllers()
+        selectedIndex = 1 // Default to Scan (middle tab)
     }
 
     // MARK: - Setup
@@ -28,18 +29,20 @@ class DoorDashTabBarController: UITabBarController {
         appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = .systemBackground
 
-        let primaryColor = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 1.0)
+        // Android: selected = #FA3D2E (DoorDash red)
+        let selectedColor = UIColor(red: 0.98, green: 0.239, blue: 0.18, alpha: 1.0) // #FA3D2E
 
-        appearance.stackedLayoutAppearance.selected.iconColor = primaryColor
+        appearance.stackedLayoutAppearance.selected.iconColor = selectedColor
         appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
-            .foregroundColor: primaryColor,
+            .foregroundColor: selectedColor,
             .font: UIFont.systemFont(ofSize: 11, weight: .semibold)
         ]
 
-        let offBlackGray = UIColor(red: 0.45, green: 0.45, blue: 0.45, alpha: 1.0)
-        appearance.stackedLayoutAppearance.normal.iconColor = offBlackGray
+        // Android: unselected = #717182 (gray_500)
+        let unselectedColor = UIColor(red: 0.443, green: 0.443, blue: 0.51, alpha: 1.0) // #717182
+        appearance.stackedLayoutAppearance.normal.iconColor = unselectedColor
         appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
-            .foregroundColor: offBlackGray,
+            .foregroundColor: unselectedColor,
             .font: UIFont.systemFont(ofSize: 11, weight: .medium)
         ]
 
@@ -52,26 +55,15 @@ class DoorDashTabBarController: UITabBarController {
         if #available(iOS 15.0, *) {
             tabBar.scrollEdgeAppearance = appearance
         }
-
-        let navAppearance = UINavigationBarAppearance()
-        navAppearance.configureWithOpaqueBackground()
-        navAppearance.backgroundColor = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 1.0)
-        navAppearance.titleTextAttributes = [
-            .foregroundColor: UIColor.white,
-            .font: UIFont.systemFont(ofSize: 18, weight: .semibold)
-        ]
-        navAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
-
-        UINavigationBar.appearance().standardAppearance = navAppearance
-        UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
     }
 
     private func setupViewControllers() {
-        let menuOcrVC = createMenuOcrVC()
         let healthVC = createHealthConditionsVC()
+        let menuOcrVC = createMenuOcrVC()
         let profileVC = createProfileVC()
 
-        viewControllers = [menuOcrVC, healthVC, profileVC]
+        // Android order: Health+ | Scan | Account
+        viewControllers = [healthVC, menuOcrVC, profileVC]
     }
 
     private func createMenuOcrVC() -> UINavigationController {
@@ -108,8 +100,9 @@ class DoorDashTabBarController: UITabBarController {
     private func createProfileVC() -> UINavigationController {
         let profileVC = ProfileViewController()
 
+        // Android: tab name is "Account"
         profileVC.tabBarItem = UITabBarItem(
-            title: "Profile",
+            title: "Account",
             image: UIImage(systemName: "person.circle"),
             selectedImage: UIImage(systemName: "person.circle.fill")
         )

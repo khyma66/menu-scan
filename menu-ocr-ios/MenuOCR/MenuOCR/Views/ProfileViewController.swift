@@ -2,13 +2,30 @@
 //  ProfileViewController.swift
 //  MenuOCR
 //
-//  Profile tab: user info, subscription card, recent scans.
-//  No privacy & security section.
-//  Recent Scans sync to Supabase per account.
+//  Account tab: sub-tabs for Profile, Payment, Recent Scans, Subscription.
+//  Matches Android ProfileFragment layout and colors.
 //
 
 import UIKit
 import Combine
+
+// MARK: - ProfileTab enum
+
+private enum ProfileTab: Int, CaseIterable {
+    case profile = 0
+    case payment
+    case recentScans
+    case subscription
+
+    var title: String {
+        switch self {
+        case .profile: return "👤 Profile"
+        case .payment: return "💳 Payment"
+        case .recentScans: return "🧾 Recent Scans"
+        case .subscription: return "⭐ Subscription"
+        }
+    }
+}
 
 // MARK: - ProfileViewController
 
@@ -18,11 +35,16 @@ class ProfileViewController: UIViewController {
     private let apiService = ApiService()
     private var cancellables = Set<AnyCancellable>()
 
-    // MARK: - Theme
-    private let violetPrimary = UIColor(red: 0.486, green: 0.227, blue: 0.929, alpha: 1)
-    private let violetBg = UIColor(red: 0.96, green: 0.94, blue: 1.0, alpha: 1)
-    private let textDark = UIColor(red: 0.12, green: 0.12, blue: 0.14, alpha: 1)
-    private let textMuted = UIColor(red: 0.45, green: 0.42, blue: 0.55, alpha: 1)
+    // MARK: - Theme (Android colors)
+    private let headerPink = UIColor(red: 0.925, green: 0.286, blue: 0.6, alpha: 1) // #EC4899
+    private let subtabActive = UIColor(red: 0.231, green: 0.357, blue: 0.859, alpha: 1) // #3B5BDB
+    private let textDark = UIColor(red: 0.012, green: 0.008, blue: 0.075, alpha: 1) // #030213
+    private let textMuted = UIColor(red: 0.443, green: 0.443, blue: 0.51, alpha: 1) // #717182
+    private let dividerColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.1) // #0000001A
+    private let pageBg = UIColor(red: 0.953, green: 0.953, blue: 0.961, alpha: 1) // #F3F3F5
+
+    // MARK: - Active tab
+    private var activeTab: ProfileTab = .profile
 
     // MARK: - UI Components
     private let scrollView = UIScrollView()
@@ -30,24 +52,32 @@ class ProfileViewController: UIViewController {
     private let headerView = UIView()
     private let titleLabel = UILabel()
 
-    // User info
+    // Sub-tab buttons
+    private let subtabScrollView = UIScrollView()
+    private let subtabStack = UIStackView()
+    private var subtabButtons: [UIButton] = []
+
+    // Sections (each is a container view)
+    private let profileSection = UIView()
+    private let paymentSection = UIView()
+    private let recentScansSection = UIView()
+    private let subscriptionSection = UIView()
+
+    // Profile section
     private let avatarLabel = UILabel()
     private let nameLabel = UILabel()
     private let emailLabel = UILabel()
+    private let signOutButton = UIButton(type: .system)
 
-    // Subscription card
+    // Recent scans section
+    private let recentScansStack = UIStackView()
+    private let noScansLabel = UILabel()
+
+    // Subscription section
     private let subscriptionCard = UIView()
     private let planNameLabel = UILabel()
     private let planStatusLabel = UILabel()
     private let managePlanButton = UIButton(type: .system)
-
-    // Recent scans section
-    private let recentScansHeader = UILabel()
-    private let recentScansStack = UIStackView()
-    private let noScansLabel = UILabel()
-
-    // Sign out
-    private let signOutButton = UIButton(type: .system)
 
     // Data
     private var recentScans: [RecentScan] = []
@@ -60,6 +90,7 @@ class ProfileViewController: UIViewController {
         setupConstraints()
         setupBindings()
         loadUserProfile()
+        selectTab(.profile)
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -71,15 +102,11 @@ class ProfileViewController: UIViewController {
     // MARK: - UI Setup
 
     private func setupUI() {
-        view.backgroundColor = violetBg
+        view.backgroundColor = pageBg
 
-        // Header
-        headerView.backgroundColor = violetPrimary
-        headerView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(headerView)
-
+        // Status bar bg
         let statusBarBg = UIView()
-        statusBarBg.backgroundColor = violetPrimary
+        statusBarBg.backgroundColor = headerPink
         statusBarBg.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(statusBarBg)
         NSLayoutConstraint.activate([
@@ -89,12 +116,20 @@ class ProfileViewController: UIViewController {
             statusBarBg.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
         ])
 
-        titleLabel.text = "Profile"
+        // Header
+        headerView.backgroundColor = headerPink
+        headerView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(headerView)
+
+        titleLabel.text = "Account"
         titleLabel.font = .systemFont(ofSize: 20, weight: .bold)
         titleLabel.textColor = .white
         titleLabel.textAlignment = .center
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         headerView.addSubview(titleLabel)
+
+        // Sub-tab bar
+        setupSubtabs()
 
         // Scroll view
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -102,47 +137,207 @@ class ProfileViewController: UIViewController {
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
 
-        setupUserInfoSection()
-        setupSubscriptionSection()
+        setupProfileSection()
+        setupPaymentSection()
         setupRecentScansSection()
-        setupSignOutButton()
+        setupSubscriptionSection()
     }
 
-    private func setupUserInfoSection() {
+    // MARK: - Sub-tabs
+
+    private func setupSubtabs() {
+        subtabScrollView.showsHorizontalScrollIndicator = false
+        subtabScrollView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(subtabScrollView)
+
+        subtabStack.axis = .horizontal
+        subtabStack.spacing = 8
+        subtabStack.translatesAutoresizingMaskIntoConstraints = false
+        subtabScrollView.addSubview(subtabStack)
+
+        for tab in ProfileTab.allCases {
+            let btn = UIButton(type: .system)
+            btn.setTitle(tab.title, for: .normal)
+            btn.titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
+            btn.layer.cornerRadius = 12
+            btn.contentEdgeInsets = UIEdgeInsets(top: 8, left: 16, bottom: 8, right: 16)
+            btn.tag = tab.rawValue
+            btn.addTarget(self, action: #selector(subtabTapped(_:)), for: .touchUpInside)
+            btn.translatesAutoresizingMaskIntoConstraints = false
+            btn.heightAnchor.constraint(equalToConstant: 40).isActive = true
+            subtabStack.addArrangedSubview(btn)
+            subtabButtons.append(btn)
+        }
+    }
+
+    @objc private func subtabTapped(_ sender: UIButton) {
+        guard let tab = ProfileTab(rawValue: sender.tag) else { return }
+        selectTab(tab)
+    }
+
+    private func selectTab(_ tab: ProfileTab) {
+        activeTab = tab
+
+        // Update button appearance
+        for btn in subtabButtons {
+            let isSelected = btn.tag == tab.rawValue
+            if isSelected {
+                btn.backgroundColor = subtabActive
+                btn.setTitleColor(.white, for: .normal)
+            } else {
+                btn.backgroundColor = .white
+                btn.setTitleColor(textDark, for: .normal)
+                btn.layer.borderWidth = 1
+                btn.layer.borderColor = dividerColor.cgColor
+            }
+        }
+
+        // Show/hide sections
+        profileSection.isHidden = tab != .profile
+        paymentSection.isHidden = tab != .payment
+        recentScansSection.isHidden = tab != .recentScans
+        subscriptionSection.isHidden = tab != .subscription
+    }
+
+    // MARK: - Profile Section
+
+    private func setupProfileSection() {
+        profileSection.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(profileSection)
+
         // Avatar circle
         avatarLabel.text = "👤"
         avatarLabel.font = .systemFont(ofSize: 40)
         avatarLabel.textAlignment = .center
-        avatarLabel.backgroundColor = violetPrimary.withAlphaComponent(0.12)
+        avatarLabel.backgroundColor = headerPink.withAlphaComponent(0.12)
         avatarLabel.layer.cornerRadius = 36
         avatarLabel.clipsToBounds = true
         avatarLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(avatarLabel)
+        profileSection.addSubview(avatarLabel)
 
         nameLabel.text = "Loading..."
         nameLabel.font = .systemFont(ofSize: 20, weight: .bold)
         nameLabel.textColor = textDark
         nameLabel.textAlignment = .center
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(nameLabel)
+        profileSection.addSubview(nameLabel)
 
         emailLabel.text = ""
         emailLabel.font = .systemFont(ofSize: 14)
         emailLabel.textColor = textMuted
         emailLabel.textAlignment = .center
         emailLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(emailLabel)
+        profileSection.addSubview(emailLabel)
+
+        // Sign out
+        signOutButton.setTitle("Sign Out", for: .normal)
+        signOutButton.setTitleColor(.white, for: .normal)
+        signOutButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .bold)
+        signOutButton.backgroundColor = .systemRed
+        signOutButton.layer.cornerRadius = 12
+        signOutButton.addTarget(self, action: #selector(signOutTapped), for: .touchUpInside)
+        signOutButton.translatesAutoresizingMaskIntoConstraints = false
+        profileSection.addSubview(signOutButton)
+
+        NSLayoutConstraint.activate([
+            avatarLabel.topAnchor.constraint(equalTo: profileSection.topAnchor, constant: 24),
+            avatarLabel.centerXAnchor.constraint(equalTo: profileSection.centerXAnchor),
+            avatarLabel.widthAnchor.constraint(equalToConstant: 72),
+            avatarLabel.heightAnchor.constraint(equalToConstant: 72),
+
+            nameLabel.topAnchor.constraint(equalTo: avatarLabel.bottomAnchor, constant: 10),
+            nameLabel.centerXAnchor.constraint(equalTo: profileSection.centerXAnchor),
+
+            emailLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 4),
+            emailLabel.centerXAnchor.constraint(equalTo: profileSection.centerXAnchor),
+
+            signOutButton.topAnchor.constraint(equalTo: emailLabel.bottomAnchor, constant: 32),
+            signOutButton.leadingAnchor.constraint(equalTo: profileSection.leadingAnchor, constant: 16),
+            signOutButton.trailingAnchor.constraint(equalTo: profileSection.trailingAnchor, constant: -16),
+            signOutButton.heightAnchor.constraint(equalToConstant: 48),
+            signOutButton.bottomAnchor.constraint(equalTo: profileSection.bottomAnchor, constant: -20),
+        ])
     }
 
+    // MARK: - Payment Section
+
+    private func setupPaymentSection() {
+        paymentSection.translatesAutoresizingMaskIntoConstraints = false
+        paymentSection.isHidden = true
+        contentView.addSubview(paymentSection)
+
+        let infoLabel = UILabel()
+        infoLabel.text = "Payment methods are managed through your subscription provider."
+        infoLabel.font = .systemFont(ofSize: 15)
+        infoLabel.textColor = textMuted
+        infoLabel.numberOfLines = 0
+        infoLabel.textAlignment = .center
+        infoLabel.translatesAutoresizingMaskIntoConstraints = false
+        paymentSection.addSubview(infoLabel)
+
+        NSLayoutConstraint.activate([
+            infoLabel.topAnchor.constraint(equalTo: paymentSection.topAnchor, constant: 40),
+            infoLabel.leadingAnchor.constraint(equalTo: paymentSection.leadingAnchor, constant: 32),
+            infoLabel.trailingAnchor.constraint(equalTo: paymentSection.trailingAnchor, constant: -32),
+            infoLabel.bottomAnchor.constraint(equalTo: paymentSection.bottomAnchor, constant: -40),
+        ])
+    }
+
+    // MARK: - Recent Scans Section
+
+    private func setupRecentScansSection() {
+        recentScansSection.translatesAutoresizingMaskIntoConstraints = false
+        recentScansSection.isHidden = true
+        contentView.addSubview(recentScansSection)
+
+        let header = UILabel()
+        header.text = "📷 Recent Scans"
+        header.font = .systemFont(ofSize: 17, weight: .bold)
+        header.textColor = textDark
+        header.translatesAutoresizingMaskIntoConstraints = false
+        recentScansSection.addSubview(header)
+
+        recentScansStack.axis = .vertical
+        recentScansStack.spacing = 8
+        recentScansStack.translatesAutoresizingMaskIntoConstraints = false
+        recentScansSection.addSubview(recentScansStack)
+
+        noScansLabel.text = "No scans yet"
+        noScansLabel.font = .systemFont(ofSize: 14)
+        noScansLabel.textColor = textMuted
+        noScansLabel.textAlignment = .center
+        noScansLabel.translatesAutoresizingMaskIntoConstraints = false
+        recentScansSection.addSubview(noScansLabel)
+
+        NSLayoutConstraint.activate([
+            header.topAnchor.constraint(equalTo: recentScansSection.topAnchor, constant: 16),
+            header.leadingAnchor.constraint(equalTo: recentScansSection.leadingAnchor, constant: 16),
+
+            recentScansStack.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 8),
+            recentScansStack.leadingAnchor.constraint(equalTo: recentScansSection.leadingAnchor, constant: 16),
+            recentScansStack.trailingAnchor.constraint(equalTo: recentScansSection.trailingAnchor, constant: -16),
+
+            noScansLabel.topAnchor.constraint(equalTo: recentScansStack.bottomAnchor, constant: 8),
+            noScansLabel.centerXAnchor.constraint(equalTo: recentScansSection.centerXAnchor),
+            noScansLabel.bottomAnchor.constraint(equalTo: recentScansSection.bottomAnchor, constant: -20),
+        ])
+    }
+
+    // MARK: - Subscription Section
+
     private func setupSubscriptionSection() {
+        subscriptionSection.translatesAutoresizingMaskIntoConstraints = false
+        subscriptionSection.isHidden = true
+        contentView.addSubview(subscriptionSection)
+
         subscriptionCard.backgroundColor = .white
         subscriptionCard.layer.cornerRadius = 16
-        subscriptionCard.layer.shadowColor = violetPrimary.cgColor
-        subscriptionCard.layer.shadowOffset = CGSize(width: 0, height: 4)
-        subscriptionCard.layer.shadowOpacity = 0.1
-        subscriptionCard.layer.shadowRadius = 12
+        subscriptionCard.layer.shadowColor = UIColor.black.cgColor
+        subscriptionCard.layer.shadowOffset = CGSize(width: 0, height: 2)
+        subscriptionCard.layer.shadowOpacity = 0.08
+        subscriptionCard.layer.shadowRadius = 8
         subscriptionCard.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(subscriptionCard)
+        subscriptionSection.addSubview(subscriptionCard)
 
         let subLabel = UILabel()
         subLabel.text = "Subscription"
@@ -166,13 +361,18 @@ class ProfileViewController: UIViewController {
         managePlanButton.setTitle("Manage Plan", for: .normal)
         managePlanButton.setTitleColor(.white, for: .normal)
         managePlanButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
-        managePlanButton.backgroundColor = violetPrimary
+        managePlanButton.backgroundColor = subtabActive
         managePlanButton.layer.cornerRadius = 12
         managePlanButton.addTarget(self, action: #selector(managePlanTapped), for: .touchUpInside)
         managePlanButton.translatesAutoresizingMaskIntoConstraints = false
         subscriptionCard.addSubview(managePlanButton)
 
         NSLayoutConstraint.activate([
+            subscriptionCard.topAnchor.constraint(equalTo: subscriptionSection.topAnchor, constant: 16),
+            subscriptionCard.leadingAnchor.constraint(equalTo: subscriptionSection.leadingAnchor, constant: 16),
+            subscriptionCard.trailingAnchor.constraint(equalTo: subscriptionSection.trailingAnchor, constant: -16),
+            subscriptionCard.bottomAnchor.constraint(equalTo: subscriptionSection.bottomAnchor, constant: -20),
+
             subLabel.topAnchor.constraint(equalTo: subscriptionCard.topAnchor, constant: 16),
             subLabel.leadingAnchor.constraint(equalTo: subscriptionCard.leadingAnchor, constant: 16),
 
@@ -190,37 +390,6 @@ class ProfileViewController: UIViewController {
         ])
     }
 
-    private func setupRecentScansSection() {
-        recentScansHeader.text = "📷 Recent Scans"
-        recentScansHeader.font = .systemFont(ofSize: 17, weight: .bold)
-        recentScansHeader.textColor = textDark
-        recentScansHeader.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(recentScansHeader)
-
-        recentScansStack.axis = .vertical
-        recentScansStack.spacing = 8
-        recentScansStack.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(recentScansStack)
-
-        noScansLabel.text = "No scans yet"
-        noScansLabel.font = .systemFont(ofSize: 14)
-        noScansLabel.textColor = textMuted
-        noScansLabel.textAlignment = .center
-        noScansLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(noScansLabel)
-    }
-
-    private func setupSignOutButton() {
-        signOutButton.setTitle("Sign Out", for: .normal)
-        signOutButton.setTitleColor(.white, for: .normal)
-        signOutButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .bold)
-        signOutButton.backgroundColor = .systemRed
-        signOutButton.layer.cornerRadius = 12
-        signOutButton.addTarget(self, action: #selector(signOutTapped), for: .touchUpInside)
-        signOutButton.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(signOutButton)
-    }
-
     // MARK: - Constraints
 
     private func setupConstraints() {
@@ -233,7 +402,18 @@ class ProfileViewController: UIViewController {
             titleLabel.centerXAnchor.constraint(equalTo: headerView.centerXAnchor),
             titleLabel.centerYAnchor.constraint(equalTo: headerView.centerYAnchor),
 
-            scrollView.topAnchor.constraint(equalTo: headerView.bottomAnchor),
+            subtabScrollView.topAnchor.constraint(equalTo: headerView.bottomAnchor, constant: 8),
+            subtabScrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            subtabScrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            subtabScrollView.heightAnchor.constraint(equalToConstant: 48),
+
+            subtabStack.topAnchor.constraint(equalTo: subtabScrollView.topAnchor, constant: 4),
+            subtabStack.leadingAnchor.constraint(equalTo: subtabScrollView.leadingAnchor, constant: 16),
+            subtabStack.trailingAnchor.constraint(equalTo: subtabScrollView.trailingAnchor, constant: -16),
+            subtabStack.bottomAnchor.constraint(equalTo: subtabScrollView.bottomAnchor, constant: -4),
+            subtabStack.heightAnchor.constraint(equalTo: subtabScrollView.heightAnchor, constant: -8),
+
+            scrollView.topAnchor.constraint(equalTo: subtabScrollView.bottomAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
@@ -244,41 +424,40 @@ class ProfileViewController: UIViewController {
             contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
             contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
 
-            // Avatar
-            avatarLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 24),
-            avatarLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            avatarLabel.widthAnchor.constraint(equalToConstant: 72),
-            avatarLabel.heightAnchor.constraint(equalToConstant: 72),
+            // All sections share the same position
+            profileSection.topAnchor.constraint(equalTo: contentView.topAnchor),
+            profileSection.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            profileSection.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
 
-            nameLabel.topAnchor.constraint(equalTo: avatarLabel.bottomAnchor, constant: 10),
-            nameLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            paymentSection.topAnchor.constraint(equalTo: contentView.topAnchor),
+            paymentSection.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            paymentSection.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
 
-            emailLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 4),
-            emailLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            recentScansSection.topAnchor.constraint(equalTo: contentView.topAnchor),
+            recentScansSection.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            recentScansSection.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
 
-            // Subscription card
-            subscriptionCard.topAnchor.constraint(equalTo: emailLabel.bottomAnchor, constant: 20),
-            subscriptionCard.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            subscriptionCard.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-
-            // Recent Scans
-            recentScansHeader.topAnchor.constraint(equalTo: subscriptionCard.bottomAnchor, constant: 24),
-            recentScansHeader.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-
-            recentScansStack.topAnchor.constraint(equalTo: recentScansHeader.bottomAnchor, constant: 8),
-            recentScansStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            recentScansStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-
-            noScansLabel.topAnchor.constraint(equalTo: recentScansStack.bottomAnchor, constant: 8),
-            noScansLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-
-            // Sign out
-            signOutButton.topAnchor.constraint(equalTo: noScansLabel.bottomAnchor, constant: 32),
-            signOutButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            signOutButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            signOutButton.heightAnchor.constraint(equalToConstant: 48),
-            signOutButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -40),
+            subscriptionSection.topAnchor.constraint(equalTo: contentView.topAnchor),
+            subscriptionSection.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            subscriptionSection.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
         ])
+
+        // The visible section determines content height
+        let profileBottom = profileSection.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
+        profileBottom.priority = .defaultLow
+        profileBottom.isActive = true
+
+        let paymentBottom = paymentSection.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
+        paymentBottom.priority = .defaultLow
+        paymentBottom.isActive = true
+
+        let scansBottom = recentScansSection.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
+        scansBottom.priority = .defaultLow
+        scansBottom.isActive = true
+
+        let subBottom = subscriptionSection.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
+        subBottom.priority = .defaultLow
+        subBottom.isActive = true
     }
 
     // MARK: - Bindings
@@ -341,7 +520,6 @@ class ProfileViewController: UIViewController {
             planStatusLabel.textColor = remaining > 0 ? .systemGreen : .systemRed
         }
 
-        // Also sync subscription status from backend
         Task {
             do {
                 let status = try await apiService.getSubscriptionInfo()
@@ -452,7 +630,6 @@ class ProfileViewController: UIViewController {
             out.timeStyle = .short
             return out.string(from: date)
         }
-        // Try without fractional seconds
         df.formatOptions = [.withInternetDateTime]
         if let date = df.date(from: ds) {
             let out = DateFormatter()
@@ -468,7 +645,6 @@ class ProfileViewController: UIViewController {
     @objc private func managePlanTapped() {
         let limiter = ScanLimitManager.shared
         if limiter.isPremium {
-            // Paid user → open Stripe customer portal to manage/cancel
             Task {
                 do {
                     let portal = try await apiService.getCustomerPortal()
@@ -478,7 +654,6 @@ class ProfileViewController: UIViewController {
                         }
                     }
                 } catch {
-                    // Fallback to paywall
                     await MainActor.run {
                         let paywall = PaywallViewController()
                         paywall.modalPresentationStyle = .fullScreen
