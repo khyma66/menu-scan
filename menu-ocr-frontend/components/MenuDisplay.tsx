@@ -109,11 +109,6 @@ export default function MenuDisplay({ items, userTier }: MenuDisplayProps) {
                           {item.category}
                         </span>
                       )}
-                      {item.preparation_method && (
-                        <span className="px-2 py-0.5 text-xs font-medium text-teal-700 bg-teal-50 rounded-full">
-                          🍳 {item.preparation_method}
-                        </span>
-                      )}
                       {item.taste && (
                         <span className="px-2 py-0.5 text-xs font-medium text-amber-700 bg-amber-50 rounded-full">
                           👅 {item.taste}
@@ -140,11 +135,13 @@ export default function MenuDisplay({ items, userTier }: MenuDisplayProps) {
               {/* Expanded Details — Gated by Tier */}
               {isExpanded && hasEnrichment && (
                 <div className="border-t border-gray-100 bg-gradient-to-b from-gray-50 to-white p-4 space-y-3 relative">
-                  {/* Recommendation Reason — pro+ */}
-                  {item.recommendation_reason && canSeeBasicEnrichment && (
+                  {/* Recommendation — pro+ */}
+                  {canSeeBasicEnrichment && (
                     <div className="flex items-start gap-2 text-sm">
                       <span className="text-gray-400 mt-0.5">💡</span>
-                      <p className="text-gray-600 italic">{item.recommendation_reason}</p>
+                      <p className="text-gray-600 italic">
+                        {item.recommendation_reason || "Please enter details in Health tab for recommendation."}
+                      </p>
                     </div>
                   )}
 

@@ -2,34 +2,13 @@
 //  ProfileViewController.swift
 //  MenuOCR
 //
-//  Profile tab: user info, subscription card, notifications, recent scans.
+//  Profile tab: user info, subscription card, recent scans.
 //  No privacy & security section.
-//  Notifications & Recent Scans sync to Supabase per account.
+//  Recent Scans sync to Supabase per account.
 //
 
 import UIKit
 import Combine
-
-// MARK: - Models
-
-struct ScanRecord: Codable {
-    let id: String?
-    let user_id: String?
-    let image_key: String?
-    let dish_count: Int?
-    let status: String?
-    let created_at: String?
-}
-
-struct NotificationRecord: Codable {
-    let id: String?
-    let user_id: String?
-    let type: String?
-    let title: String?
-    let message: String?
-    let read: Bool?
-    let created_at: String?
-}
 
 // MARK: - ProfileViewController
 
@@ -62,11 +41,6 @@ class ProfileViewController: UIViewController {
     private let planStatusLabel = UILabel()
     private let managePlanButton = UIButton(type: .system)
 
-    // Notifications section
-    private let notificationsHeader = UILabel()
-    private let notificationsStack = UIStackView()
-    private let noNotificationsLabel = UILabel()
-
     // Recent scans section
     private let recentScansHeader = UILabel()
     private let recentScansStack = UIStackView()
@@ -76,8 +50,7 @@ class ProfileViewController: UIViewController {
     private let signOutButton = UIButton(type: .system)
 
     // Data
-    private var notifications: [NotificationRecord] = []
-    private var recentScans: [ScanRecord] = []
+    private var recentScans: [RecentScan] = []
 
     // MARK: - Lifecycle
 
@@ -92,7 +65,6 @@ class ProfileViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         refreshSubscriptionCard()
-        loadNotifications()
         loadRecentScans()
     }
 
@@ -132,7 +104,6 @@ class ProfileViewController: UIViewController {
 
         setupUserInfoSection()
         setupSubscriptionSection()
-        setupNotificationsSection()
         setupRecentScansSection()
         setupSignOutButton()
     }
@@ -219,26 +190,6 @@ class ProfileViewController: UIViewController {
         ])
     }
 
-    private func setupNotificationsSection() {
-        notificationsHeader.text = "🔔 Notifications"
-        notificationsHeader.font = .systemFont(ofSize: 17, weight: .bold)
-        notificationsHeader.textColor = textDark
-        notificationsHeader.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(notificationsHeader)
-
-        notificationsStack.axis = .vertical
-        notificationsStack.spacing = 8
-        notificationsStack.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(notificationsStack)
-
-        noNotificationsLabel.text = "No notifications yet"
-        noNotificationsLabel.font = .systemFont(ofSize: 14)
-        noNotificationsLabel.textColor = textMuted
-        noNotificationsLabel.textAlignment = .center
-        noNotificationsLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(noNotificationsLabel)
-    }
-
     private func setupRecentScansSection() {
         recentScansHeader.text = "📷 Recent Scans"
         recentScansHeader.font = .systemFont(ofSize: 17, weight: .bold)
@@ -310,19 +261,8 @@ class ProfileViewController: UIViewController {
             subscriptionCard.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             subscriptionCard.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
 
-            // Notifications
-            notificationsHeader.topAnchor.constraint(equalTo: subscriptionCard.bottomAnchor, constant: 24),
-            notificationsHeader.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-
-            notificationsStack.topAnchor.constraint(equalTo: notificationsHeader.bottomAnchor, constant: 8),
-            notificationsStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            notificationsStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-
-            noNotificationsLabel.topAnchor.constraint(equalTo: notificationsStack.bottomAnchor, constant: 8),
-            noNotificationsLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-
             // Recent Scans
-            recentScansHeader.topAnchor.constraint(equalTo: noNotificationsLabel.bottomAnchor, constant: 24),
+            recentScansHeader.topAnchor.constraint(equalTo: subscriptionCard.bottomAnchor, constant: 24),
             recentScansHeader.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
 
             recentScansStack.topAnchor.constraint(equalTo: recentScansHeader.bottomAnchor, constant: 8),
@@ -400,18 +340,26 @@ class ProfileViewController: UIViewController {
             planStatusLabel.text = "\(remaining) scan\(remaining == 1 ? "" : "s") left"
             planStatusLabel.textColor = remaining > 0 ? .systemGreen : .systemRed
         }
-    }
 
-    private func loadNotifications() {
+        // Also sync subscription status from backend
         Task {
             do {
-                let result = try await apiService.getNotifications()
+                let status = try await apiService.getSubscriptionInfo()
                 await MainActor.run {
-                    notifications = result
-                    renderNotifications()
+                    planNameLabel.text = "\(status.plan_name) Plan"
+                    planStatusLabel.text = status.status.capitalized
+                    planStatusLabel.textColor = status.status == "active" ? .systemGreen : .systemOrange
+                    let normalized = status.plan_name.lowercased()
+                    if normalized != limiter.planName {
+                        if normalized == "free" {
+                            limiter.downgrade()
+                        } else {
+                            limiter.upgradeTo(plan: normalized)
+                        }
+                    }
                 }
             } catch {
-                await MainActor.run { renderNotifications() }
+                // Keep local state as fallback
             }
         }
     }
@@ -419,9 +367,9 @@ class ProfileViewController: UIViewController {
     private func loadRecentScans() {
         Task {
             do {
-                let result = try await apiService.getRecentScans()
+                let result = try await apiService.getRecentScans(days: 30, limit: 10)
                 await MainActor.run {
-                    recentScans = result
+                    recentScans = result.scans
                     renderRecentScans()
                 }
             } catch {
@@ -431,62 +379,6 @@ class ProfileViewController: UIViewController {
     }
 
     // MARK: - Render Data
-
-    private func renderNotifications() {
-        notificationsStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        noNotificationsLabel.isHidden = !notifications.isEmpty
-
-        for notif in notifications.prefix(10) {
-            let card = makeNotificationRow(notif)
-            notificationsStack.addArrangedSubview(card)
-        }
-    }
-
-    private func makeNotificationRow(_ n: NotificationRecord) -> UIView {
-        let row = UIView()
-        row.backgroundColor = .white
-        row.layer.cornerRadius = 12
-        row.translatesAutoresizingMaskIntoConstraints = false
-        row.heightAnchor.constraint(greaterThanOrEqualToConstant: 56).isActive = true
-
-        let icon = UILabel()
-        icon.text = n.type == "payment" ? "💳" : "📷"
-        icon.font = .systemFont(ofSize: 22)
-        icon.translatesAutoresizingMaskIntoConstraints = false
-        row.addSubview(icon)
-
-        let titleLbl = UILabel()
-        titleLbl.text = n.title ?? (n.type == "payment" ? "Payment" : "Scan")
-        titleLbl.font = .systemFont(ofSize: 14, weight: .semibold)
-        titleLbl.textColor = textDark
-        titleLbl.translatesAutoresizingMaskIntoConstraints = false
-        row.addSubview(titleLbl)
-
-        let msgLbl = UILabel()
-        msgLbl.text = n.message ?? ""
-        msgLbl.font = .systemFont(ofSize: 12)
-        msgLbl.textColor = textMuted
-        msgLbl.numberOfLines = 2
-        msgLbl.translatesAutoresizingMaskIntoConstraints = false
-        row.addSubview(msgLbl)
-
-        NSLayoutConstraint.activate([
-            icon.leadingAnchor.constraint(equalTo: row.leadingAnchor, constant: 12),
-            icon.centerYAnchor.constraint(equalTo: row.centerYAnchor),
-            icon.widthAnchor.constraint(equalToConstant: 28),
-
-            titleLbl.topAnchor.constraint(equalTo: row.topAnchor, constant: 10),
-            titleLbl.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 10),
-            titleLbl.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -12),
-
-            msgLbl.topAnchor.constraint(equalTo: titleLbl.bottomAnchor, constant: 2),
-            msgLbl.leadingAnchor.constraint(equalTo: titleLbl.leadingAnchor),
-            msgLbl.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -12),
-            msgLbl.bottomAnchor.constraint(equalTo: row.bottomAnchor, constant: -10),
-        ])
-
-        return row
-    }
 
     private func renderRecentScans() {
         recentScansStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
@@ -498,7 +390,7 @@ class ProfileViewController: UIViewController {
         }
     }
 
-    private func makeScanRow(_ scan: ScanRecord) -> UIView {
+    private func makeScanRow(_ scan: RecentScan) -> UIView {
         let row = UIView()
         row.backgroundColor = .white
         row.layer.cornerRadius = 12
@@ -520,16 +412,16 @@ class ProfileViewController: UIViewController {
         row.addSubview(titleLbl)
 
         let dateLbl = UILabel()
-        dateLbl.text = formatDate(scan.created_at)
+        dateLbl.text = formatDate(scan.scanned_at)
         dateLbl.font = .systemFont(ofSize: 12)
         dateLbl.textColor = textMuted
         dateLbl.translatesAutoresizingMaskIntoConstraints = false
         row.addSubview(dateLbl)
 
         let statusLbl = UILabel()
-        statusLbl.text = (scan.status ?? "done").capitalized
+        statusLbl.text = scan.processing_status.capitalized
         statusLbl.font = .systemFont(ofSize: 11, weight: .medium)
-        statusLbl.textColor = .systemGreen
+        statusLbl.textColor = scan.processing_status == "completed" ? .systemGreen : .systemOrange
         statusLbl.translatesAutoresizingMaskIntoConstraints = false
         row.addSubview(statusLbl)
 
@@ -574,9 +466,31 @@ class ProfileViewController: UIViewController {
     // MARK: - Actions
 
     @objc private func managePlanTapped() {
-        let paywall = PaywallViewController()
-        paywall.modalPresentationStyle = .fullScreen
-        present(paywall, animated: true)
+        let limiter = ScanLimitManager.shared
+        if limiter.isPremium {
+            // Paid user → open Stripe customer portal to manage/cancel
+            Task {
+                do {
+                    let portal = try await apiService.getCustomerPortal()
+                    await MainActor.run {
+                        if let url = URL(string: portal.portal_url) {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                } catch {
+                    // Fallback to paywall
+                    await MainActor.run {
+                        let paywall = PaywallViewController()
+                        paywall.modalPresentationStyle = .fullScreen
+                        present(paywall, animated: true)
+                    }
+                }
+            }
+        } else {
+            let paywall = PaywallViewController()
+            paywall.modalPresentationStyle = .fullScreen
+            present(paywall, animated: true)
+        }
     }
 
     @objc private func signOutTapped() {
@@ -600,54 +514,3 @@ class ProfileViewController: UIViewController {
     }
 }
 
-// MARK: - ApiService Extensions for Notifications & Recent Scans
-
-extension ApiService {
-
-    func getNotifications() async throws -> [NotificationRecord] {
-        let url = URL(string: "\(baseURL)/user/notifications")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if let token = await getAuthToken() {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-        let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-            return []
-        }
-        struct Wrapper: Codable { let notifications: [NotificationRecord]? }
-        let w = try? JSONDecoder().decode(Wrapper.self, from: data)
-        return w?.notifications ?? []
-    }
-
-    func getRecentScans() async throws -> [ScanRecord] {
-        let url = URL(string: "\(baseURL)/user/recent-scans")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if let token = await getAuthToken() {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-        let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-            return []
-        }
-        struct Wrapper: Codable { let scans: [ScanRecord]? }
-        let w = try? JSONDecoder().decode(Wrapper.self, from: data)
-        return w?.scans ?? []
-    }
-
-    func recordScanToServer(dishCount: Int) async throws {
-        let url = URL(string: "\(baseURL)/user/recent-scans")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if let token = await getAuthToken() {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-        let body: [String: Any] = ["dish_count": dishCount, "status": "done"]
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        _ = try await session.data(for: request)
-    }
-}

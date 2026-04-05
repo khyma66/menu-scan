@@ -73,7 +73,7 @@ class SplashActivity : AppCompatActivity() {
         val logoSize = (screenWidth * 0.45f).toInt()
 
         val iconView = ImageView(this).apply {
-            setImageResource(R.drawable.ic_nav_discover)
+            setImageResource(R.drawable.ic_app_logo)
             scaleType = ImageView.ScaleType.FIT_CENTER
             adjustViewBounds = true
             scaleX = 0f
@@ -150,6 +150,9 @@ class SplashActivity : AppCompatActivity() {
                 SupabaseClient.restoreSession(prefs)
             } ?: false
 
+            if (hasSession) {
+                ApiClient.updateAuthToken()
+            }
             val destination = if (hasSession) {
                 DoorDashMainActivity::class.java
             } else {

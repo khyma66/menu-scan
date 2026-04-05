@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 import logging
@@ -21,6 +22,8 @@ _PRICE_TOKEN_RE = re.compile(
     re.IGNORECASE,
 )
 _MAX_STRUCTURED_RETRIES = 3
+_GEMINI_MAX_RETRIES = 3
+_GEMINI_BACKOFF_BASE = 2.0  # seconds
 
 
 class GeminiGroqMenuService:
@@ -31,7 +34,7 @@ class GeminiGroqMenuService:
 
     def __init__(self) -> None:
         self.gemini_api_key = settings.gemini_api_key or os.getenv("GEMINI_API_KEY")
-        self.gemini_model = settings.gemini_model or os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+        self.gemini_model = settings.gemini_model or os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         self.gemini_api_base = settings.gemini_api_base or os.getenv(
             "GEMINI_API_BASE", "https://generativelanguage.googleapis.com/v1beta"
         )
@@ -45,6 +48,15 @@ class GeminiGroqMenuService:
         self.groq_timeout = settings.groq_timeout
         self._gemini_client = httpx.AsyncClient(timeout=self.gemini_timeout)
         self._groq_client = httpx.AsyncClient(timeout=self.groq_timeout)
+
+        # Fallback enhancement providers (OpenAI / Anthropic via OpenAI-compat)
+        self.openai_api_key = settings.openai_api_key or os.getenv("OPENAI_API_KEY")
+        self.anthropic_api_key = settings.anthropic_api_key or os.getenv("ANTHROPIC_API_KEY")
+        self.openrouter_api_key = settings.openrouter_api_key or os.getenv("OPENROUTER_API_KEY")
+        self._fallback_client = httpx.AsyncClient(timeout=90.0)
+
+        # Third model: Llama 3.3 70B on Groq for gap-filling
+        self.llama_model = os.getenv("GROQ_LLAMA_MODEL", "llama-3.3-70b-versatile")
 
     def _extract_json(self, text: str) -> Any:
         if not text:
@@ -165,27 +177,39 @@ class GeminiGroqMenuService:
         }
 
         url = f"{self.gemini_api_base}/models/{self.gemini_model}:generateContent"
-        logger.info("Gemini extraction request model=%s", self.gemini_model)
+        last_exc: Optional[Exception] = None
 
-        resp = await self._gemini_client.post(url, params={"key": self.gemini_api_key}, json=payload)
-        resp.raise_for_status()
-        data = resp.json()
+        for attempt in range(1, _GEMINI_MAX_RETRIES + 1):
+            try:
+                logger.info("Gemini extraction request model=%s attempt=%s/%s", self.gemini_model, attempt, _GEMINI_MAX_RETRIES)
+                resp = await self._gemini_client.post(url, params={"key": self.gemini_api_key}, json=payload)
+                resp.raise_for_status()
+                data = resp.json()
 
-        candidates = data.get("candidates") or []
-        if not candidates:
-            raise ValueError("Gemini returned no candidates")
+                candidates = data.get("candidates") or []
+                if not candidates:
+                    raise ValueError("Gemini returned no candidates")
 
-        text = ""
-        for part in ((candidates[0].get("content") or {}).get("parts") or []):
-            if "text" in part:
-                text += part["text"]
+                text = ""
+                for part in ((candidates[0].get("content") or {}).get("parts") or []):
+                    if "text" in part:
+                        text += part["text"]
 
-        parsed = self._extract_json(text)
-        if not isinstance(parsed, dict):
-            raise ValueError("Gemini extraction output must be a JSON object")
+                parsed = self._extract_json(text)
+                if not isinstance(parsed, dict):
+                    raise ValueError("Gemini extraction output must be a JSON object")
 
-        rows = parsed.get("menu_items") if isinstance(parsed.get("menu_items"), list) else []
-        return {"menu_items": rows, "raw_text": text}
+                rows = parsed.get("menu_items") if isinstance(parsed.get("menu_items"), list) else []
+                return {"menu_items": rows, "raw_text": text}
+
+            except Exception as exc:
+                last_exc = exc
+                if attempt < _GEMINI_MAX_RETRIES:
+                    wait = _GEMINI_BACKOFF_BASE ** attempt
+                    logger.warning("Gemini call failed attempt=%s/%s error=%s retrying_in=%.1fs", attempt, _GEMINI_MAX_RETRIES, exc, wait)
+                    await asyncio.sleep(wait)
+
+        raise last_exc or RuntimeError("Gemini call failed after retries")
 
     def _merge_unique_rows(self, first: List[Dict[str, Any]], second: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         merged: List[Dict[str, Any]] = []
@@ -213,9 +237,9 @@ class GeminiGroqMenuService:
     def _build_groq_prompt(self, extracted_rows: List[Dict[str, Any]], health_profile: Dict[str, Any]) -> str:
         menu_names = [str(row.get("item") or "").strip() for row in extracted_rows if str(row.get("item") or "").strip()]
         return (
-            "You are a professional menu post-OCR enhancement agent.\n"
-            "Input rows are OCR extracted and must be preserved exactly in count and order.\n"
-            "Enhance each row for user-facing table columns without losing or merging rows.\n\n"
+            "You are an expert culinary knowledge agent that enhances OCR-extracted menu rows.\n"
+            "For EVERY field in EVERY dish, you MUST use your real-world culinary knowledge to provide accurate, "
+            "dish-specific information — as if you looked up each dish on a food encyclopedia or culinary database.\n\n"
             "Health profile:\n"
             f"{json.dumps(health_profile, ensure_ascii=False)}\n\n"
             "Current menu dish names (do NOT use these as similar dishes):\n"
@@ -227,47 +251,54 @@ class GeminiGroqMenuService:
             '  "menu_items": [\n'
             "    {\n"
             '      "item": "Dish name in English",\n'
-            '      "description_ingredients": "Enhanced description",\n'
+            '      "description_ingredients": "A vivid 1-2 sentence description of what this specific dish is",\n'
             '      "price": "Price string or null",\n'
-            '      "ingredients": ["ingredient1", "ingredient2"],\n'
+            '      "ingredients": ["ingredient1", "ingredient2", "...at least 5 real ingredients"],\n'
             '      "taste": "spicy|salty|tangy|sweet|savory|umami|mild|mixed",\n'
-            '      "similarDish1": "Most similar dish #1",\n'
-            '      "similarDish2": "Most similar dish #2",\n'
+            '      "similarDish1": "A well-known dish from ANOTHER cuisine with similar flavors",\n'
+            '      "similarDish2": "Another well-known dish from a DIFFERENT cuisine",\n'
             '      "recommendation": "Most Recommended|Recommended|Not Recommended",\n'
             '      "recommendation_reason": "Short reason tied to health profile",\n'
-            '      "category": "appetizer|main|dessert|drink|other",\n'
+            '      "category": "appetizer|main|dessert|drink|side|other",\n'
             '      "allergens": ["gluten", "dairy", "nuts"],\n'
             '      "spiciness_level": "none|mild|medium|hot|extra hot",\n'
             '      "preparation_method": "grilled|fried|baked|steamed|raw|sautéed|roasted|boiled|other"\n'
             "    }\n"
             "  ]\n"
             "}\n\n"
-            "Rules:\n"
-            "- Keep outputs in English.\n"
-            "- MANDATORY COVERAGE: output row count must equal input row count exactly.\n"
-            "- Preserve row order exactly; output row i must correspond to input row i.\n"
-            "- Never drop, merge, or deduplicate rows.\n"
-            "- item must contain only the dish name; never put price/currency/size-only tokens into item.\n"
-            "- price must remain in price field only; do not move it into item or description_ingredients.\n"
-            "- Preserve special tokens from OCR context where applicable: €, allergen notations like (1,7,8), and units like €/hg.\n"
-            "- INGREDIENTS RULE: If the menu text explicitly lists ingredients for a dish, use those exact ingredients. "
-            "If the menu does NOT list ingredients, you MUST infer the typical ingredients from your culinary knowledge base "
-            "based on the dish name, cuisine type, and cooking tradition. Never leave ingredients empty.\n"
-            "- TASTE RULE: Always fill the taste field. Infer from dish name and ingredients if not stated.\n"
-            "- SIMILAR DISHES RULE: Always fill similarDish1 and similarDish2 with well-known dishes from OTHER cuisines. "
-            "These must be internationally recognizable dishes that share flavor profiles or preparation styles.\n"
-            "- ALLERGENS RULE: Identify all common allergens present in the dish ingredients "
+            "CRITICAL KNOWLEDGE-LOOKUP RULES — apply to EVERY dish:\n"
+            "- description_ingredients: Write a UNIQUE, tailored description for THIS specific dish — mention its cuisine origin, "
+            "key flavors, and what makes it distinctive. Each dish MUST have a different description. "
+            "If the menu provides no description, use your culinary knowledge to describe what the dish traditionally is, "
+            "its origin, and what makes it distinctive. NEVER use generic filler like 'a thoughtfully prepared dish' or "
+            "'a popular menu item'. Every description must be specific enough that a reader can identify the dish from it alone.\n"
+            "- ingredients: List the REAL, specific ingredients used in this dish as traditionally prepared. "
+            "Include proteins, vegetables, sauces, spices, and base ingredients. "
+            "Minimum 5 ingredients per dish. If the menu text lists ingredients, use those AND supplement with "
+            "commonly known additional ingredients. If the menu does NOT list ingredients, infer ALL typical ingredients "
+            "from your knowledge of the dish's cuisine and cooking tradition.\n"
+            "- taste: Identify the PRIMARY taste profile of this specific dish based on its known flavor. "
+            "A Pad Thai is 'tangy', a Tiramisu is 'sweet', a Kimchi Jjigae is 'spicy'. Be dish-specific.\n"
+            "- similarDish1 / similarDish2: Name two REAL, internationally recognized dishes from OTHER cuisines "
+            "that share flavor profiles or preparation style. Be specific — not generic categories. "
+            "e.g., for Butter Chicken → 'Japanese Katsu Curry' and 'Moroccan Chicken Tagine'.\n"
+            "- allergens: Identify REAL allergens based on the dish's actual ingredients "
             "(gluten, dairy, nuts, shellfish, eggs, soy, fish, peanuts, sesame, celery, mustard, sulfites). "
-            "If no allergens are identified, return an empty array.\n"
-            "- SPICINESS RULE: Always fill spiciness_level based on the dish's typical heat level.\n"
-            "- PREPARATION RULE: Identify the primary cooking/preparation method.\n"
-            "- If an input row has partial text, improve clarity but do not replace with a different dish.\n"
-            "- recommendation must use exactly one of: Most Recommended, Recommended, Not Recommended.\n"
+            "A pizza has [gluten, dairy]. A pad thai has [peanuts, soy, eggs, shellfish]. Be accurate.\n"
+            "- spiciness_level: Rate based on the dish's known heat level in its traditional preparation.\n"
+            "- preparation_method: Identify the PRIMARY cooking method for this dish as traditionally made.\n"
+            "- category: Classify accurately — a French Fries is 'side', a Coke is 'drink', Tiramisu is 'dessert'.\n\n"
+            "STRUCTURAL RULES:\n"
+            "- Output row count MUST equal input row count exactly.\n"
+            "- Preserve row order exactly; output row i corresponds to input row i.\n"
+            "- Never drop, merge, or deduplicate rows.\n"
+            "- item must contain only the dish name; never put price/currency into item.\n"
+            "- price must remain in price field only.\n"
+            "- recommendation must be exactly one of: Most Recommended, Recommended, Not Recommended.\n"
             "- Use health profile (allergies/conditions/preferences) for recommendation.\n"
-            "- If health profile has NO health conditions, allergies, or dietary preferences, set recommendation and recommendation_reason to null.\n"
-            "- similarDish1 and similarDish2 must be dishes from other cuisines/menus, not from the current input menu.\n"
-            "- similarDish1 and similarDish2 must not be the same as the current item.\n"
-            "- If data is missing, infer conservatively and keep explanation brief.\n"
+            "- If health profile has NO conditions/allergies/preferences, set recommendation and recommendation_reason to null.\n"
+            "- similarDish1 and similarDish2 must NOT be from the current input menu and must NOT match the item itself.\n"
+            "- Keep outputs in English.\n"
         )
 
     def _build_groq_repair_prompt(
@@ -362,6 +393,273 @@ class GeminiGroqMenuService:
         if not isinstance(parsed, dict):
             raise ValueError("Groq output must be a JSON object")
         return parsed
+
+    async def _call_fallback_llm_json(self, prompt: str, temperature: float = 0.0) -> tuple[Dict[str, Any], str]:
+        """Call OpenRouter → OpenAI → Anthropic as fallback enhancement providers.
+
+        Returns (parsed_json, provider_name) on success, raises on total failure.
+        """
+        providers: list[tuple[str, str, str, str]] = []  # (name, url, key, model)
+
+        if self.openrouter_api_key:
+            providers.append((
+                "openrouter",
+                "https://openrouter.ai/api/v1/chat/completions",
+                self.openrouter_api_key,
+                "google/gemini-2.0-flash-001",  # fast + cheap on OpenRouter
+            ))
+        if self.openai_api_key:
+            providers.append((
+                "openai",
+                "https://api.openai.com/v1/chat/completions",
+                self.openai_api_key,
+                "gpt-4o-mini",
+            ))
+        if self.anthropic_api_key:
+            providers.append((
+                "anthropic_via_openrouter",
+                "https://openrouter.ai/api/v1/chat/completions",
+                self.openrouter_api_key or "",
+                "anthropic/claude-3-haiku",
+            ))
+
+        if not providers:
+            raise RuntimeError("No fallback LLM API keys configured (OPENROUTER / OPENAI / ANTHROPIC)")
+
+        last_exc: Optional[Exception] = None
+        for name, url, key, model in providers:
+            if not key:
+                continue
+            try:
+                logger.info("Fallback LLM enhancement via %s model=%s", name, model)
+                payload = {
+                    "model": model,
+                    "messages": [
+                        {"role": "system", "content": "You are a strict JSON API. Return valid JSON only."},
+                        {"role": "user", "content": prompt},
+                    ],
+                    "temperature": temperature,
+                    "response_format": {"type": "json_object"},
+                }
+                headers = {
+                    "Authorization": f"Bearer {key}",
+                    "Content-Type": "application/json",
+                }
+                resp = await self._fallback_client.post(url, headers=headers, json=payload)
+                resp.raise_for_status()
+                data = resp.json()
+                content = ((data.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+                parsed = self._extract_json(content)
+                if not isinstance(parsed, dict):
+                    raise ValueError(f"{name} output must be a JSON object")
+                return parsed, name
+            except Exception as exc:
+                last_exc = exc
+                logger.warning("Fallback LLM %s failed: %s", name, exc)
+
+        raise last_exc or RuntimeError("All fallback LLM providers failed")
+
+    async def _call_groq_llama_json(self, prompt: str, temperature: float = 0.0) -> Dict[str, Any]:
+        """Call Groq with Llama 3.3 70B model (same API key, different model)."""
+        payload = {
+            "model": self.llama_model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a strict JSON API. Return valid JSON only.",
+                },
+                {
+                    "role": "user",
+                    "content": prompt,
+                },
+            ],
+            "temperature": temperature,
+            "response_format": {"type": "json_object"},
+        }
+
+        url = f"{self.groq_api_base}/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.groq_api_key}",
+            "Content-Type": "application/json",
+        }
+
+        resp = await self._groq_client.post(url, headers=headers, json=payload)
+        resp.raise_for_status()
+        data = resp.json()
+        content = ((data.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+        parsed = self._extract_json(content)
+        if not isinstance(parsed, dict):
+            raise ValueError("Llama output must be a JSON object")
+        return parsed
+
+    def _row_has_gaps(self, row: Dict[str, Any]) -> bool:
+        """Check if a row has weak/missing fields that Llama should fill."""
+        ingredients = row.get("ingredients") if isinstance(row.get("ingredients"), list) else []
+        real_ingredients = [i for i in ingredients if i and "inferred" not in str(i).lower()]
+        if len(real_ingredients) < 3:
+            return True
+        if not str(row.get("description_ingredients") or "").strip():
+            return True
+        if not str(row.get("taste") or "").strip():
+            return True
+        if not str(row.get("similarDish1") or "").strip() or not str(row.get("similarDish2") or "").strip():
+            return True
+        if not row.get("allergens") or not isinstance(row.get("allergens"), list) or len(row.get("allergens", [])) == 0:
+            return True
+        if not str(row.get("spiciness_level") or "").strip() or str(row.get("spiciness_level") or "") == "none":
+            return True
+        if not str(row.get("preparation_method") or "").strip() or str(row.get("preparation_method") or "") == "other":
+            return True
+        return False
+
+    def _build_llama_gapfill_prompt(self, rows: List[Dict[str, Any]], health_profile: Dict[str, Any]) -> str:
+        """Build a prompt for Llama 3.3 70B to fill gaps in already-enhanced rows."""
+        return (
+            "You are an expert culinary database. You receive menu dishes that already have PARTIAL enrichment.\n"
+            "Your job: review every field of every dish and REPLACE any weak, generic, or missing values with "
+            "accurate, dish-specific culinary knowledge.\n\n"
+            "Health profile:\n"
+            f"{json.dumps(health_profile, ensure_ascii=False)}\n\n"
+            "Current enriched rows (some fields may be empty, generic, or inaccurate):\n"
+            f"{json.dumps(rows, ensure_ascii=False)}\n\n"
+            "Return strict JSON: {\"menu_items\": [...]}\n\n"
+            "For EVERY dish, ensure ALL of these fields are filled with REAL culinary knowledge:\n"
+            "- \"item\": keep the dish name unchanged\n"
+            "- \"description_ingredients\": a vivid 1-2 sentence description of what THIS specific dish actually is. "
+            "If the current description is generic (e.g. 'a thoughtfully prepared dish'), REPLACE it with a real description.\n"
+            "- \"price\": keep unchanged\n"
+            "- \"ingredients\": list at least 5-8 REAL, specific ingredients for this dish as traditionally prepared. "
+            "Include proteins, vegetables, sauces, spices, and base ingredients. Never use 'traditional ingredients inferred from dish name'.\n"
+            "- \"taste\": the PRIMARY taste (spicy|salty|tangy|sweet|savory|umami|mild|mixed) — be dish-specific.\n"
+            "- \"similarDish1\": a REAL well-known dish from ANOTHER cuisine with similar flavors.\n"
+            "- \"similarDish2\": another REAL dish from a DIFFERENT cuisine.\n"
+            "- \"recommendation\": keep unchanged if already set.\n"
+            "- \"recommendation_reason\": keep unchanged if already set.\n"
+            "- \"category\": keep unchanged.\n"
+            "- \"allergens\": list REAL allergens based on actual ingredients (gluten, dairy, nuts, shellfish, eggs, soy, fish, peanuts, sesame). "
+            "A pizza has [\"gluten\", \"dairy\"]. A pad thai has [\"peanuts\", \"soy\", \"eggs\"]. NEVER leave empty if there are real allergens.\n"
+            "- \"spiciness_level\": rate accurately (none|mild|medium|hot|extra hot).\n"
+            "- \"preparation_method\": identify the PRIMARY cooking method (grilled|fried|baked|steamed|raw|sautéed|roasted|boiled|other).\n\n"
+            "RULES:\n"
+            "- Output row count MUST equal input row count.\n"
+            "- Preserve row order exactly.\n"
+            "- Do NOT change item names or prices.\n"
+            "- Do NOT change recommendation/recommendation_reason if already filled.\n"
+            "- IMPROVE every other field where the current value is weak, empty, or generic.\n"
+            "- If a field already has good data, keep it.\n"
+        )
+
+    async def gapfill_with_llama(
+        self,
+        enhanced_rows: List[Dict[str, Any]],
+        health_profile: Optional[Dict[str, Any]] = None,
+    ) -> tuple[List[Dict[str, Any]], bool]:
+        """Run Llama 3.3 70B on Groq to fill gaps in enhanced rows.
+
+        Only sends rows that actually have gaps to save tokens (Llama 3.3 has
+        a tight 100K TPD free-tier limit on Groq).
+
+        Returns (improved_rows, success_flag).
+        On failure, returns the original rows unchanged with success=False.
+        """
+        if not self.groq_api_key:
+            return enhanced_rows, False
+
+        # Identify which rows need gap-filling
+        gap_indices = [i for i, row in enumerate(enhanced_rows) if self._row_has_gaps(row)]
+        if not gap_indices:
+            logger.info("Llama gap-fill: all %s rows already complete, skipping", len(enhanced_rows))
+            return enhanced_rows, False
+
+        # Only send rows with gaps to save tokens
+        gap_rows = [enhanced_rows[i] for i in gap_indices]
+
+        logger.info(
+            "Llama gap-fill: %s/%s rows have gaps, sending only those to %s",
+            len(gap_rows), len(enhanced_rows), self.llama_model,
+        )
+
+        health_profile = health_profile or {}
+        prompt = self._build_llama_gapfill_prompt(gap_rows, health_profile)
+
+        try:
+            parsed = await self._call_groq_llama_json(prompt=prompt, temperature=0.0)
+            rows = parsed.get("menu_items") if isinstance(parsed.get("menu_items"), list) else []
+
+            if len(rows) != len(gap_rows):
+                logger.warning(
+                    "Llama gap-fill row count mismatch: expected=%s got=%s, discarding",
+                    len(gap_rows), len(rows),
+                )
+                return enhanced_rows, False
+
+            # Merge Llama results back into the full list
+            result = list(enhanced_rows)  # shallow copy
+            for slot, llama_row in zip(gap_indices, rows):
+                orig = enhanced_rows[slot]
+                m = dict(orig)
+
+                # item and price: never change
+                m["item"] = orig.get("item")
+                m["price"] = orig.get("price")
+
+                # description: upgrade if original was generic
+                orig_desc = str(orig.get("description_ingredients") or "").strip()
+                llama_desc = str(llama_row.get("description_ingredients") or "").strip()
+                if llama_desc and (
+                    not orig_desc
+                    or "thoughtfully prepared" in orig_desc.lower()
+                    or "quality ingredients" in orig_desc.lower()
+                    or len(orig_desc) < 20
+                ):
+                    m["description_ingredients"] = llama_desc
+
+                # ingredients: upgrade if original had < 3 real ingredients
+                orig_ing = orig.get("ingredients") if isinstance(orig.get("ingredients"), list) else []
+                llama_ing = llama_row.get("ingredients") if isinstance(llama_row.get("ingredients"), list) else []
+                real_orig = [i for i in orig_ing if i and "inferred" not in str(i).lower()]
+                if len(real_orig) < 3 and len(llama_ing) >= 3:
+                    m["ingredients"] = llama_ing
+
+                # taste: upgrade if missing
+                if not str(orig.get("taste") or "").strip() and str(llama_row.get("taste") or "").strip():
+                    m["taste"] = llama_row["taste"]
+
+                # similarDish1/2: upgrade if missing
+                if not str(orig.get("similarDish1") or "").strip() and str(llama_row.get("similarDish1") or "").strip():
+                    m["similarDish1"] = llama_row["similarDish1"]
+                if not str(orig.get("similarDish2") or "").strip() and str(llama_row.get("similarDish2") or "").strip():
+                    m["similarDish2"] = llama_row["similarDish2"]
+
+                # allergens: upgrade if empty
+                orig_allergens = orig.get("allergens") if isinstance(orig.get("allergens"), list) else []
+                llama_allergens = llama_row.get("allergens") if isinstance(llama_row.get("allergens"), list) else []
+                if not orig_allergens and llama_allergens:
+                    m["allergens"] = llama_allergens
+
+                # spiciness_level: upgrade if missing/generic
+                orig_spice = str(orig.get("spiciness_level") or "").strip()
+                llama_spice = str(llama_row.get("spiciness_level") or "").strip()
+                if (not orig_spice or orig_spice == "none") and llama_spice:
+                    m["spiciness_level"] = llama_spice
+
+                # preparation_method: upgrade if missing/generic
+                orig_prep = str(orig.get("preparation_method") or "").strip()
+                llama_prep = str(llama_row.get("preparation_method") or "").strip()
+                if (not orig_prep or orig_prep == "other") and llama_prep:
+                    m["preparation_method"] = llama_prep
+
+                # recommendation: never change from Qwen3 output
+                # category: never change
+
+                result[slot] = m
+
+            logger.info("Llama gap-fill completed successfully (%s rows improved)", len(gap_indices))
+            return result, True
+
+        except Exception as exc:
+            logger.warning("Llama gap-fill failed, keeping original rows: %s", exc)
+            return enhanced_rows, False
 
     def _validate_enhancement_rows(self, source_rows: List[Dict[str, Any]], rows: List[Dict[str, Any]]) -> tuple[bool, str]:
         if len(rows) != len(source_rows):
@@ -546,6 +844,54 @@ class GeminiGroqMenuService:
             return "sautéed"
         return "other"
 
+    def _infer_description(self, item_name: str) -> str:
+        source = item_name.lower()
+        if "margherita" in source:
+            return "Classic Italian pizza with tomato sauce, fresh mozzarella, and fragrant basil on a thin crispy crust."
+        if "pizza" in source:
+            return f"{item_name} – oven-baked pizza topped with signature ingredients on a golden, crispy crust."
+        if "carbonara" in source:
+            return "Traditional Roman pasta with eggs, Pecorino Romano, crispy guanciale, and freshly cracked black pepper."
+        if "tiramisu" in source:
+            return "Italian dessert of espresso-soaked ladyfingers layered with mascarpone cream, dusted with rich cocoa powder."
+        if any(t in source for t in ["spaghetti", "pasta", "penne", "fettuccine", "linguine", "tagliatelle"]):
+            return f"{item_name} – Italian pasta prepared with a carefully crafted sauce and house-seasoned garnishes."
+        if "lasagna" in source or "lasagne" in source:
+            return "Hearty layered Italian pasta baked with meat sauce, creamy béchamel, and melted mozzarella."
+        if "risotto" in source:
+            return "Creamy Italian Arborio rice slowly cooked with broth, white wine, and finished with Parmesan."
+        if "burger" in source:
+            return f"Juicy {item_name} in a toasted brioche bun with crisp lettuce, tomato, and house-made sauce."
+        if any(t in source for t in ["sandwich", "sub", "wrap"]):
+            return f"Freshly made {item_name} packed with premium fillings and house dressing."
+        if any(t in source for t in ["salad", "caesar", "niçoise"]):
+            return f"Crisp {item_name} with seasonal greens, fresh toppings, and a light house vinaigrette."
+        if any(t in source for t in ["curry", "masala", "tikka", "korma"]):
+            return f"Aromatic {item_name} simmered in a fragrant blend of spices with tender protein."
+        if "biryani" in source:
+            return "Fragrant basmati rice slow-cooked with marinated protein, caramelised onions, and saffron."
+        if any(t in source for t in ["ramen", "pho", "noodle"]):
+            return f"Steaming bowl of {item_name} with rich broth, springy noodles, and traditional garnishes."
+        if any(t in source for t in ["soup", "bisque", "chowder"]):
+            return f"Warming {item_name} simmered from scratch with fresh vegetables and aromatic herbs."
+        if any(t in source for t in ["sushi", "roll", "maki", "nigiri"]):
+            return f"Artfully crafted {item_name} with seasoned sushi rice and premium, fresh fillings."
+        if any(t in source for t in ["taco", "burrito", "quesadilla", "enchilada"]):
+            return f"{item_name} – Mexican-inspired dish wrapped with seasoned filling, salsa, and fresh herbs."
+        if "steak" in source or any(t in source for t in ["ribeye", "tenderloin", "sirloin"]):
+            return f"Premium {item_name} dry-aged and grilled to your preferred doneness, served with seasonal sides."
+        if any(t in source for t in ["chicken", "poultry", "wings"]):
+            return f"Tender {item_name} seasoned with herbs and spices, cooked to golden perfection."
+        if any(t in source for t in ["salmon", "tuna", "fish", "seafood", "shrimp", "prawn", "lobster"]):
+            return f"Fresh {item_name} prepared to highlight its natural flavour, served with a citrus garnish."
+        if any(t in source for t in ["cake", "cheesecake", "tart"]):
+            return f"Indulgent {item_name} baked fresh daily with premium ingredients and house-made frosting."
+        if any(t in source for t in ["ice cream", "gelato", "sorbet", "sundae"]):
+            return f"Creamy {item_name} made from the finest dairy and natural flavors, served chilled."
+        if any(t in source for t in ["brownie", "waffle", "pancake", "crepe"]):
+            return f"House-made {item_name} served warm with seasonal accompaniments."
+        return f"{item_name} – a thoughtfully prepared dish made with quality ingredients and house seasoning."
+
     def _infer_similar_dishes(self, item_name: str, description: str) -> tuple[str, str]:
         source = f"{item_name} {description}".lower()
         if any(token in source for token in ["pizza", "flatbread"]):
@@ -574,7 +920,7 @@ class GeminiGroqMenuService:
             if row.get("description_ingredients") not in (None, "")
             else base_row.get("description_ingredients")
         )
-        description = str(description).strip() if description not in (None, "") else "Description inferred from menu context"
+        description = str(description).strip() if description not in (None, "") else self._infer_description(name)
 
         ingredients = row.get("ingredients") if isinstance(row.get("ingredients"), list) else []
         ingredients = [str(value).strip() for value in ingredients if str(value or "").strip()]
@@ -605,8 +951,7 @@ class GeminiGroqMenuService:
 
         allergens = row.get("allergens") if isinstance(row.get("allergens"), list) else []
         allergens = [str(value).strip() for value in allergens if str(value or "").strip()]
-        if not allergens:
-            allergens = ["unknown"]
+        allergens = [a for a in allergens if a.lower() != "unknown"]
 
         taste = str(row.get("taste") or "").strip() or self._infer_taste(name, description)
         spiciness = str(row.get("spiciness_level") or "").strip() or self._infer_spiciness(name, description)
@@ -830,6 +1175,7 @@ class GeminiGroqMenuService:
                         "metadata": {
                             "enhancement_attempts": attempt,
                             "enhancement_validated": True,
+                            "enhancement_provider": "groq",
                         },
                     }
 
@@ -862,7 +1208,28 @@ class GeminiGroqMenuService:
                     exc,
                 )
 
-        raise ValueError(f"Groq enhancement failed validation after retries: {last_error}")
+        # ------- FALLBACK: try OpenRouter / OpenAI / Anthropic -------
+        logger.warning("Groq exhausted %s retries (%s), trying fallback LLM providers", _MAX_STRUCTURED_RETRIES, last_error)
+        fallback_prompt = self._build_groq_prompt(extracted_rows, health_profile)
+        try:
+            parsed, provider = await self._call_fallback_llm_json(prompt=fallback_prompt, temperature=0.0)
+            rows = parsed.get("menu_items") if isinstance(parsed.get("menu_items"), list) else []
+            is_valid, validation_error = self._validate_enhancement_rows(extracted_rows, rows)
+            if is_valid:
+                logger.info("Fallback LLM enhancement succeeded via %s", provider)
+                return {
+                    "menu_items": rows,
+                    "metadata": {
+                        "enhancement_attempts": _MAX_STRUCTURED_RETRIES + 1,
+                        "enhancement_validated": True,
+                        "enhancement_provider": provider,
+                    },
+                }
+            logger.warning("Fallback LLM %s returned invalid rows: %s", provider, validation_error)
+        except Exception as fallback_exc:
+            logger.warning("All fallback LLM providers also failed: %s", fallback_exc)
+
+        raise ValueError(f"Enhancement failed after Groq retries + fallback providers: {last_error}")
 
     async def process_menu(
         self,
@@ -954,6 +1321,11 @@ class GeminiGroqMenuService:
             for base_row, row in zip(base_rows, enhanced_rows)
         ]
 
+        # ---- Step 3: Llama 3.3 70B gap-fill pass ----
+        enhanced_rows, llama_used = await self.gapfill_with_llama(
+            enhanced_rows=enhanced_rows, health_profile=health_profile,
+        )
+
         final_rows: List[Dict[str, Any]] = []
         for row in enhanced_rows:
             final_rows.append(
@@ -1020,7 +1392,10 @@ class GeminiGroqMenuService:
                 "enhancement_model": self.groq_model,
                 "pipeline": "gemini_plus_groq",
                 "ui_source": "qwen",
+                "enhancement_provider": enhancement_meta.get("enhancement_provider", "groq"),
                 "enhancement_attempts": enhancement_meta.get("enhancement_attempts", 1),
                 "enhancement_validated": enhancement_meta.get("enhancement_validated", False),
+                "llama_gapfill_model": self.llama_model if llama_used else None,
+                "llama_gapfill_applied": llama_used,
             },
         }

@@ -22,15 +22,15 @@ object AppConfig {
     // Menu OCR API Configuration (Cloudflare Workers)
     object MenuOcrApi {
         const val BASE_URL = "https://menu-ocr-backend.varunchinna5966.workers.dev"
-        const val LOCAL_BASE_URL = "http://10.0.2.2:8000"
-        const val USE_LOCAL = false
+        const val LOCAL_BASE_URL = "http://192.168.1.47:8000" // Mac LAN IP for physical device
+        const val USE_LOCAL = true
     }
 
     // FastAPI OCR backend (Cloudflare Workers — Gemini + Groq)
     object FastApi {
         const val BASE_URL = "https://menu-ocr-backend.varunchinna5966.workers.dev"
-        const val LOCAL_BASE_URL = "http://10.0.2.2:8000"
-        const val USE_LOCAL = false
+        const val LOCAL_BASE_URL = "http://192.168.1.47:8000" // Mac LAN IP for physical device
+        const val USE_LOCAL = true
     }
 
     // API endpoint paths

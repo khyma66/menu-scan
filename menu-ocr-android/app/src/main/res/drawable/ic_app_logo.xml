@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    App logo – cute tomato mascot with consistent light-black (#2D2D2D) border.
+    Used as splash logo, login logo, and anywhere the branding appears.
+    Standalone vector at native 96×108 viewport (no adaptive-icon padding).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="108dp"
+    android:viewportWidth="96"
+    android:viewportHeight="108">
+
+    <!-- Tomato body – bright red, light-black border -->
+    <path
+        android:fillColor="#ED1C24"
+        android:pathData="M 4,58 A 44,44 0 1 0 92,58 A 44,44 0 1 0 4,58 Z"
+        android:strokeColor="#2D2D2D"
+        android:strokeWidth="5" />
+
+    <!-- Leaf / calyx -->
+    <path
+        android:fillColor="#4CA621"
+        android:pathData="M 48,22
+                          Q 34,10 16,22
+                          Q 34,36 48,29
+                          Q 62,36 80,22
+                          Q 62,10 48,22 Z"
+        android:strokeColor="#2D2D2D"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Stem – outline then green -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M 48,4 L 48,22"
+        android:strokeColor="#2D2D2D"
+        android:strokeWidth="7"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M 48,4 L 48,22"
+        android:strokeColor="#4CA621"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+
+    <!-- Left eye sclera -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 21,50 A 12,12 0 1 0 45,50 A 12,12 0 1 0 21,50 Z"
+        android:strokeColor="#2D2D2D"
+        android:strokeWidth="3.5" />
+
+    <!-- Right eye sclera -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 51,50 A 12,12 0 1 0 75,50 A 12,12 0 1 0 51,50 Z"
+        android:strokeColor="#2D2D2D"
+        android:strokeWidth="3.5" />
+
+    <!-- Left pupil -->
+    <path
+        android:fillColor="#2D2D2D"
+        android:pathData="M 28,50 A 5,5 0 1 0 38,50 A 5,5 0 1 0 28,50 Z" />
+
+    <!-- Right pupil -->
+    <path
+        android:fillColor="#2D2D2D"
+        android:pathData="M 58,50 A 5,5 0 1 0 68,50 A 5,5 0 1 0 58,50 Z" />
+
+    <!-- Smile arc -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M 32,72 Q 48,88 64,72"
+        android:strokeColor="#2D2D2D"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+
+</vector>

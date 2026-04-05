@@ -1171,8 +1171,6 @@ class MenuOCRViewController: UIViewController {
         if let desc = detail.description, !desc.isEmpty {
             stack.addArrangedSubview(makeDetailCard(icon: "\u{1F4DD}", title: "Description", body: desc, accentColor: .systemBlue))
         }
-
-        // ─── Ingredients ────────────────────────
         if let ingredients = detail.ingredients, !ingredients.isEmpty {
             let pills = ingredients.map { "  \u{2022} \($0)" }.joined(separator: "\n")
             stack.addArrangedSubview(makeDetailCard(icon: "\u{1F9FE}", title: "Ingredients", body: pills, accentColor: .systemGreen))
@@ -1186,20 +1184,18 @@ class MenuOCRViewController: UIViewController {
             stack.addArrangedSubview(makeDetailCard(icon: "\u{1F30D}", title: "Similar Dishes", body: similarParts.joined(separator: "\n"), accentColor: .systemTeal))
         }
 
-        // ─── Recommendation reason ──────────────
-        if let reason = detail.recommendation_reason, !reason.isEmpty {
+        // ─── Recommendation ─────────────────────
+        if let reason = detail.recommendation_reason, !reason.isEmpty,
+           reason != "Balanced choice based on dish profile." {
             stack.addArrangedSubview(makeDetailCard(icon: "\u{1F48A}", title: "Health Insight", body: reason, accentColor: .systemPurple))
+        } else {
+            stack.addArrangedSubview(makeDetailCard(icon: "\u{1F48A}", title: "Recommendation", body: "Please enter details in Health tab for recommendation.", accentColor: .systemPurple))
         }
 
         // ─── Allergens ──────────────────────────
         if let allergens = detail.allergens, !allergens.isEmpty {
             let joined = allergens.joined(separator: ", ")
             stack.addArrangedSubview(makeDetailCard(icon: "\u{26A0}\u{FE0F}", title: "Allergens", body: joined, accentColor: .systemYellow))
-        }
-
-        // ─── Preparation ────────────────────────
-        if let prep = detail.preparation_method, !prep.isEmpty {
-            stack.addArrangedSubview(makeDetailCard(icon: "\u{1F468}\u{200D}\u{1F373}", title: "Preparation", body: prep, accentColor: .systemBrown))
         }
 
         // Layout

@@ -1,14 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Launcher foreground – pixel-perfect match to ic_nav_discover.xml.
-    Source artwork is drawn on a 28×28 viewport.
-    Here it is scaled ×2.571 (= 72÷28) and translated 18dp so it sits
-    perfectly inside the 72dp adaptive-icon safe zone of the 108dp canvas.
-
-    Transform maths (VectorDrawable group order: scale around pivot then translate):
-      pivot default = (0,0) → point (x,y) maps to (x×2.571 + 18 , y×2.571 + 18)
-      content spans x: 3→25, y: 3→27  →  after transform: x: 25.7→82.3, y: 25.7→87.4
-      all well within the 108dp canvas.
+    Launcher foreground – cute tomato mascot with light-black border.
+    Viewport 28×28 scaled to fill the 108dp adaptive-icon canvas.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -22,70 +15,70 @@
         android:translateX="18"
         android:translateY="18">
 
-        <!-- Tomato body – centre (14,16) radius 11 -->
+        <!-- Tomato body – bright red with light-black border -->
         <path
-            android:fillColor="#E8341A"
+            android:fillColor="#ED1C24"
             android:pathData="M 3,16 A 11,11 0 1 0 25,16 A 11,11 0 1 0 3,16 Z"
-            android:strokeColor="#1A1A1A"
-            android:strokeWidth="1.4" />
+            android:strokeColor="#2D2D2D"
+            android:strokeWidth="1.6" />
 
-        <!-- Leaf / calyx -->
+        <!-- Leaf / calyx – wider, matching image -->
         <path
-            android:fillColor="#5BA01E"
+            android:fillColor="#4CA621"
             android:pathData="M 14,7.5
-                              Q 11,5 7,7.5
-                              Q 11,10.5 14,9
-                              Q 17,10.5 21,7.5
-                              Q 17,5 14,7.5 Z"
-            android:strokeColor="#1A1A1A"
-            android:strokeWidth="1.0"
+                              Q 10.5,4.5 6,7.5
+                              Q 10.5,11 14,9.2
+                              Q 17.5,11 22,7.5
+                              Q 17.5,4.5 14,7.5 Z"
+            android:strokeColor="#2D2D2D"
+            android:strokeWidth="1.2"
             android:strokeLineCap="round"
             android:strokeLineJoin="round" />
 
-        <!-- Stem – dark outline then green fill on top -->
+        <!-- Stem – dark outline then green fill -->
         <path
             android:fillColor="#00000000"
             android:pathData="M 14,3 L 14,7.5"
-            android:strokeColor="#1A1A1A"
-            android:strokeWidth="1.8"
+            android:strokeColor="#2D2D2D"
+            android:strokeWidth="2.2"
             android:strokeLineCap="round" />
         <path
             android:fillColor="#00000000"
             android:pathData="M 14,3 L 14,7.5"
-            android:strokeColor="#5BA01E"
-            android:strokeWidth="1.0"
+            android:strokeColor="#4CA621"
+            android:strokeWidth="1.2"
             android:strokeLineCap="round" />
 
-        <!-- Left eye sclera – centre (10.2, 13.8) radius 2.75 -->
+        <!-- Left eye sclera – bigger, centre (10.2, 14) radius 3.0 -->
         <path
             android:fillColor="#FFFFFF"
-            android:pathData="M 7.45,13.8 A 2.75,2.75 0 1 0 12.95,13.8 A 2.75,2.75 0 1 0 7.45,13.8 Z"
-            android:strokeColor="#1A1A1A"
-            android:strokeWidth="0.6" />
+            android:pathData="M 7.2,14 A 3.0,3.0 0 1 0 13.2,14 A 3.0,3.0 0 1 0 7.2,14 Z"
+            android:strokeColor="#2D2D2D"
+            android:strokeWidth="0.9" />
 
-        <!-- Right eye sclera – centre (17.8, 13.8) radius 2.75 -->
+        <!-- Right eye sclera – centre (17.8, 14) radius 3.0 -->
         <path
             android:fillColor="#FFFFFF"
-            android:pathData="M 15.05,13.8 A 2.75,2.75 0 1 0 20.55,13.8 A 2.75,2.75 0 1 0 15.05,13.8 Z"
-            android:strokeColor="#1A1A1A"
-            android:strokeWidth="0.6" />
+            android:pathData="M 14.8,14 A 3.0,3.0 0 1 0 20.8,14 A 3.0,3.0 0 1 0 14.8,14 Z"
+            android:strokeColor="#2D2D2D"
+            android:strokeWidth="0.9" />
 
-        <!-- Left pupil – centre (10.2, 13.8) radius 1.1 -->
+        <!-- Left pupil – centre (10.2, 14) radius 1.3 -->
         <path
-            android:fillColor="#1A1A1A"
-            android:pathData="M 9.1,13.8 A 1.1,1.1 0 1 0 11.3,13.8 A 1.1,1.1 0 1 0 9.1,13.8 Z" />
+            android:fillColor="#2D2D2D"
+            android:pathData="M 8.9,14 A 1.3,1.3 0 1 0 11.5,14 A 1.3,1.3 0 1 0 8.9,14 Z" />
 
-        <!-- Right pupil – centre (17.8, 13.8) radius 1.1 -->
+        <!-- Right pupil – centre (17.8, 14) radius 1.3 -->
         <path
-            android:fillColor="#1A1A1A"
-            android:pathData="M 16.7,13.8 A 1.1,1.1 0 1 0 18.9,13.8 A 1.1,1.1 0 1 0 16.7,13.8 Z" />
+            android:fillColor="#2D2D2D"
+            android:pathData="M 16.5,14 A 1.3,1.3 0 1 0 19.1,14 A 1.3,1.3 0 1 0 16.5,14 Z" />
 
-        <!-- Smile arc -->
+        <!-- Smile arc – wider, friendlier -->
         <path
             android:fillColor="#00000000"
-            android:pathData="M 10.5,19.5 Q 14,23 17.5,19.5"
-            android:strokeColor="#1A1A1A"
-            android:strokeWidth="1.0"
+            android:pathData="M 10,19.5 Q 14,23.5 18,19.5"
+            android:strokeColor="#2D2D2D"
+            android:strokeWidth="1.1"
             android:strokeLineCap="round" />
 
     </group>

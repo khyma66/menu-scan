@@ -388,6 +388,225 @@ struct DiscoveryPreferencesRequest: Codable {
     let longitude: Double?
 }
 
+// MARK: - V1 Async Scan Pipeline Models
+
+struct ScanMenuResponse: Codable {
+    let job_id: String
+    let status: String
+    let is_cached: Bool
+    let cache_hit_from: String?
+    let menu_id: String?
+}
+
+struct JobStatusResponse: Codable {
+    let job_id: String?
+    let status: String
+    let error: String?
+    let menu: MenuResult?
+}
+
+struct MenuResult: Codable {
+    let id: String
+    let restaurant_name: String?
+    let region: String?
+    let cuisine_type: String?
+    let ocr_raw: String?
+    let personalized: [PersonalizedDish]?
+}
+
+struct PersonalizedMenuResponse: Codable {
+    let menu_id: String
+    let personalized: [PersonalizedDish]
+}
+
+struct PersonalizedDish: Codable, Identifiable {
+    var id: String { dish_id }
+    let dish_id: String
+    let dish_name: String
+    let price: Double?
+    let ingredients: String?
+    let calories: Int?
+    let recommendation_level: String?
+    let risk_summary: String?
+    let alternative_suggestion: String?
+    let health_score: Double?
+}
+
+// MARK: - V1 Health Profile (Legacy Compat)
+
+struct HealthProfile: Codable {
+    let healthConditions: [String]
+    let allergies: [String]
+    let dietaryPreferences: [String]
+    let medicalNotes: String?
+
+    enum CodingKeys: String, CodingKey {
+        case healthConditions = "health_conditions"
+        case allergies
+        case dietaryPreferences = "dietary_preferences"
+        case medicalNotes = "medical_notes"
+    }
+
+    init(healthConditions: [String] = [], allergies: [String] = [], dietaryPreferences: [String] = [], medicalNotes: String? = nil) {
+        self.healthConditions = healthConditions
+        self.allergies = allergies
+        self.dietaryPreferences = dietaryPreferences
+        self.medicalNotes = medicalNotes
+    }
+}
+
+struct HealthProfileRequest: Codable {
+    let healthConditions: [String]
+    let allergies: [String]
+    let dietaryPreferences: [String]
+    let medicalNotes: String?
+
+    enum CodingKeys: String, CodingKey {
+        case healthConditions = "health_conditions"
+        case allergies
+        case dietaryPreferences = "dietary_preferences"
+        case medicalNotes = "medical_notes"
+    }
+}
+
+struct HealthProfileResponse: Codable {
+    let healthProfile: HealthProfile?
+
+    enum CodingKeys: String, CodingKey {
+        case healthProfile = "health_profile"
+    }
+}
+
+// MARK: - User Menus
+
+struct UserMenu: Codable, Identifiable {
+    let id: String
+    let restaurant_name: String?
+    let region: String?
+    let cuisine_type: String?
+    let created_at: String?
+}
+
+struct UserMenusResponse: Codable {
+    let menus: [UserMenu]
+}
+
+// MARK: - Recent Scans
+
+struct RecentScan: Codable, Identifiable {
+    let id: String
+    let scanned_at: String
+    let source: String?
+    let image_name: String?
+    let detected_language: String?
+    let output_language: String?
+    let dish_count: Int?
+    let processing_status: String
+    let processing_time_ms: Int?
+    let pipeline: String?
+}
+
+struct RecentScansListResponse: Codable {
+    let scans: [RecentScan]
+    let total_count: Int
+}
+
+struct DailyScanGroup: Codable, Identifiable {
+    var id: String { date }
+    let date: String
+    let scans: [RecentScan]
+    let count: Int
+}
+
+struct DailyScansListResponse: Codable {
+    let days: [DailyScanGroup]
+    let total_count: Int
+}
+
+// MARK: - Saved Cards
+
+struct SaveCardRequest: Codable {
+    let card_brand: String
+    let card_last_four: String
+    let card_exp_month: Int
+    let card_exp_year: Int
+    let cardholder_name: String?
+    let tokenized_card_id: String?
+    let is_default: Bool
+}
+
+struct SavedCard: Codable, Identifiable {
+    let id: String
+    let card_brand: String
+    let card_last_four: String
+    let card_exp_month: Int
+    let card_exp_year: Int
+    let cardholder_name: String?
+    let is_default: Bool
+    let created_at: String?
+}
+
+struct SavedCardsResponse: Codable {
+    let cards: [SavedCard]
+}
+
+// MARK: - User Payment History
+
+struct UserPaymentRecord: Codable, Identifiable {
+    let id: String
+    let amount_cents: Int
+    let currency: String
+    let status: String
+    let transaction_type: String
+    let created_at: String?
+}
+
+struct UserPaymentHistoryResponse: Codable {
+    let payments: [UserPaymentRecord]
+}
+
+// MARK: - Subscription Plans & Status
+
+struct SubscriptionPlan: Codable {
+    let name: String
+    let price_display: String?
+    let billing_period: String?
+    let description: String?
+    let features: [String]?
+}
+
+struct SubscriptionPlansResponse: Codable {
+    let plans: [SubscriptionPlan]
+}
+
+struct SelectSubscriptionPlanRequest: Codable {
+    let plan_name: String
+}
+
+struct UserSubscriptionStatus: Codable {
+    let plan_name: String
+    let plan_description: String
+    let status: String
+    let current_period_end: String?
+    let cancel_at_period_end: Bool
+}
+
+struct CustomerPortalResponse: Codable {
+    let portal_url: String
+}
+
+struct SubscriptionStatusResponse: Codable {
+    let plan_id: String
+    let plan_name: String
+    let status: String
+    let is_effective: Bool
+    let scan_limit_monthly: Int
+    let features: [String]
+    let current_period_end: String?
+    let cancel_at_period_end: Bool
+    let billing_cycle: String?
+}
+
 // MARK: - Payment Models
 
 struct PaymentIntentRequest: Codable {

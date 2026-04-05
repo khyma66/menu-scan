@@ -239,8 +239,8 @@ async def create_checkout_session(
         success_url=success_url,
         cancel_url=cancel_url,
         allow_promotion_codes=True,        # so discount codes work globally
-        billing_address_collection="auto",  # needed for tax/SCA compliance
-        automatic_tax={"enabled": True},   # Stripe Tax — handles VAT/GST globally
+        billing_address_collection="auto",  # needed for SCA compliance
+        automatic_tax={"enabled": False},  # No tax — prices are all-inclusive
         metadata={
             "supabase_user_id": current_user["id"],
             "plan_id": req.plan_id,

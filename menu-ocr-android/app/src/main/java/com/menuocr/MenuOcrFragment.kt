@@ -57,7 +57,6 @@ class MenuOcrFragment : Fragment() {
     private lateinit var detailRecommendation: TextView
     private lateinit var detailAllergens: TextView
     private lateinit var detailSpiciness: TextView
-    private lateinit var detailPreparation: TextView
     private lateinit var scanLimitText: TextView
     private lateinit var btnResetResults: Button
     private lateinit var btnAddMoreResults: Button
@@ -135,7 +134,6 @@ class MenuOcrFragment : Fragment() {
         detailRecommendation = view.findViewById(R.id.detail_recommendation)
         detailAllergens = view.findViewById(R.id.detail_allergens)
         detailSpiciness = view.findViewById(R.id.detail_spiciness)
-        detailPreparation = view.findViewById(R.id.detail_preparation)
         btnResetResults = view.findViewById(R.id.btn_reset_results)
         btnAddMoreResults = view.findViewById(R.id.btn_add_more_results)
 
@@ -555,8 +553,9 @@ class MenuOcrFragment : Fragment() {
 
                     if (response?.isSuccessful == true && response.body() != null) {
                         val body = response.body()!!
-                        val qwenItems = (body.qwen_menu_items ?: body.menu_items)
-                            .orEmpty()
+                        val rawQwenItems = (body.qwen_menu_items ?: body.menu_items).orEmpty()
+
+                        val qwenItems = rawQwenItems
                             .map { sanitizeMenuItem(it) }
                             .filter { !it.name.isNullOrBlank() }
 
@@ -1011,14 +1010,13 @@ class MenuOcrFragment : Fragment() {
             detailPrice.text = makeBoldLabel("💰 Price: ", if (!freePriceVal.isNullOrBlank() && freePriceVal != "-") freePriceVal else "Not Available")
             detailPrice.visibility = View.VISIBLE
             val descText = pickText(selectedItem.description, null)
-            detailDescription.text = makeBoldLabel("📝 General Description:\n", if (!descText.isNullOrBlank()) descText else "Based on the dish name, this appears to be a popular menu item. Please ask the chef for more details.")
+            detailDescription.text = makeBoldLabel("📝 Description:\n", if (!descText.isNullOrBlank()) descText else "Based on the dish name, this appears to be a popular menu item. Please ask the chef for more details.")
             detailIngredients.text = makeBoldLabel("🧾 Ingredients:\n", "  Upgrade to Pro or Max to view")
             detailTaste.text = makeBoldLabel("😋 Taste: ", pickText(selectedItem.taste, "-") ?: "-")
             detailSimilar.text = makeBoldLabel("🌍 Similar Dishes:\n", "  Upgrade to Pro to view")
             detailRecommendation.text = makeBoldLabel("💊 Recommendation:\n", "  Upgrade to Max to view")
             detailAllergens.text = makeBoldLabel("⚠️ Allergens: ", "Upgrade to Pro or Max to view")
             detailSpiciness.text = makeBoldLabel("🌶️ Spiciness: ", "Upgrade to Pro or Max to view")
-            detailPreparation.text = makeBoldLabel("👨‍🍳 Preparation: ", "Upgrade to Pro or Max to view")
 
             geminiDishLinksContainer.visibility = View.GONE
             qwenDetailCard.visibility = View.VISIBLE
@@ -1026,7 +1024,8 @@ class MenuOcrFragment : Fragment() {
         }
 
         val geminiItem = sanitizeMenuItem(accumulatedGeminiItems.getOrNull(index) ?: selectedItem)
-        val qwenItem = sanitizeMenuItem(findQwenItemForGemini(index, geminiItem) ?: geminiItem)
+        val foundQwen = findQwenItemForGemini(index, geminiItem)
+        val qwenItem = sanitizeMenuItem(foundQwen ?: geminiItem)
         val detailItem = buildDisplayDetails(geminiItem, qwenItem)
 
         detailDishName.text = detailItem.name ?: "Unknown Dish"
@@ -1035,7 +1034,7 @@ class MenuOcrFragment : Fragment() {
         detailPrice.text = makeBoldLabel("💰 Price: ", priceVal ?: "Not Available")
         detailPrice.visibility = View.VISIBLE
         val descText = detailItem.description?.takeIf { it != "Description unavailable" && it.isNotBlank() }
-        detailDescription.text = makeBoldLabel("📝 General Description:\n", if (!descText.isNullOrBlank()) descText else "Based on the dish name, this appears to be a popular menu item. Please ask the chef for more details.")
+        detailDescription.text = makeBoldLabel("📝 Description:\n", if (!descText.isNullOrBlank()) descText else "Based on the dish name, this appears to be a popular menu item. Please ask the chef for more details.")
 
         val canUseIngredients = ScanLimitManager.canUseIngredients(requireContext())
         val canUseSimilar = ScanLimitManager.canUseSimilarDishes(requireContext())
@@ -1058,20 +1057,23 @@ class MenuOcrFragment : Fragment() {
             makeBoldLabel("🌍 Similar Dishes:\n", "  Upgrade to Pro to view")
         }
 
-        val recommendationValue = if (showRecommendationColumn) {
-            "${pickText(detailItem.recommendation, "Recommended") ?: "Recommended"}${if (!detailItem.recommendation_reason.isNullOrBlank()) "\n  ${detailItem.recommendation_reason}" else ""}"
+        val recLabel = pickText(detailItem.recommendation, null)
+        val recReason = detailItem.recommendation_reason?.takeIf { it.isNotBlank() }
+        val recommendationBody = if (showRecommendationColumn && recLabel != null) {
+            val parts = mutableListOf("  $recLabel")
+            if (recReason != null) parts.add("  $recReason")
+            parts.joinToString("\n")
         } else {
-            pickText(detailItem.recommendation, "Recommended") ?: "Recommended"
+            "  Please enter details in Health tab for recommendation."
         }
         detailRecommendation.text = if (canUseRecommendations) {
-            makeBoldLabel("💊 Recommendation:\n", "  ${pickText(recommendationValue, "Not Available") ?: "Not Available"}\n\n  ⚕️ Please consult your doctor for personalized dietary recommendations.")
+            makeBoldLabel("💊 Recommendation:\n", recommendationBody)
         } else {
             makeBoldLabel("💊 Recommendation:\n", "  Upgrade to Max to view")
         }
         val allergensText = if (!cleanList(detailItem.allergens).isNullOrEmpty()) cleanList(detailItem.allergens).joinToString(", ") else "Not Specified"
         detailAllergens.text = if (canUseIngredients) makeBoldLabel("⚠️ Allergens: ", allergensText) else makeBoldLabel("⚠️ Allergens: ", "Upgrade to Pro or Max")
         detailSpiciness.text = if (canUseIngredients) makeBoldLabel("🌶️ Spiciness: ", pickText(detailItem.spiciness_level, "Not Available") ?: "Not Available") else makeBoldLabel("🌶️ Spiciness: ", "Upgrade to Pro or Max")
-        detailPreparation.text = if (canUseIngredients) makeBoldLabel("👨‍🍳 Preparation: ", pickText(detailItem.preparation_method, "Not Available") ?: "Not Available") else makeBoldLabel("👨‍🍳 Preparation: ", "Upgrade to Pro or Max")
 
         geminiDishLinksContainer.visibility = View.GONE
         qwenDetailCard.visibility = View.VISIBLE
@@ -1197,7 +1199,7 @@ class MenuOcrFragment : Fragment() {
         detailPrice.text = makeBoldLabel("💰 Price: ", priceVal ?: "Not Available")
 
         val descText = item.description?.takeIf { it != "Description unavailable" && it.isNotBlank() }
-        detailDescription.text = makeBoldLabel("📝 General Description:\n", if (!descText.isNullOrBlank()) descText else "Based on the dish name, this appears to be a popular menu item. Please ask the chef for more details.")
+        detailDescription.text = makeBoldLabel("📝 Description:\n", if (!descText.isNullOrBlank()) descText else "Based on the dish name, this appears to be a popular menu item. Please ask the chef for more details.")
 
         val canUseIngredients = ScanLimitManager.canUseIngredients(requireContext())
         val canUseSimilar = ScanLimitManager.canUseSimilarDishes(requireContext())
@@ -1215,15 +1217,23 @@ class MenuOcrFragment : Fragment() {
         } else {
             makeBoldLabel("🌍 Similar Dishes:\n", "  Upgrade to Pro to view")
         }
+        val recLabel2 = pickText(item.recommendation, null)
+        val recReason2 = item.recommendation_reason?.takeIf { it.isNotBlank() }
+        val recBody2 = if (showRecommendationColumn && recLabel2 != null) {
+            val parts = mutableListOf("  $recLabel2")
+            if (recReason2 != null) parts.add("  $recReason2")
+            parts.joinToString("\n")
+        } else {
+            "  Please enter details in Health tab for recommendation."
+        }
         detailRecommendation.text = if (canUseRecommendations) {
-            makeBoldLabel("💊 Recommendation:\n", "  ${pickText(item.recommendation, "Not Available") ?: "Not Available"}\n\n  ⚕️ Please consult your doctor for personalized dietary recommendations.")
+            makeBoldLabel("💊 Recommendation:\n", recBody2)
         } else {
             makeBoldLabel("💊 Recommendation:\n", "  Upgrade to Max to view")
         }
         val allergensText = if (!cleanList(item.allergens).isNullOrEmpty()) cleanList(item.allergens).joinToString(", ") else "Not Specified"
         detailAllergens.text = if (canUseIngredients) makeBoldLabel("⚠️ Allergens: ", allergensText) else makeBoldLabel("⚠️ Allergens: ", "Upgrade to Pro or Max")
         detailSpiciness.text = if (canUseIngredients) makeBoldLabel("🌶️ Spiciness: ", pickText(item.spiciness_level, "Not Available") ?: "Not Available") else makeBoldLabel("🌶️ Spiciness: ", "Upgrade to Pro or Max")
-        detailPreparation.text = if (canUseIngredients) makeBoldLabel("👨‍🍳 Preparation: ", pickText(item.preparation_method, "Not Available") ?: "Not Available") else makeBoldLabel("👨‍🍳 Preparation: ", "Upgrade to Pro or Max")
     }
 
     private fun clearResultsTable() {

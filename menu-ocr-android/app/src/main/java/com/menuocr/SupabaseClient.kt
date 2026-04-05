@@ -1,8 +1,13 @@
 package com.menuocr
 
 import android.content.SharedPreferences
+import android.util.Base64
 import android.util.Log
 import java.net.URLEncoder
+import java.security.MessageDigest
+import java.security.SecureRandom
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.gotrue.Auth
 import io.github.jan.supabase.gotrue.OtpType
@@ -16,6 +21,20 @@ import io.github.jan.supabase.storage.Storage
  */
 object SupabaseClient {
     const val TAG = "SupabaseClient"
+
+    // PKCE: store the verifier between URL generation and callback
+    @Volatile private var pendingCodeVerifier: String? = null
+
+    private fun generateCodeVerifier(): String {
+        val bytes = ByteArray(32)
+        SecureRandom().nextBytes(bytes)
+        return Base64.encodeToString(bytes, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
+    }
+
+    private fun generateCodeChallenge(verifier: String): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest(verifier.toByteArray(Charsets.US_ASCII))
+        return Base64.encodeToString(digest, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
+    }
 
     private val AUTH_RETRY_CONFIG = RetryConfig(
         enabled = true,
@@ -137,8 +156,16 @@ object SupabaseClient {
      * direct Supabase OAuth avoids the 401 / 404 from an undeployed proxy.
      */
     fun getGoogleOAuthUrl(): String {
-        val redirect = URLEncoder.encode(AppConfig.Supabase.AUTH_REDIRECT_URL, "UTF-8")
-        return "${AppConfig.Supabase.URL}/auth/v1/authorize?provider=google&redirect_to=$redirect"
+        val verifier = generateCodeVerifier()
+        pendingCodeVerifier = verifier
+        val challenge = generateCodeChallenge(verifier)
+        // Do NOT pass redirect_to with a custom URI scheme — Google's OAuth policy blocks
+        // requests that contain custom schemes anywhere in the state/parameters.
+        // Supabase uses the redirect URL configured in the dashboard instead.
+        return "${AppConfig.Supabase.URL}/auth/v1/authorize" +
+            "?provider=google" +
+            "&code_challenge=${URLEncoder.encode(challenge, "UTF-8")}" +
+            "&code_challenge_method=s256"
     }
 
     /**
@@ -157,7 +184,6 @@ object SupabaseClient {
      */
     suspend fun handleOAuthCallback(uri: android.net.Uri): Result<Unit> {
         return try {
-            // Try fragment first (#access_token=...) then query params (?access_token=...)
             val rawFragment = uri.encodedFragment
             val rawQuery = uri.encodedQuery
 
@@ -172,11 +198,18 @@ object SupabaseClient {
                 parts[0] to (if (parts.size > 1) java.net.URLDecoder.decode(parts[1], "UTF-8") else "")
             }
 
+            // PKCE flow: Supabase returns ?code=... instead of tokens
+            val authCode = params["code"]
+            if (!authCode.isNullOrBlank()) {
+                return exchangeCodeForSession(authCode)
+            }
+
+            // Implicit flow fallback: tokens in fragment/query directly
             val accessToken = params["access_token"]
             val refreshToken = params["refresh_token"]
 
             if (accessToken.isNullOrBlank()) {
-                return Result.failure(Exception("No access token in callback"))
+                return Result.failure(Exception("No access token or auth code in callback"))
             }
             if (refreshToken.isNullOrBlank()) {
                 return Result.failure(Exception("No refresh token in callback"))
@@ -185,9 +218,6 @@ object SupabaseClient {
             val expiresIn = params["expires_in"]?.toLongOrNull() ?: 3600
             val tokenType = params["token_type"] ?: "bearer"
 
-            // Fetch user BEFORE importSession so the session object contains a
-            // populated user — this makes currentUserOrNull() return non-null
-            // immediately after importSession, without needing a second call.
             val userInfo = try {
                 client.auth.retrieveUser(accessToken).also {
                     Log.i(TAG, "User fetched during OAuth callback: ${it.email}")
@@ -202,13 +232,75 @@ object SupabaseClient {
                 refreshToken = refreshToken,
                 expiresIn = expiresIn,
                 tokenType = tokenType,
-                user = userInfo   // populated — currentUserOrNull() returns non-null
+                user = userInfo
             )
             client.auth.importSession(session)
             Log.i(TAG, "OAuth session imported with user=${userInfo?.email}")
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "OAuth callback handling failed: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Exchange a PKCE auth code for a session by calling Supabase's token endpoint.
+     * Called automatically by handleOAuthCallback when ?code=... is present in the callback.
+     */
+    private suspend fun exchangeCodeForSession(code: String): Result<Unit> {
+        val verifier = pendingCodeVerifier
+            ?: return Result.failure(Exception("PKCE verifier missing – OAuth flow not initiated from this session"))
+        pendingCodeVerifier = null
+        return try {
+            val (responseCode, responseBody) = withContext(Dispatchers.IO) {
+                val url = java.net.URL("${AppConfig.Supabase.URL}/auth/v1/token?grant_type=pkce")
+                val body = org.json.JSONObject().apply {
+                    put("auth_code", code)
+                    put("code_verifier", verifier)
+                }.toString()
+                val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("apikey", AppConfig.Supabase.ANON_KEY)
+                    doOutput = true
+                    outputStream.write(body.toByteArray(Charsets.UTF_8))
+                }
+                val code = conn.responseCode
+                val stream = if (code < 400) conn.inputStream else conn.errorStream
+                val text = stream.bufferedReader().readText()
+                conn.disconnect()
+                Pair(code, text)
+            }
+            if (responseCode != 200) {
+                Log.e(TAG, "PKCE token exchange failed: HTTP $responseCode – $responseBody")
+                return Result.failure(Exception("Token exchange failed: HTTP $responseCode"))
+            }
+            val json = org.json.JSONObject(responseBody)
+            val accessToken = json.optString("access_token")
+                .takeIf { it.isNotBlank() }
+                ?: return Result.failure(Exception("No access_token in PKCE token response"))
+            val refreshToken = json.optString("refresh_token").ifBlank { null }
+                ?: return Result.failure(Exception("No refresh_token in PKCE token response"))
+            val expiresIn = json.optLong("expires_in", 3600)
+
+            val userInfo = try {
+                client.auth.retrieveUser(accessToken)
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not prefetch user after PKCE exchange: ${e.message}")
+                null
+            }
+            val session = UserSession(
+                accessToken = accessToken,
+                refreshToken = refreshToken,
+                expiresIn = expiresIn,
+                tokenType = "bearer",
+                user = userInfo
+            )
+            client.auth.importSession(session)
+            Log.i(TAG, "PKCE session imported with user=${userInfo?.email}")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "PKCE code exchange exception: ${e.message}", e)
             Result.failure(e)
         }
     }

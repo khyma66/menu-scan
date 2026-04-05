@@ -8,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Button
-import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Spinner
@@ -19,6 +18,8 @@ import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 class ProfileFragment : Fragment() {
@@ -28,8 +29,7 @@ class ProfileFragment : Fragment() {
         PAYMENT,
         RECENT_PAYMENTS,
         SCANS,
-        SUBSCRIPTION,
-        NOTIFICATIONS
+        SUBSCRIPTION
     }
 
     private lateinit var apiService: ApiService
@@ -40,14 +40,12 @@ class ProfileFragment : Fragment() {
     private var btnTabRecentPayments: Button? = null
     private lateinit var btnTabScans: Button
     private lateinit var btnTabSubscription: Button
-    private lateinit var btnTabNotifications: Button
 
     private lateinit var sectionProfile: View
     private lateinit var sectionPayment: View
     private var sectionRecentPayments: View? = null
     private lateinit var sectionScans: View
     private lateinit var sectionSubscription: View
-    private lateinit var sectionNotifications: View
 
     private lateinit var loadingProgress: LinearLayout
     private lateinit var loadingText: TextView
@@ -90,12 +88,8 @@ class ProfileFragment : Fragment() {
     private lateinit var tvPricePro: TextView
     private lateinit var tvPriceMax: TextView
 
-    private lateinit var checkNotificationsEnabled: CheckBox
-    private lateinit var checkNotificationsPush: CheckBox
-    private lateinit var checkNotificationsEmail: CheckBox
-    private lateinit var btnSaveNotifications: Button
-
     private var currentPlanName: String = "FREE"
+    private var loadProfileJob: Job? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -121,14 +115,12 @@ class ProfileFragment : Fragment() {
         btnTabRecentPayments = view.findViewById(R.id.btn_tab_recent_payments)
         btnTabScans = view.findViewById(R.id.btn_tab_scans)
         btnTabSubscription = view.findViewById(R.id.btn_tab_subscription)
-        btnTabNotifications = view.findViewById(R.id.btn_tab_notifications)
 
         sectionProfile = view.findViewById(R.id.section_profile)
         sectionPayment = view.findViewById(R.id.section_payment)
         sectionRecentPayments = view.findViewById(R.id.section_recent_payments)
         sectionScans = view.findViewById(R.id.section_scans)
         sectionSubscription = view.findViewById(R.id.section_subscription)
-        sectionNotifications = view.findViewById(R.id.section_notifications)
 
         loadingProgress = view.findViewById(R.id.loading_progress)
         loadingText = view.findViewById(R.id.loading_text)
@@ -169,11 +161,6 @@ class ProfileFragment : Fragment() {
         tvPricePro = view.findViewById(R.id.tv_price_pro)
         tvPriceMax = view.findViewById(R.id.tv_price_max)
 
-        checkNotificationsEnabled = view.findViewById(R.id.check_notifications_enabled)
-        checkNotificationsPush = view.findViewById(R.id.check_notifications_push)
-        checkNotificationsEmail = view.findViewById(R.id.check_notifications_email)
-        btnSaveNotifications = view.findViewById(R.id.btn_save_notifications)
-
     }
 
     private fun setupListeners() {
@@ -182,11 +169,9 @@ class ProfileFragment : Fragment() {
         btnTabRecentPayments?.setOnClickListener { selectTab(ProfileTab.RECENT_PAYMENTS) }
         btnTabScans.setOnClickListener { selectTab(ProfileTab.SCANS) }
         btnTabSubscription.setOnClickListener { selectTab(ProfileTab.SUBSCRIPTION) }
-        btnTabNotifications.setOnClickListener { selectTab(ProfileTab.NOTIFICATIONS) }
 
         btnSaveProfile.setOnClickListener { saveProfile() }
         btnSaveCard.setOnClickListener { saveCard() }
-        btnSaveNotifications.setOnClickListener { savePreferences() }
         btnSignOut?.setOnClickListener { handleLogout() }
         btnManageSubscription?.setOnClickListener { openManageSubscription() }
 
@@ -203,14 +188,12 @@ class ProfileFragment : Fragment() {
         sectionRecentPayments?.isVisible = tab == ProfileTab.RECENT_PAYMENTS
         sectionScans.isVisible = tab == ProfileTab.SCANS
         sectionSubscription.isVisible = tab == ProfileTab.SUBSCRIPTION
-        sectionNotifications.isVisible = tab == ProfileTab.NOTIFICATIONS
 
         setTabState(btnTabProfile, tab == ProfileTab.PROFILE)
         setTabState(btnTabPayment, tab == ProfileTab.PAYMENT)
         btnTabRecentPayments?.let { setTabState(it, tab == ProfileTab.RECENT_PAYMENTS) }
         setTabState(btnTabScans, tab == ProfileTab.SCANS)
         setTabState(btnTabSubscription, tab == ProfileTab.SUBSCRIPTION)
-        setTabState(btnTabNotifications, tab == ProfileTab.NOTIFICATIONS)
     }
 
     private fun setTabState(button: Button, selected: Boolean) {
@@ -231,8 +214,7 @@ class ProfileFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         viewLifecycleOwner.lifecycleScope.launch {
-            refreshAuthHeader()
-            // Reload profile data so form fields populate after login
+            try { refreshAuthHeader() } catch (e: CancellationException) { throw e } catch (_: Exception) {}
             loadAllProfileData()
         }
     }
@@ -294,16 +276,18 @@ class ProfileFragment : Fragment() {
     }
 
     private fun loadAllProfileData() {
-        viewLifecycleOwner.lifecycleScope.launch {
+        loadProfileJob?.cancel()
+        loadProfileJob = viewLifecycleOwner.lifecycleScope.launch {
             setLoading(true, "Loading profile...")
             try {
                 loadProfile()
-                loadPreferences()
                 loadSavedCards()
                 loadPaymentHistory()
                 loadScans()
                 loadSubscription()
                 try { loadPlans() } catch (_: Exception) { /* plans fallback to XML defaults */ }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Failed to load profile: ${e.message}", Toast.LENGTH_SHORT).show()
             } finally {
@@ -378,16 +362,6 @@ class ProfileFragment : Fragment() {
         inputEmail.setText(email)
         inputContact.setText(profile.contact ?: profile.phone ?: "")
         inputCountry.setText(profile.country ?: "")
-    }
-
-    private suspend fun loadPreferences() {
-        val response = apiService.getProfilePreferences()
-        if (!response.isSuccessful || response.body() == null) return
-
-        val prefs = response.body()!!
-        checkNotificationsEnabled.isChecked = prefs.notifications_enabled
-        checkNotificationsPush.isChecked = prefs.push_notifications
-        checkNotificationsEmail.isChecked = prefs.email_notifications
     }
 
     private suspend fun loadSavedCards() {
@@ -645,29 +619,4 @@ class ProfileFragment : Fragment() {
         openWebCheckout(planId = planName.lowercase())
     }
 
-    private fun savePreferences() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            setLoading(true, "Saving preferences...")
-            try {
-                val request = ProfilePreferencesRequest(
-                    notifications_enabled = checkNotificationsEnabled.isChecked,
-                    push_notifications = checkNotificationsPush.isChecked,
-                    email_notifications = checkNotificationsEmail.isChecked,
-                    language = null,
-                    timezone = null
-                )
-
-                val response = apiService.updateProfilePreferences(request)
-                if (response.isSuccessful) {
-                    Toast.makeText(requireContext(), "Preferences updated", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(requireContext(), "Failed to update preferences", Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Failed to update preferences: ${e.message}", Toast.LENGTH_SHORT).show()
-            } finally {
-                setLoading(false)
-            }
-        }
-    }
 }

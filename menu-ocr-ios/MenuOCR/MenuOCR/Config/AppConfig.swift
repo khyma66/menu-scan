@@ -10,6 +10,8 @@ enum AppConfig {
         static let url = "https://jlfqzcaospvspmzbvbxd.supabase.co"
         // NOTE: Anon key removed — all auth now proxied via the CF Worker backend.
         // This avoids the Supabase April 2026 anon-key deprecation for auth endpoints.
+        // Auth deep-link callback (matches Android)
+        static let authRedirectURL = "com.menuocr://auth-callback"
     }
     
     // MARK: - Menu OCR API Configuration (Cloudflare Workers)
@@ -24,11 +26,26 @@ enum AppConfig {
         static let useLocal = false
     }
     
+    // MARK: - Web Configuration
+    enum Web {
+        static let baseURL = "https://menuocr.com"
+
+        /// Build the pricing URL that opens in SFSafariViewController for subscription checkout.
+        static func pricingURL(accessToken: String, refreshToken: String) -> URL? {
+            var components = URLComponents(string: "\(baseURL)/pricing")
+            components?.queryItems = [
+                URLQueryItem(name: "token", value: accessToken),
+                URLQueryItem(name: "refresh", value: refreshToken)
+            ]
+            return components?.url
+        }
+    }
+    
     // MARK: - Overpass API Configuration (OpenStreetMap POI data)
     enum Overpass {
         static let baseURL = "https://overpass-api.de/api"
         static let interpreterEndpoint = "/interpreter"
-        static let defaultSearchRadius = 500 // meters
+        static let defaultSearchRadius = 16000 // meters (16km, matches Android)
         static let timeoutSeconds = 25
     }
     

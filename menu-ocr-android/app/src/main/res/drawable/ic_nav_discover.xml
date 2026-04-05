@@ -1,112 +1,71 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Fooder tomato mascot — matches the brand reference image exactly:
-    • Very thick dark outline on body (~2.5 viewport units)
-    • Leaf wings: two symmetric lobes + outlined green stem
-    • Eyes: large white sclera circles, pupils CENTRED (no offset)
-    • Smile arc in lower half
--->
+<!-- Tomato mascot – light-black (#2D2D2D) border everywhere, matching limg.png -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="28dp"
     android:height="28dp"
     android:viewportWidth="28"
     android:viewportHeight="28">
 
-    <!--
-        Tomato body
-        centre (14, 16), radius 11
-        path: M (14-11),16  arc to (14+11),16  arc back
-    -->
+    <!-- Tomato body –  bright red, light-black border -->
     <path
-        android:fillColor="#E8341A"
+        android:fillColor="#ED1C24"
         android:pathData="M 3,16 A 11,11 0 1 0 25,16 A 11,11 0 1 0 3,16 Z"
-        android:strokeColor="#1A1A1A"
-        android:strokeWidth="1.4" />
+        android:strokeColor="#2D2D2D"
+        android:strokeWidth="1.6" />
 
-    <!--
-        Leaf / calyx — two wing lobes pinched at centre
-        Shape: from centre (14,7.5) sweep out to left tip, back through
-        lower-centre, out to right tip, and close at top-centre.
-    -->
+    <!-- Leaf / calyx -->
     <path
-        android:fillColor="#5BA01E"
-        android:pathData="M 14,7.5
-                          Q 11,5 7,7.5
-                          Q 11,10.5 14,9
-                          Q 17,10.5 21,7.5
-                          Q 17,5 14,7.5 Z"
-        android:strokeColor="#1A1A1A"
-        android:strokeWidth="1.0"
+        android:fillColor="#4CA621"
+        android:pathData="M 14,7.5 Q 10.5,4.5 6,7.5 Q 10.5,11 14,9.2 Q 17.5,11 22,7.5 Q 17.5,4.5 14,7.5 Z"
+        android:strokeColor="#2D2D2D"
+        android:strokeWidth="1.2"
         android:strokeLineCap="round"
         android:strokeLineJoin="round" />
 
-    <!--
-        Stem — dark outline (wider) drawn first, green fill (narrower) on top
-        to produce a green stem with dark side-borders.
-    -->
+    <!-- Stem -->
     <path
         android:fillColor="#00000000"
         android:pathData="M 14,3 L 14,7.5"
-        android:strokeColor="#1A1A1A"
-        android:strokeWidth="1.8"
+        android:strokeColor="#2D2D2D"
+        android:strokeWidth="2.2"
         android:strokeLineCap="round" />
     <path
         android:fillColor="#00000000"
         android:pathData="M 14,3 L 14,7.5"
-        android:strokeColor="#5BA01E"
-        android:strokeWidth="1.0"
+        android:strokeColor="#4CA621"
+        android:strokeWidth="1.2"
         android:strokeLineCap="round" />
 
-    <!--
-        Left eye sclera
-        centre (10.2, 13.8), radius 2.75
-        path: M (10.2-2.75), 13.8 = M 7.45, 13.8
-              A 2.75,2.75 0 1 0 (10.2+2.75), 13.8 = 12.95, 13.8
-              A 2.75,2.75 0 1 0 7.45, 13.8 Z
-    -->
+    <!-- Left eye sclera -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M 7.45,13.8 A 2.75,2.75 0 1 0 12.95,13.8 A 2.75,2.75 0 1 0 7.45,13.8 Z"
-        android:strokeColor="#1A1A1A"
-        android:strokeWidth="0.6" />
+        android:pathData="M 7.2,14 A 3.0,3.0 0 1 0 13.2,14 A 3.0,3.0 0 1 0 7.2,14 Z"
+        android:strokeColor="#2D2D2D"
+        android:strokeWidth="0.9" />
 
-    <!--
-        Right eye sclera
-        centre (17.8, 13.8), radius 2.75
-        path: M 15.05, 13.8 … 20.55, 13.8
-    -->
+    <!-- Right eye sclera -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M 15.05,13.8 A 2.75,2.75 0 1 0 20.55,13.8 A 2.75,2.75 0 1 0 15.05,13.8 Z"
-        android:strokeColor="#1A1A1A"
-        android:strokeWidth="0.6" />
+        android:pathData="M 14.8,14 A 3.0,3.0 0 1 0 20.8,14 A 3.0,3.0 0 1 0 14.8,14 Z"
+        android:strokeColor="#2D2D2D"
+        android:strokeWidth="0.9" />
 
-    <!--
-        Left pupil — centre (10.2, 13.8), radius 1.1
-        path: M (10.2-1.1), 13.8 = M 9.1, 13.8
-              A 1.1,1.1 0 1 0 11.3, 13.8
-              A 1.1,1.1 0 1 0 9.1, 13.8 Z
-    -->
+    <!-- Left pupil -->
     <path
-        android:fillColor="#1A1A1A"
-        android:pathData="M 9.1,13.8 A 1.1,1.1 0 1 0 11.3,13.8 A 1.1,1.1 0 1 0 9.1,13.8 Z" />
+        android:fillColor="#2D2D2D"
+        android:pathData="M 8.9,14 A 1.3,1.3 0 1 0 11.5,14 A 1.3,1.3 0 1 0 8.9,14 Z" />
 
-    <!--
-        Right pupil — centre (17.8, 13.8), radius 1.1
-        path: M 16.7, 13.8 … 18.9, 13.8
-    -->
+    <!-- Right pupil -->
     <path
-        android:fillColor="#1A1A1A"
-        android:pathData="M 16.7,13.8 A 1.1,1.1 0 1 0 18.9,13.8 A 1.1,1.1 0 1 0 16.7,13.8 Z" />
+        android:fillColor="#2D2D2D"
+        android:pathData="M 16.5,14 A 1.3,1.3 0 1 0 19.1,14 A 1.3,1.3 0 1 0 16.5,14 Z" />
 
-    <!--
-        Smile arc — gentle quadratic bezier curve below the eyes
-    -->
+    <!-- Smile -->
     <path
         android:fillColor="#00000000"
-        android:pathData="M 10.5,19.5 Q 14,23 17.5,19.5"
-        android:strokeColor="#1A1A1A"
-        android:strokeWidth="1.0"
+        android:pathData="M 10,19.5 Q 14,23.5 18,19.5"
+        android:strokeColor="#2D2D2D"
+        android:strokeWidth="1.1"
         android:strokeLineCap="round" />
 
 </vector>

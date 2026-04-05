@@ -414,214 +414,247 @@
                 android:id="@+id/qwen_detail_card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/loading_background"
+                android:background="@drawable/bg_detail_card"
                 android:orientation="vertical"
-                android:padding="16dp"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingTop="16dp"
+                android:paddingBottom="24dp"
+                android:elevation="4dp"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:layout_marginBottom="16dp"
                 android:visibility="gone">
 
-                <!-- Header: Back + Title -->
+                <!-- ═══ Header: Back + Title ═══ -->
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="40dp"
+                    android:layout_height="48dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
                     <ImageButton
                         android:id="@+id/btn_back_to_dishes"
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
                         android:src="@android:drawable/ic_menu_revert"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:contentDescription="Back"
                         android:scaleType="centerInside"
-                        android:padding="6dp" />
+                        android:padding="8dp" />
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="8dp"
-                        android:text="Additional Details"
+                        android:text="Dish Details"
                         android:textColor="@color/gray_900"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.01" />
                 </LinearLayout>
 
-                <!-- Divider after header -->
+                <!-- Header divider -->
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginTop="8dp"
+                    android:layout_marginBottom="16dp"
                     android:background="@color/gray_300" />
 
-                <!-- Caution Banner -->
-                <TextView
-                    android:id="@+id/detail_caution_text"
+                <!-- ═══ Caution Banner ═══ -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
                     android:background="@color/warning_bg"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp"
-                    android:text="⚠️ This is general information. For specific dietary or ingredient details, please check with the chef."
-                    android:textColor="@color/warning_text"
-                    android:textSize="12sp"
-                    android:lineSpacingMultiplier="1.3" />
+                    android:orientation="horizontal"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="10dp"
+                    android:layout_marginBottom="20dp"
+                    android:gravity="center_vertical">
 
-                <!-- Dish Name -->
+                    <TextView
+                        android:layout_width="20dp"
+                        android:layout_height="wrap_content"
+                        android:text="⚠️"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/detail_caution_text"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        android:text="General info only. Check with chef for specific dietary or ingredient details."
+                        android:textColor="@color/warning_text"
+                        android:textSize="12sp"
+                        android:lineSpacingMultiplier="1.4" />
+                </LinearLayout>
+
+                <!-- ═══ Dish Name (hero) ═══ -->
                 <TextView
                     android:id="@+id/detail_dish_name"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
                     android:textColor="@color/gray_900"
-                    android:textSize="22sp"
+                    android:textSize="24sp"
                     android:textStyle="bold"
                     android:lineSpacingMultiplier="1.2" />
 
-                <!-- Price -->
+                <!-- ═══ Price ═══ -->
                 <TextView
                     android:id="@+id/detail_price"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
                     android:textColor="@color/green_700"
-                    android:textSize="17sp"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
 
-
-
-                <!-- Description Section -->
-                <TextView
-                    android:id="@+id/detail_description"
+                <!-- ═══ Description Section (card) ═══ -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:textColor="@color/gray_700"
-                    android:textSize="15sp"
-                    android:lineSpacingMultiplier="1.5" />
+                    android:background="@drawable/bg_detail_section"
+                    android:orientation="vertical"
+                    android:padding="14dp"
+                    android:layout_marginTop="18dp">
 
-                <!-- Divider -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="14dp"
-                    android:background="@color/gray_200" />
+                    <TextView
+                        android:id="@+id/detail_description"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/gray_700"
+                        android:textSize="15sp"
+                        android:lineSpacingMultiplier="1.6" />
+                </LinearLayout>
 
-                <!-- Ingredients Section -->
-                <TextView
-                    android:id="@+id/detail_ingredients"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:textColor="@color/gray_700"
-                    android:textSize="15sp"
-                    android:lineSpacingMultiplier="1.5" />
-
-                <!-- Divider -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="14dp"
-                    android:background="@color/gray_200" />
-
-                <!-- Taste Section -->
-                <TextView
-                    android:id="@+id/detail_taste"
+                <!-- ═══ Ingredients Section (card) ═══ -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:textColor="@color/gray_700"
-                    android:textSize="15sp"
-                    android:lineSpacingMultiplier="1.5" />
+                    android:background="@drawable/bg_detail_section"
+                    android:orientation="vertical"
+                    android:padding="14dp"
+                    android:layout_marginTop="12dp">
 
-                <!-- Divider -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="14dp"
-                    android:background="@color/gray_200" />
+                    <TextView
+                        android:id="@+id/detail_ingredients"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/gray_700"
+                        android:textSize="15sp"
+                        android:lineSpacingMultiplier="1.6" />
+                </LinearLayout>
 
-                <!-- Similar Dishes Section -->
-                <TextView
-                    android:id="@+id/detail_similar"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:textColor="@color/gray_700"
-                    android:textSize="15sp"
-                    android:lineSpacingMultiplier="1.5" />
-
-                <!-- Divider -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="14dp"
-                    android:background="@color/gray_200" />
-
-                <!-- Recommendation Section -->
-                <TextView
-                    android:id="@+id/detail_recommendation"
+                <!-- ═══ Taste + Spiciness Row (side by side) ═══ -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:textColor="@color/gray_700"
-                    android:textSize="15sp"
-                    android:lineSpacingMultiplier="1.5" />
+                    android:orientation="horizontal"
+                    android:layout_marginTop="12dp"
+                    android:baselineAligned="false">
 
-                <!-- Divider -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="14dp"
-                    android:background="@color/gray_200" />
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_detail_section"
+                        android:orientation="vertical"
+                        android:padding="14dp"
+                        android:layout_marginEnd="6dp">
 
-                <!-- Allergens Section -->
-                <TextView
-                    android:id="@+id/detail_allergens"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:textColor="@color/gray_700"
-                    android:textSize="15sp"
-                    android:lineSpacingMultiplier="1.5" />
+                        <TextView
+                            android:id="@+id/detail_taste"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/gray_700"
+                            android:textSize="15sp"
+                            android:lineSpacingMultiplier="1.5" />
+                    </LinearLayout>
 
-                <!-- Divider -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="14dp"
-                    android:background="@color/gray_200" />
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_detail_section"
+                        android:orientation="vertical"
+                        android:padding="14dp"
+                        android:layout_marginStart="6dp">
 
-                <!-- Spiciness Section -->
-                <TextView
-                    android:id="@+id/detail_spiciness"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:textColor="@color/gray_700"
-                    android:textSize="15sp"
-                    android:lineSpacingMultiplier="1.5" />
+                        <TextView
+                            android:id="@+id/detail_spiciness"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/gray_700"
+                            android:textSize="15sp"
+                            android:lineSpacingMultiplier="1.5" />
+                    </LinearLayout>
+                </LinearLayout>
 
-                <!-- Divider -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="14dp"
-                    android:background="@color/gray_200" />
-
-                <!-- Preparation Section -->
-                <TextView
-                    android:id="@+id/detail_preparation"
+                <!-- ═══ Similar Dishes Section (card) ═══ -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:layout_marginBottom="4dp"
-                    android:textColor="@color/gray_700"
-                    android:textSize="15sp"
-                    android:lineSpacingMultiplier="1.5" />
+                    android:background="@drawable/bg_detail_section"
+                    android:orientation="vertical"
+                    android:padding="14dp"
+                    android:layout_marginTop="12dp">
+
+                    <TextView
+                        android:id="@+id/detail_similar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/gray_700"
+                        android:textSize="15sp"
+                        android:lineSpacingMultiplier="1.6" />
+                </LinearLayout>
+
+                <!-- ═══ Allergens Row ═══ -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="12dp"
+                    android:baselineAligned="false">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_detail_section"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+
+                        <TextView
+                            android:id="@+id/detail_allergens"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/gray_700"
+                            android:textSize="15sp"
+                            android:lineSpacingMultiplier="1.5" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- ═══ Recommendation Section (card) ═══ -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_detail_section"
+                    android:orientation="vertical"
+                    android:padding="14dp"
+                    android:layout_marginTop="12dp">
+
+                    <TextView
+                        android:id="@+id/detail_recommendation"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/gray_700"
+                        android:textSize="15sp"
+                        android:lineSpacingMultiplier="1.6" />
+                </LinearLayout>
 
             </LinearLayout>
 

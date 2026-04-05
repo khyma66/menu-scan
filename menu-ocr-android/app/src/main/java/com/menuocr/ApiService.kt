@@ -120,12 +120,6 @@ interface ApiService {
     @PUT("/user/app-profile")
     suspend fun updateAppProfile(@Body request: AppProfileDetailsRequest): Response<AppProfileDetails>
 
-    @GET("/user/profile-preferences")
-    suspend fun getProfilePreferences(): Response<ProfilePreferences>
-
-    @PUT("/user/profile-preferences")
-    suspend fun updateProfilePreferences(@Body request: ProfilePreferencesRequest): Response<ProfilePreferences>
-
     @GET("/user/recent-scans")
     suspend fun getRecentScans(@Query("days") days: Int = 30, @Query("limit") limit: Int = 50): Response<RecentScansListResponse>
 
@@ -387,24 +381,6 @@ data class AppProfileDetails(
     val contact: String? = null,
     val phone: String? = null,
     val country: String? = null,
-    val updated_at: String? = null
-)
-
-data class ProfilePreferencesRequest(
-    val notifications_enabled: Boolean = true,
-    val push_notifications: Boolean = true,
-    val email_notifications: Boolean = false,
-    val language: String? = null,
-    val timezone: String? = null
-)
-
-data class ProfilePreferences(
-    val user_id: String,
-    val notifications_enabled: Boolean = true,
-    val push_notifications: Boolean = true,
-    val email_notifications: Boolean = false,
-    val language: String? = null,
-    val timezone: String? = null,
     val updated_at: String? = null
 )
 

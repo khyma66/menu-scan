@@ -3,47 +3,10 @@
 //  MenuOCR
 //
 //  Health conditions management - equivalent to Android HealthConditionsFragment.kt
+//  Uses v1 health profile endpoints matching Android.
 //
 
 import UIKit
-
-// MARK: - Health Profile Models
-
-struct HealthProfile: Codable {
-    let healthConditions: [String]
-    let allergies: [String]
-    let dietaryPreferences: [String]
-    let medicalNotes: String?
-    
-    enum CodingKeys: String, CodingKey {
-        case healthConditions = "health_conditions"
-        case allergies
-        case dietaryPreferences = "dietary_preferences"
-        case medicalNotes = "medical_notes"
-    }
-}
-
-struct HealthProfileWrapper: Codable {
-    let healthProfile: HealthProfile?
-    
-    enum CodingKeys: String, CodingKey {
-        case healthProfile = "health_profile"
-    }
-}
-
-struct HealthProfileRequest: Codable {
-    let healthConditions: [String]
-    let allergies: [String]
-    let dietaryPreferences: [String]
-    let medicalNotes: String?
-    
-    enum CodingKeys: String, CodingKey {
-        case healthConditions = "health_conditions"
-        case allergies
-        case dietaryPreferences = "dietary_preferences"
-        case medicalNotes = "medical_notes"
-    }
-}
 
 // MARK: - Health Conditions View Controller
 
@@ -497,7 +460,8 @@ class HealthConditionsViewController: UIViewController {
     private func loadCurrentProfile() {
         Task {
             do {
-                let profile = try await apiService.getHealthProfile()
+                let response = try await apiService.getHealthProfile()
+                let profile = response.healthProfile ?? HealthProfile()
                 await MainActor.run {
                     populateFields(with: profile)
                     updateStatus("✅ Profile loaded successfully", isSuccess: true)
@@ -647,56 +611,12 @@ extension HealthConditionsViewController: UITextViewDelegate {
     }
 }
 
-// MARK: - API Service Extension for Health Profile
+// MARK: - PaywallViewControllerDelegate
 
-extension ApiService {
-    
-    func getHealthProfile() async throws -> HealthProfile {
-        let url = URL(string: "\(baseURL)/health/profile")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        if let authToken = await getAuthToken() {
-            request.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
-        }
-        
-        let (data, response) = try await session.data(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
-            throw ApiError.invalidResponse
-        }
-        
-        let wrapper = try JSONDecoder().decode(HealthProfileWrapper.self, from: data)
-        return wrapper.healthProfile ?? HealthProfile(healthConditions: [], allergies: [], dietaryPreferences: [], medicalNotes: nil)
-    }
-    
-    func updateHealthProfile(request: HealthProfileRequest) async throws -> HealthProfile {
-        let url = URL(string: "\(baseURL)/health/profile")!
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        if let authToken = await getAuthToken() {
-            urlRequest.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
-        }
-        
-        let jsonData = try JSONEncoder().encode(request)
-        urlRequest.httpBody = jsonData
-        
-        let (data, response) = try await session.data(for: urlRequest)
-        
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
-            throw ApiError.invalidResponse
-        }
-        
-        let wrapper = try JSONDecoder().decode(HealthProfileWrapper.self, from: data)
-        guard let profile = wrapper.healthProfile else {
-            throw ApiError.invalidResponse
-        }
-        return profile
+extension HealthConditionsViewController: PaywallViewControllerDelegate {
+    func paywallDidComplete(plan: String) {
+        ScanLimitManager.shared.upgradeTo(plan: plan)
+        updateMaxPlanGate()
     }
 }
 

@@ -8,7 +8,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.fragment.app.Fragment
-import kotlinx.coroutines.CoroutineScope
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -35,7 +37,7 @@ class HealthConditionsFragment : Fragment() {
     private var btnHealthLogin: Button? = null
 
     private var apiService: ApiService? = null
-    private val uiScope = CoroutineScope(Dispatchers.Main)
+    private var loadProfileJob: Job? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -67,7 +69,7 @@ class HealthConditionsFragment : Fragment() {
 
         setupApiService()
         setupClickListeners()
-        loadCurrentProfile()
+        // Profile loaded in onResume to avoid duplicate calls
     }
 
     override fun onResume() {
@@ -86,7 +88,8 @@ class HealthConditionsFragment : Fragment() {
     }
 
     private fun loadCurrentProfile() {
-        uiScope.launch {
+        loadProfileJob?.cancel()
+        loadProfileJob = viewLifecycleOwner.lifecycleScope.launch {
             // Show loading state while checking auth
             statusMessage.text = "⏳ Checking your account…"
             statusMessage.setTextColor(requireContext().getColor(R.color.gray_600))
@@ -108,6 +111,9 @@ class HealthConditionsFragment : Fragment() {
             inputsCard.visibility = View.VISIBLE
             currentConditionsCard.visibility = View.VISIBLE
             updateStatus("⏳ Loading your health profile…", true)
+
+            // Ensure API auth token is fresh before loading
+            try { ApiClient.updateAuthToken() } catch (_: Exception) {}
 
             try {
                 val response = apiService?.getHealthProfile()
@@ -153,8 +159,25 @@ class HealthConditionsFragment : Fragment() {
 
                     statusMessage.visibility = View.GONE
                 } else if (response?.code() == 401 || response?.code() == 403) {
-                    updateStatus("⚠️ Please login to load your health profile.", false)
+                    // Token may be stale - refresh and retry once
+                    try { ApiClient.updateAuthToken() } catch (_: Exception) {}
+                    val retryResponse = apiService?.getHealthProfile()
+                    if (retryResponse?.isSuccessful == true && retryResponse.body() != null) {
+                        // retry succeeded - reload
+                        loadCurrentProfile()
+                        return@launch
+                    }
+                    inputsCard.visibility = View.VISIBLE
+                    currentConditionsCard.visibility = View.VISIBLE
+                    updateStatus("ℹ️ Add your health preferences below.", true)
+                } else {
+                    inputsCard.visibility = View.VISIBLE
+                    currentConditionsCard.visibility = View.VISIBLE
+                    updateStatus("ℹ️ Add your health preferences below.", true)
                 }
+            } catch (e: CancellationException) {
+                // Coroutine was cancelled (e.g. fragment destroyed) - don't update UI
+                throw e
             } catch (e: Exception) {
                 Log.w("HealthConditionsFragment", "Could not load profile: ${e.message}")
                 updateStatus("ℹ️ No existing profile found. Create a new one.", true)
@@ -198,7 +221,7 @@ class HealthConditionsFragment : Fragment() {
 
         showLoading(true)
 
-        uiScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val response = apiService?.updateHealthProfile(
                     HealthProfileRequest(

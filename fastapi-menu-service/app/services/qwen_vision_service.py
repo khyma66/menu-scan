@@ -20,9 +20,9 @@ class QwenVisionService:
 
     def __init__(self):
         # OpenRouter API configuration (free tier)
-        self.api_key = os.getenv("OPENROUTER_API_KEY") or "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"
+        self.api_key = os.getenv("OPENROUTER_API_KEY")
         self.base_url = "https://openrouter.ai/api/v1/chat/completions"
-        self.model = "anthropic/claude-3-haiku"  # Use Claude for testing
+        self.model = "qwen/qwen-2.5-vl-72b-instruct"  # Qwen Vision model via OpenRouter
         self.timeout = 90  # 90 seconds for vision processing
 
         if not self.api_key:
@@ -103,13 +103,11 @@ class QwenVisionService:
 
         except httpx.TimeoutException:
             logger.error("Qwen vision processing timed out")
-            # Return mock data for testing
-            return self._create_mock_response()
+            return self._create_error_response("Qwen vision processing timed out")
 
         except Exception as e:
             logger.error(f"Qwen vision processing failed: {e}")
-            # Return mock data for testing when API fails
-            return self._create_mock_response()
+            return self._create_error_response(f"Qwen vision processing failed: {e}")
 
     def _build_menu_extraction_prompt(self) -> str:
         """Build the menu extraction prompt for Qwen vision model"""

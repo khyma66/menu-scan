@@ -47,7 +47,8 @@ class Settings(BaseSettings):
     render_api_token: Optional[str] = Field(default=None, env="RENDER_API_TOKEN")
 
     # Gemini OCR + Groq enhancement pipeline
-    gemini_model: str = Field(default="gemini-2.0-flash", env="GEMINI_MODEL")
+    # NOTE: gemini-2.0-flash is deprecated (shutdown June 1, 2026). Using 2.5-flash (free tier).
+    gemini_model: str = Field(default="gemini-2.5-flash", env="GEMINI_MODEL")
     gemini_api_base: str = Field(default="https://generativelanguage.googleapis.com/v1beta", env="GEMINI_API_BASE")
     gemini_timeout: float = Field(default=60.0, env="GEMINI_TIMEOUT")
 
@@ -127,7 +128,7 @@ class Settings(BaseSettings):
 
     class Config:
         """Pydantic configuration"""
-        env_file = ".env.secrets"
+        env_file = (".env", ".env.secrets")
         env_file_encoding = "utf-8"
         case_sensitive = False
 

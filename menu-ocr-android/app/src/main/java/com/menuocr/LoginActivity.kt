@@ -454,6 +454,7 @@ class LoginActivity : AppCompatActivity() {
         hideError()
         try {
             val url = SupabaseClient.getGoogleOAuthUrl()
+            Log.i(TAG, "Google OAuth URL: $url")
             launchBrandedTab(url)
         } catch (e: Exception) {
             showError(getErrorMessage(e))
@@ -464,7 +465,7 @@ class LoginActivity : AppCompatActivity() {
         hideError()
         try {
             val url = SupabaseClient.getAppleOAuthUrl()
-            launchBrandedTab(url)
+            OAuthWebViewActivity.launch(this, url)
         } catch (e: Exception) {
             showError(getErrorMessage(e))
         }
