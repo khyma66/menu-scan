@@ -64,6 +64,10 @@
         <string>UIInterfaceOrientationPortrait</string>
     </array>
 
+    <!-- Launch Screen (required for full-screen on modern devices) -->
+    <key>UILaunchScreen</key>
+    <dict/>
+
     <!-- Scene Manifest -->
     <key>UIApplicationSceneManifest</key>
     <dict>
