@@ -3,9 +3,7 @@
 <plist version="1.0">
 <dict>
 
-    <!-- ============================================================ -->
-    <!-- App Identity                                                 -->
-    <!-- ============================================================ -->
+    <!-- App Identity -->
     <key>CFBundleName</key>
     <string>Fooder</string>
 
@@ -30,57 +28,35 @@
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
 
-    <!-- ============================================================ -->
-    <!-- Privacy – Usage Description Strings (REQUIRED by App Store)  -->
-    <!-- Missing any of these = guaranteed rejection                  -->
-    <!-- ============================================================ -->
+    <!-- Privacy – Usage Description Strings (REQUIRED by App Store) -->
 
-    <!-- Camera: used to photograph restaurant menus -->
     <key>NSCameraUsageDescription</key>
     <string>Fooder uses your camera to photograph restaurant menus so it can scan and translate dish names, descriptions, and prices for you.</string>
 
-    <!-- Photo Library read-access: user selects existing menu photos -->
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Fooder reads photos from your library so you can scan a menu image you have already saved.</string>
 
-    <!-- Photo Library write-access: only required if you save processed images back -->
     <key>NSPhotoLibraryAddUsageDescription</key>
     <string>Fooder can save annotated menu images to your photo library so you can reference them later.</string>
 
-    <!-- Location (future map / nearby-restaurant feature) -->
-    <!-- Remove this key entirely if location is not yet used in the current build -->
-    <!-- <key>NSLocationWhenInUseUsageDescription</key> -->
-    <!-- <string>Fooder uses your location to show nearby restaurants and match menus to the right venue.</string> -->
-
-    <!-- ============================================================ -->
-    <!-- App Tracking Transparency (ATT) – REQUIRED if analytics     -->
-    <!-- are enabled or any advertising identifier is read            -->
-    <!-- ============================================================ -->
+    <!-- App Tracking Transparency -->
     <key>NSUserTrackingUsageDescription</key>
     <string>Fooder uses anonymous usage data to improve scan accuracy and app performance. No personal information is shared with third parties for advertising purposes.</string>
 
-    <!-- ============================================================ -->
-    <!-- App Transport Security                                       -->
-    <!-- ============================================================ -->
+    <!-- App Transport Security -->
     <key>NSAppTransportSecurity</key>
     <dict>
-        <!-- All production endpoints (Cloudflare Worker, Supabase) use HTTPS  -->
-        <!-- Only allow localhost for DEBUG simulator builds                   -->
         <key>NSExceptionDomains</key>
         <dict>
             <key>localhost</key>
             <dict>
                 <key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
                 <true/>
-                <!-- Localhost exception is stripped from App Store builds     -->
-                <!-- via a build-time script; production traffic is HTTPS only -->
             </dict>
         </dict>
     </dict>
 
-    <!-- ============================================================ -->
-    <!-- Scene & UI                                                   -->
-    <!-- ============================================================ -->
+    <!-- Scene & UI -->
     <key>UIApplicationSceneManifest</key>
     <dict>
         <key>UIApplicationSupportsMultipleScenes</key>
@@ -112,9 +88,6 @@
     <key>UIRequiresFullScreen</key>
     <false/>
 
-    <!-- ============================================================ -->
-    <!-- Minimum iOS version (matches Xcode Deployment Target)        -->
-    <!-- ============================================================ -->
     <key>MinimumOSVersion</key>
     <string>16.0</string>
 
